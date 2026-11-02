@@ -34,6 +34,24 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt -r requiremen
 .venv/bin/pytest
 ```
 
+## API surface (M1 foundation)
+
+| Endpoint | Scope | Purpose |
+|---|---|---|
+| `GET /health` | public | service health |
+| `POST/GET /api/v1/platform/tenants` | platform key | tenant registry |
+| `PATCH /api/v1/platform/tenants/{slug}/status` | platform key | suspend / reactivate tenant |
+| `GET /api/v1/platform/audit` | platform key | full append-only audit log |
+| `GET /api/v1/context` | tenant | resolve tenant context (`X-Tenant-Id`) |
+| `POST/GET /api/v1/users` | tenant | tenant users and roles (`X-Actor`) |
+| `GET /api/v1/audit` | tenant | this tenant's audit entries only |
+| `POST/GET /api/v1/workspaces` | tenant | tenant-isolated workspaces (demo resource) |
+
+Tenant rules enforced by the API: unregistered or suspended tenants are
+rejected (deny by default); the first user of a tenant is bootstrapped as
+`TENANT_ADMIN`; user management afterwards requires a `TENANT_ADMIN` actor;
+workspace writes require role `OPERATOR` or higher.
+
 ## Principles
 
 - Strict tenant isolation on every tenant-scoped resource (deny by default).

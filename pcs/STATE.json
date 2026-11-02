@@ -1,5 +1,5 @@
 {
-  "revision": 3,
+  "revision": 4,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -28,9 +28,9 @@
       }
     ],
     "current": {
-      "active_task": "T-003",
-      "last_completed_step": "T-001 TECH_DONE: repository live, initial checkpoint (STATE rev 2) pushed as commit 2b354557 and verified by read-back",
-      "next_action": "Start T-003 (M1 foundation): tenant registry, identity/access skeleton and audit log on the existing tenant-isolation contract, with tests",
+      "active_task": "T-004",
+      "last_completed_step": "T-003 TECH_DONE: M1 foundation implemented and verified (pytest 24/24)",
+      "next_action": "T-004 (M2): data model (ERD) for core production objects (ZON/MPL/FLD/LOT) and persistence layer replacing in-memory stores behind the same API contracts",
       "blockers": []
     },
     "decisions": [
@@ -90,6 +90,30 @@
         ],
         "status": "PLANNED",
         "classification": "PUBLIC"
+      },
+      {
+        "id": "F-003",
+        "classification": "PUBLIC",
+        "status": "TECH_DONE",
+        "name": "Tenant registry and lifecycle: create/list/get, ACTIVE/SUSPENDED, platform-key administration",
+        "srs_refs": [
+          "TEN-01",
+          "TEN-02",
+          "ADM-01"
+        ],
+        "evidence": "backend/tests/test_m1.py registry/lifecycle tests within the 24/24 passing suite"
+      },
+      {
+        "id": "F-004",
+        "classification": "PUBLIC",
+        "status": "TECH_DONE",
+        "name": "Tenant identity skeleton and append-only audit: bootstrap TENANT_ADMIN, role guards (VIEWER/OPERATOR/TENANT_ADMIN), per-tenant audit views without cross-tenant leakage",
+        "srs_refs": [
+          "ADM-02",
+          "SEC-05",
+          "NFR-36"
+        ],
+        "evidence": "backend/tests/test_m1.py identity/audit tests within the 24/24 passing suite"
       }
     ],
     "flows": [],
@@ -121,6 +145,12 @@
         "mitigation": "Classification recorded in policy; .gitignore covers env/keys/credentials; every push is content-reviewed before commit.",
         "risk": "Public repository: accidental publication of internal documents, pilot data or secrets.",
         "classification": "PUBLIC"
+      },
+      {
+        "id": "R-003",
+        "classification": "PUBLIC",
+        "risk": "The public repository description currently shows personal email addresses (entered by the Owner at creation). Owner acknowledged on 2026-11-02 and will remove them later.",
+        "mitigation": "Flagged to the Owner at the rev 3 report; no project data is affected; removal is a one-line metadata edit whenever the Owner chooses."
       }
     ],
     "schema": "pcs.solo.project.v1",
@@ -162,13 +192,14 @@
       },
       {
         "id": "T-003",
-        "status": "IN_PROGRESS",
+        "status": "TECH_DONE",
         "title": "M1 foundation: tenancy, identity/access and audit skeleton (SRS TEN/ADM groups, SEC controls)",
-        "classification": "PUBLIC"
+        "classification": "PUBLIC",
+        "evidence": "FastAPI backend: platform tenant registry + lifecycle, registry-aware tenant guard (unknown/suspended denied), tenant users with bootstrap-admin rule and role guards, append-only audit with tenant-scoped views. pytest 24/24 passed locally on 2026-11-02."
       },
       {
         "id": "T-004",
-        "status": "PLANNED",
+        "status": "IN_PROGRESS",
         "title": "M2: data model (ERD) and core production objects (ZON/MPL/FLD/LOT) with persistence",
         "classification": "PUBLIC"
       },
@@ -193,5 +224,5 @@
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-02T05:47:10Z"
+  "updated_at": "2026-11-02T05:52:28Z"
 }

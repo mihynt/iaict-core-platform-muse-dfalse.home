@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 3 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
+- **Revision:** 4 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -29,7 +29,16 @@
   commit `2b354557` and verified: HEAD and `pcs/STATE.json` revision 2 read
   back from GitHub match this project.
 
+## Latest progress
+
+- **T-003 (M1 foundation) TECH_DONE:** platform tenant registry with
+  lifecycle (ACTIVE/SUSPENDED), registry-aware tenant guard (unknown or
+  suspended tenants denied), tenant users with a bootstrap-admin rule and
+  role guards (VIEWER < OPERATOR < TENANT_ADMIN), and an append-only audit
+  log with per-tenant views. Verified by **pytest 24/24** (2026-11-02).
+
 ## Next action
 
-T-003 (M1 foundation): tenant registry, identity/access skeleton and audit
-log on the existing tenant-isolation contract, with tests.
+T-004 (M2): data model (ERD) for the core production objects
+(ZON/MPL/FLD/LOT) and a persistence layer that replaces the in-memory
+stores behind the same API contracts.
