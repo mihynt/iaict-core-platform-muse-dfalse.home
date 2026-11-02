@@ -30,7 +30,7 @@ class PgStore:
         with self._lock, self._conn.cursor() as cur:
             cur.execute(_SCHEMA)
 
-    def reset(self) -> None:
+    async def reset(self) -> None:
         with self._lock, self._conn.cursor() as cur:
             cur.execute(
                 "TRUNCATE audit_log, lot_relations, field_events, lots, crop_plans,"
@@ -39,7 +39,7 @@ class PgStore:
             )
 
     # ---- audit ---------------------------------------------------------
-    def record_audit(self, *, scope: str, tenant_id: str | None, actor: str,
+    async def record_audit(self, *, scope: str, tenant_id: str | None, actor: str,
                      action: str, target: str, outcome: str) -> dict:
         with self._lock, self._conn.cursor() as cur:
             cur.execute(
@@ -58,14 +58,14 @@ class PgStore:
             rows = cur.fetchall()
         return [{**r, "ts": r["ts"].isoformat()} for r in rows]
 
-    def list_audit(self) -> list[dict]:
+    async def list_audit(self) -> list[dict]:
         return self._audit_rows("", ())
 
-    def audit_for_tenant(self, tenant_id: str) -> list[dict]:
+    async def audit_for_tenant(self, tenant_id: str) -> list[dict]:
         return self._audit_rows("WHERE tenant_id = %s", (tenant_id,))
 
     # ---- tenants -------------------------------------------------------
-    def create_tenant(self, slug: str, name: str) -> Tenant | None:
+    async def create_tenant(self, slug: str, name: str) -> Tenant | None:
         with self._lock, self._conn.cursor() as cur:
             try:
                 cur.execute(
@@ -77,7 +77,7 @@ class PgStore:
                 return None
         return Tenant(slug=slug, name=name, created_at=created.isoformat())
 
-    def get_tenant(self, slug: str) -> Tenant | None:
+    async def get_tenant(self, slug: str) -> Tenant | None:
         with self._lock, self._conn.cursor() as cur:
             cur.execute("SELECT * FROM tenants WHERE slug = %s", (slug,))
             row = cur.fetchone()
@@ -86,14 +86,14 @@ class PgStore:
         return Tenant(slug=row["slug"], name=row["name"], status=row["status"],
                       created_at=row["created_at"].isoformat())
 
-    def list_tenants(self) -> list[Tenant]:
+    async def list_tenants(self) -> list[Tenant]:
         with self._lock, self._conn.cursor() as cur:
             cur.execute("SELECT * FROM tenants ORDER BY slug")
             rows = cur.fetchall()
         return [Tenant(slug=r["slug"], name=r["name"], status=r["status"],
                        created_at=r["created_at"].isoformat()) for r in rows]
 
-    def set_tenant_status(self, slug: str, status: str) -> Tenant | None:
+    async def set_tenant_status(self, slug: str, status: str) -> Tenant | None:
         with self._lock, self._conn.cursor() as cur:
             cur.execute(
                 "UPDATE tenants SET status = %s WHERE slug = %s RETURNING *", (status, slug)
@@ -105,7 +105,7 @@ class PgStore:
                       created_at=row["created_at"].isoformat())
 
     # ---- users ---------------------------------------------------------
-    def create_user(self, tenant: str, username: str, display_name: str, role: str) -> User | None:
+    async def create_user(self, tenant: str, username: str, display_name: str, role: str) -> User | None:
         with self._lock, self._conn.cursor() as cur:
             try:
                 cur.execute(
@@ -119,7 +119,7 @@ class PgStore:
         return User(username=username, display_name=display_name, role=role,
                     created_at=created.isoformat())
 
-    def get_user(self, tenant: str, username: str) -> User | None:
+    async def get_user(self, tenant: str, username: str) -> User | None:
         with self._lock, self._conn.cursor() as cur:
             cur.execute("SELECT * FROM users WHERE tenant_id = %s AND username = %s",
                         (tenant, username))
@@ -129,20 +129,20 @@ class PgStore:
         return User(username=row["username"], display_name=row["display_name"],
                     role=row["role"], created_at=row["created_at"].isoformat())
 
-    def list_users(self, tenant: str) -> list[User]:
+    async def list_users(self, tenant: str) -> list[User]:
         with self._lock, self._conn.cursor() as cur:
             cur.execute("SELECT * FROM users WHERE tenant_id = %s ORDER BY username", (tenant,))
             rows = cur.fetchall()
         return [User(username=r["username"], display_name=r["display_name"], role=r["role"],
                      created_at=r["created_at"].isoformat()) for r in rows]
 
-    def tenant_user_count(self, tenant: str) -> int:
+    async def tenant_user_count(self, tenant: str) -> int:
         with self._lock, self._conn.cursor() as cur:
             cur.execute("SELECT count(*) AS n FROM users WHERE tenant_id = %s", (tenant,))
             return cur.fetchone()["n"]
 
     # ---- workspaces ------------------------------------------------------
-    def create_workspace(self, tenant: str, name: str) -> bool:
+    async def create_workspace(self, tenant: str, name: str) -> bool:
         with self._lock, self._conn.cursor() as cur:
             cur.execute(
                 "INSERT INTO workspaces (tenant_id, name) VALUES (%s, %s)"
@@ -151,7 +151,7 @@ class PgStore:
             )
             return cur.rowcount == 1
 
-    def list_workspace_names(self, tenant: str) -> list[str]:
+    async def list_workspace_names(self, tenant: str) -> list[str]:
         with self._lock, self._conn.cursor() as cur:
             cur.execute("SELECT name FROM workspaces WHERE tenant_id = %s ORDER BY name",
                         (tenant,))
@@ -165,7 +165,7 @@ class PgStore:
         row = cur.fetchone()
         return None if row is None else row["id"]
 
-    def create_record(self, tenant: str, kind: str, fields: dict) -> dict | None:
+    async def create_record(self, tenant: str, kind: str, fields: dict) -> dict | None:
         table, columns = SPECS[kind]
         refs = RECORD_REFS[kind]
         with self._lock, self._conn.cursor() as cur:
@@ -218,7 +218,7 @@ class PgStore:
             record["updated_at"] = row["updated_at"].isoformat()
         return record
 
-    def list_records(self, tenant: str, kind: str) -> list[dict]:
+    async def list_records(self, tenant: str, kind: str) -> list[dict]:
         table, _ = SPECS[kind]
         order = "code" if kind in CODED_KINDS else "id"
         with self._lock, self._conn.cursor() as cur:
@@ -226,7 +226,7 @@ class PgStore:
                         (tenant,))
             return [self._row_to_record(r, kind) for r in cur.fetchall()]
 
-    def get_record_by_code(self, tenant: str, kind: str, code: str) -> dict | None:
+    async def get_record_by_code(self, tenant: str, kind: str, code: str) -> dict | None:
         table, _ = SPECS[kind]
         with self._lock, self._conn.cursor() as cur:
             cur.execute(f"SELECT * FROM {table} WHERE tenant_id = %s AND code = %s",

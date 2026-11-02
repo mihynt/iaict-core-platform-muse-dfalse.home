@@ -57,7 +57,7 @@ async def require_actor(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"code": "ACTOR_REQUIRED", "message": "X-Actor header is required"},
         )
-    user = store.get_user(tenant, x_actor.strip())
+    user = await store.get_user(tenant, x_actor.strip())
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

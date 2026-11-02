@@ -58,16 +58,16 @@ async def context(tenant: str = Depends(require_tenant)) -> dict:
 @app.post(f"{settings.api_prefix}/workspaces", status_code=status.HTTP_201_CREATED)
 async def create_workspace(body: WorkspaceIn, tenant: str = Depends(require_tenant),
                            actor: User = Depends(require_role("OPERATOR"))) -> dict:
-    created = store.create_workspace(tenant, body.name)
+    created = await store.create_workspace(tenant, body.name)
     if created:
-        store.record_audit(scope="tenant", tenant_id=tenant, actor=actor.username,
+        await store.record_audit(scope="tenant", tenant_id=tenant, actor=actor.username,
                            action="WORKSPACE_CREATE", target=body.name, outcome="OK")
     return {"tenant_id": tenant, "name": body.name, "created": created}
 
 
 @app.get(f"{settings.api_prefix}/workspaces")
 async def list_workspaces(tenant: str = Depends(require_tenant)) -> dict:
-    return {"tenant_id": tenant, "items": store.list_workspace_names(tenant)}
+    return {"tenant_id": tenant, "items": await store.list_workspace_names(tenant)}
 
 
 @app.get("/{path:path}")

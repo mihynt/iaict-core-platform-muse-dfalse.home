@@ -33,27 +33,27 @@ async def create_tenant(body: TenantIn, actor: str = Depends(require_platform_ke
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={"code": "TENANT_INVALID", "message": "Slug must be lowercase letters, digits and dashes"},
         )
-    tenant = store.create_tenant(body.slug, body.name)
+    tenant = await store.create_tenant(body.slug, body.name)
     if tenant is None:
-        store.record_audit(scope="platform", tenant_id=body.slug, actor=actor,
+        await store.record_audit(scope="platform", tenant_id=body.slug, actor=actor,
                            action="TENANT_CREATE", target=body.slug, outcome="CONFLICT")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={"code": "TENANT_EXISTS", "message": "Tenant slug already registered"},
         )
-    store.record_audit(scope="platform", tenant_id=tenant.slug, actor=actor,
+    await store.record_audit(scope="platform", tenant_id=tenant.slug, actor=actor,
                        action="TENANT_CREATE", target=tenant.slug, outcome="OK")
     return _tenant_view(tenant)
 
 
 @router.get("/tenants")
 async def list_tenants(_: str = Depends(require_platform_key)) -> dict:
-    return {"items": [_tenant_view(t) for t in store.list_tenants()]}
+    return {"items": [_tenant_view(t) for t in await store.list_tenants()]}
 
 
 @router.get("/tenants/{slug}")
 async def get_tenant(slug: str, _: str = Depends(require_platform_key)) -> dict:
-    tenant = store.get_tenant(slug)
+    tenant = await store.get_tenant(slug)
     if tenant is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail={"code": "TENANT_NOT_FOUND", "message": "Tenant not found"})
@@ -63,15 +63,15 @@ async def get_tenant(slug: str, _: str = Depends(require_platform_key)) -> dict:
 @router.patch("/tenants/{slug}/status")
 async def set_tenant_status(slug: str, body: TenantStatusIn,
                             actor: str = Depends(require_platform_key)) -> dict:
-    tenant = store.set_tenant_status(slug, body.status)
+    tenant = await store.set_tenant_status(slug, body.status)
     if tenant is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail={"code": "TENANT_NOT_FOUND", "message": "Tenant not found"})
-    store.record_audit(scope="platform", tenant_id=slug, actor=actor,
+    await store.record_audit(scope="platform", tenant_id=slug, actor=actor,
                        action="TENANT_STATUS", target=slug, outcome=body.status)
     return _tenant_view(tenant)
 
 
 @router.get("/audit")
 async def platform_audit(_: str = Depends(require_platform_key)) -> dict:
-    return {"items": store.list_audit()}
+    return {"items": await store.list_audit()}

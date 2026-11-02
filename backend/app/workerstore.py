@@ -184,7 +184,7 @@ class WorkerPgStore:
         rows = self._rows(cur)
         return rows[0] if rows else None
 
-    def reset(self) -> None:
+    async def reset(self) -> None:
         self._tenant_cache.clear()
         self._user_cache.clear()
         with self._lock, self._session() as cur:
@@ -195,7 +195,7 @@ class WorkerPgStore:
             )
 
     # ---- audit ---------------------------------------------------------
-    def record_audit(self, *, scope: str, tenant_id: str | None, actor: str,
+    async def record_audit(self, *, scope: str, tenant_id: str | None, actor: str,
                      action: str, target: str, outcome: str) -> dict:
         with self._lock, self._session() as cur:
             cur.execute(
@@ -216,14 +216,14 @@ class WorkerPgStore:
             rows = self._run_read(work)
         return [{**r, "ts": r["ts"].isoformat()} for r in rows]
 
-    def list_audit(self) -> list[dict]:
+    async def list_audit(self) -> list[dict]:
         return self._audit_rows("", ())
 
-    def audit_for_tenant(self, tenant_id: str) -> list[dict]:
+    async def audit_for_tenant(self, tenant_id: str) -> list[dict]:
         return self._audit_rows("WHERE tenant_id = %s", (tenant_id,))
 
     # ---- tenants -------------------------------------------------------
-    def create_tenant(self, slug: str, name: str) -> Tenant | None:
+    async def create_tenant(self, slug: str, name: str) -> Tenant | None:
         # The unique-violation handler lives OUTSIDE the session on purpose:
         # a swallowed server error would leave the transaction aborted and
         # pg8000 refuses any further statement in a failed transaction.
@@ -242,7 +242,7 @@ class WorkerPgStore:
         self._tenant_cache[slug] = (time.monotonic(), tenant)
         return tenant
 
-    def get_tenant(self, slug: str) -> Tenant | None:
+    async def get_tenant(self, slug: str) -> Tenant | None:
         now = time.monotonic()
         hit = self._tenant_cache.get(slug)
         if hit is not None:
@@ -262,7 +262,7 @@ class WorkerPgStore:
         self._tenant_cache[slug] = (now, result)
         return result
 
-    def list_tenants(self) -> list[Tenant]:
+    async def list_tenants(self) -> list[Tenant]:
         def work(cur):
             cur.execute("SELECT * FROM tenants ORDER BY slug")
             return self._rows(cur)
@@ -272,7 +272,7 @@ class WorkerPgStore:
         return [Tenant(slug=r["slug"], name=r["name"], status=r["status"],
                        created_at=r["created_at"].isoformat()) for r in rows]
 
-    def set_tenant_status(self, slug: str, status: str) -> Tenant | None:
+    async def set_tenant_status(self, slug: str, status: str) -> Tenant | None:
         with self._lock, self._session() as cur:
             cur.execute(
                 "UPDATE tenants SET status = %s WHERE slug = %s RETURNING *", (status, slug)
@@ -287,7 +287,7 @@ class WorkerPgStore:
         return tenant
 
     # ---- users ---------------------------------------------------------
-    def create_user(self, tenant: str, username: str, display_name: str, role: str) -> User | None:
+    async def create_user(self, tenant: str, username: str, display_name: str, role: str) -> User | None:
         try:
             with self._lock, self._session() as cur:
                 cur.execute(
@@ -304,7 +304,7 @@ class WorkerPgStore:
         return User(username=username, display_name=display_name, role=role,
                     created_at=created.isoformat())
 
-    def get_user(self, tenant: str, username: str) -> User | None:
+    async def get_user(self, tenant: str, username: str) -> User | None:
         now = time.monotonic()
         hit = self._user_cache.get((tenant, username))
         if hit is not None:
@@ -325,7 +325,7 @@ class WorkerPgStore:
         self._user_cache[(tenant, username)] = (now, result)
         return result
 
-    def list_users(self, tenant: str) -> list[User]:
+    async def list_users(self, tenant: str) -> list[User]:
         def work(cur):
             cur.execute("SELECT * FROM users WHERE tenant_id = %s ORDER BY username", (tenant,))
             return self._rows(cur)
@@ -335,7 +335,7 @@ class WorkerPgStore:
         return [User(username=r["username"], display_name=r["display_name"], role=r["role"],
                      created_at=r["created_at"].isoformat()) for r in rows]
 
-    def tenant_user_count(self, tenant: str) -> int:
+    async def tenant_user_count(self, tenant: str) -> int:
         def work(cur):
             cur.execute("SELECT count(*) AS n FROM users WHERE tenant_id = %s", (tenant,))
             return self._one(cur)["n"]
@@ -344,7 +344,7 @@ class WorkerPgStore:
             return self._run_read(work)
 
     # ---- workspaces ------------------------------------------------------
-    def create_workspace(self, tenant: str, name: str) -> bool:
+    async def create_workspace(self, tenant: str, name: str) -> bool:
         with self._lock, self._session() as cur:
             cur.execute(
                 "INSERT INTO workspaces (tenant_id, name) VALUES (%s, %s)"
@@ -353,7 +353,7 @@ class WorkerPgStore:
             )
             return cur.rowcount == 1
 
-    def list_workspace_names(self, tenant: str) -> list[str]:
+    async def list_workspace_names(self, tenant: str) -> list[str]:
         def work(cur):
             cur.execute("SELECT name FROM workspaces WHERE tenant_id = %s ORDER BY name",
                         (tenant,))
@@ -370,7 +370,7 @@ class WorkerPgStore:
         row = self._one(cur)
         return None if row is None else row["id"]
 
-    def create_record(self, tenant: str, kind: str, fields: dict) -> dict | None:
+    async def create_record(self, tenant: str, kind: str, fields: dict) -> dict | None:
         try:
             return self._create_record_inner(tenant, kind, fields)
         except Exception as exc:
@@ -429,7 +429,7 @@ class WorkerPgStore:
             record["updated_at"] = row["updated_at"].isoformat()
         return record
 
-    def list_records(self, tenant: str, kind: str) -> list[dict]:
+    async def list_records(self, tenant: str, kind: str) -> list[dict]:
         table, _ = SPECS[kind]
         order = "code" if kind in CODED_KINDS else "id"
 
@@ -441,7 +441,7 @@ class WorkerPgStore:
         with self._lock:
             return self._run_read(work)
 
-    def get_record_by_code(self, tenant: str, kind: str, code: str) -> dict | None:
+    async def get_record_by_code(self, tenant: str, kind: str, code: str) -> dict | None:
         table, _ = SPECS[kind]
 
         def work(cur):

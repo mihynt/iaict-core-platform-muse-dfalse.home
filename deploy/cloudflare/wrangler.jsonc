@@ -1,5 +1,5 @@
 {
-  // IAICT Core Platform — Cloudflare Python Worker (beta hosting, DEC-006).
+  // IAICT Core Platform — Cloudflare Python Worker (beta hosting).
   // Run ./build.sh first so src/ contains entry.py + the app package.
   "name": "iaict-core-platform",
   "main": "src/entry.py",
@@ -16,15 +16,19 @@
     "binding": "ASSETS",
     "run_worker_first": true
   },
-  // Hyperdrive config "iaict-supabase" (created by the Owner in the
-  // dashboard on 2026-11-02; Supabase direct connection string, caching
-  // disabled). Switched from "iaict-neon" (id 3cdbf0e61cfc4a078ea1f4790200a65f,
-  // kept intact for instant rollback) for the Supabase trial at STATE rev 18.
-  // The store layer (app/workerstore.py, pg8000) binds it from the first
-  // request's env; /health reports storage "postgresql-hyperdrive".
-  "hyperdrive": [
-    { "binding": "HYPERDRIVE", "id": "4ee90fdeba69436493d69e11fd7a870b" }
+  // Primary store since T-014 / DEC-008 (2026-11-03): D1 database
+  // "iaict-core". The store layer (app/d1store.py) binds env.DB from the
+  // first request; /health reports storage "d1". Chosen by measurement:
+  // the D1 spike scored 68/68 requests ok with cpuTime median 26ms,
+  // versus 19/48 and ~1,241ms for PostgreSQL via Hyperdrive.
+  "d1_databases": [
+    { "binding": "DB", "database_name": "iaict-core", "database_id": "f4d07d24-3375-4588-affc-f6122c440ca6" }
   ]
+  // Rollback to PostgreSQL: restore the hyperdrive array below, set
+  // IAICT_BACKEND=hyperdrive in src/entry.py, redeploy. Both Hyperdrive
+  // configs still exist ("iaict-supabase" id 4ee90fdeba69436493d69e11fd7a870b,
+  // "iaict-neon" id 3cdbf0e61cfc4a078ea1f4790200a65f) and the Supabase/Neon
+  // datasets are untouched.
   // Secrets (never commit values):
   //   wrangler secret put PLATFORM_ADMIN_KEY
 }

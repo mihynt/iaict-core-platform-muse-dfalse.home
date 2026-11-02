@@ -83,7 +83,7 @@ class RecordIn(BaseModel):
     plan_code: str | None = None
 
 
-def _create(tenant: str, actor: User, kind: str, prefix: str, body: RecordIn) -> dict:
+async def _create(tenant: str, actor: User, kind: str, prefix: str, body: RecordIn) -> dict:
     fields = body.model_dump(mode="json", exclude_none=True)
     for key in RESERVED:
         fields.pop(key, None)
@@ -95,7 +95,7 @@ def _create(tenant: str, actor: User, kind: str, prefix: str, body: RecordIn) ->
             detail={"code": "CODE_REQUIRED", "message": "code is required for this object type"},
         )
     try:
-        record = store.create_record(tenant, kind, fields)
+        record = await store.create_record(tenant, kind, fields)
     except RefUnknown as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -107,18 +107,18 @@ def _create(tenant: str, actor: User, kind: str, prefix: str, body: RecordIn) ->
             status_code=status.HTTP_409_CONFLICT,
             detail={"code": "CODE_EXISTS", "message": "code already exists in this tenant"},
         )
-    store.record_audit(scope="tenant", tenant_id=tenant, actor=actor.username,
+    await store.record_audit(scope="tenant", tenant_id=tenant, actor=actor.username,
                        action=f"{prefix}_CREATE",
                        target=record.get("code") or str(record["id"]), outcome="OK")
     return record
 
 
-def _list(tenant: str, kind: str) -> dict:
-    return {"tenant_id": tenant, "items": store.list_records(tenant, kind)}
+async def _list(tenant: str, kind: str) -> dict:
+    return {"tenant_id": tenant, "items": await store.list_records(tenant, kind)}
 
 
-def _get(tenant: str, kind: str, code: str) -> dict:
-    record = store.get_record_by_code(tenant, kind, code)
+async def _get(tenant: str, kind: str, code: str) -> dict:
+    record = await store.get_record_by_code(tenant, kind, code)
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail={"code": "NOT_FOUND", "message": "Object not found"})
@@ -129,76 +129,76 @@ def _get(tenant: str, kind: str, code: str) -> dict:
 @router.post("/zones", status_code=status.HTTP_201_CREATED)
 async def create_zone(body: RecordIn, tenant: str = Depends(require_tenant),
                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
-    return _create(tenant, actor, "zones", "ZON", body)
+    return await _create(tenant, actor, "zones", "ZON", body)
 
 
 @router.get("/zones")
 async def list_zones(tenant: str = Depends(require_tenant)) -> dict:
-    return _list(tenant, "zones")
+    return await _list(tenant, "zones")
 
 
 @router.get("/zones/{code}")
 async def get_zone(code: str, tenant: str = Depends(require_tenant)) -> dict:
-    return _get(tenant, "zones", code)
+    return await _get(tenant, "zones", code)
 
 
 # ---- MPL -------------------------------------------------------------------
 @router.post("/mother-plants", status_code=status.HTTP_201_CREATED)
 async def create_mother_plant(body: RecordIn, tenant: str = Depends(require_tenant),
                               actor: User = Depends(require_role("OPERATOR"))) -> dict:
-    return _create(tenant, actor, "mother_plants", "MPL", body)
+    return await _create(tenant, actor, "mother_plants", "MPL", body)
 
 
 @router.get("/mother-plants")
 async def list_mother_plants(tenant: str = Depends(require_tenant)) -> dict:
-    return _list(tenant, "mother_plants")
+    return await _list(tenant, "mother_plants")
 
 
 @router.get("/mother-plants/{code}")
 async def get_mother_plant(code: str, tenant: str = Depends(require_tenant)) -> dict:
-    return _get(tenant, "mother_plants", code)
+    return await _get(tenant, "mother_plants", code)
 
 
 # ---- FLD -------------------------------------------------------------------
 @router.post("/crop-plans", status_code=status.HTTP_201_CREATED)
 async def create_crop_plan(body: RecordIn, tenant: str = Depends(require_tenant),
                            actor: User = Depends(require_role("OPERATOR"))) -> dict:
-    return _create(tenant, actor, "crop_plans", "FLD", body)
+    return await _create(tenant, actor, "crop_plans", "FLD", body)
 
 
 @router.get("/crop-plans")
 async def list_crop_plans(tenant: str = Depends(require_tenant)) -> dict:
-    return _list(tenant, "crop_plans")
+    return await _list(tenant, "crop_plans")
 
 
 @router.get("/crop-plans/{code}")
 async def get_crop_plan(code: str, tenant: str = Depends(require_tenant)) -> dict:
-    return _get(tenant, "crop_plans", code)
+    return await _get(tenant, "crop_plans", code)
 
 
 @router.post("/field-events", status_code=status.HTTP_201_CREATED)
 async def create_field_event(body: RecordIn, tenant: str = Depends(require_tenant),
                              actor: User = Depends(require_role("OPERATOR"))) -> dict:
-    return _create(tenant, actor, "field_events", "FLD", body)
+    return await _create(tenant, actor, "field_events", "FLD", body)
 
 
 @router.get("/field-events")
 async def list_field_events(tenant: str = Depends(require_tenant)) -> dict:
-    return _list(tenant, "field_events")
+    return await _list(tenant, "field_events")
 
 
 # ---- LOT -------------------------------------------------------------------
 @router.post("/lots", status_code=status.HTTP_201_CREATED)
 async def create_lot(body: RecordIn, tenant: str = Depends(require_tenant),
                      actor: User = Depends(require_role("OPERATOR"))) -> dict:
-    return _create(tenant, actor, "lots", "LOT", body)
+    return await _create(tenant, actor, "lots", "LOT", body)
 
 
 @router.get("/lots")
 async def list_lots(tenant: str = Depends(require_tenant)) -> dict:
-    return _list(tenant, "lots")
+    return await _list(tenant, "lots")
 
 
 @router.get("/lots/{code}")
 async def get_lot(code: str, tenant: str = Depends(require_tenant)) -> dict:
-    return _get(tenant, "lots", code)
+    return await _get(tenant, "lots", code)

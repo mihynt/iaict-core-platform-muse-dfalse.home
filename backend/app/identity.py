@@ -27,18 +27,18 @@ def _user_view(u: User) -> dict:
 @router.post("/users", status_code=status.HTTP_201_CREATED)
 async def create_user(body: UserIn, tenant: str = Depends(require_tenant),
                       x_actor: str | None = Header(default=None)) -> dict:
-    bootstrap = store.tenant_user_count(tenant) == 0
+    bootstrap = await store.tenant_user_count(tenant) == 0
     if bootstrap:
         role = "TENANT_ADMIN"  # first user is always the tenant administrator
         actor_name = "bootstrap"
         action = "USER_BOOTSTRAP"
     else:
-        if x_actor is None or store.get_user(tenant, x_actor.strip()) is None:
+        if x_actor is None or await store.get_user(tenant, x_actor.strip()) is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail={"code": "ACTOR_UNKNOWN", "message": "Actor is not a user of this tenant"},
             )
-        actor = store.get_user(tenant, x_actor.strip())
+        actor = await store.get_user(tenant, x_actor.strip())
         if actor.role != "TENANT_ADMIN":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -47,24 +47,24 @@ async def create_user(body: UserIn, tenant: str = Depends(require_tenant),
         role = body.role
         actor_name = actor.username
         action = "USER_CREATE"
-    user = store.create_user(tenant, body.username, body.display_name, role)
+    user = await store.create_user(tenant, body.username, body.display_name, role)
     if user is None:
-        store.record_audit(scope="tenant", tenant_id=tenant, actor=actor_name,
+        await store.record_audit(scope="tenant", tenant_id=tenant, actor=actor_name,
                            action=action, target=body.username, outcome="CONFLICT")
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={"code": "USER_EXISTS", "message": "Username already exists in this tenant"},
         )
-    store.record_audit(scope="tenant", tenant_id=tenant, actor=actor_name,
+    await store.record_audit(scope="tenant", tenant_id=tenant, actor=actor_name,
                        action=action, target=user.username, outcome="OK")
     return {"tenant_id": tenant, **_user_view(user)}
 
 
 @router.get("/users")
 async def list_users(tenant: str = Depends(require_tenant)) -> dict:
-    return {"tenant_id": tenant, "items": [_user_view(u) for u in store.list_users(tenant)]}
+    return {"tenant_id": tenant, "items": [_user_view(u) for u in await store.list_users(tenant)]}
 
 
 @router.get("/audit")
 async def tenant_audit(tenant: str = Depends(require_tenant)) -> dict:
-    return {"tenant_id": tenant, "items": store.audit_for_tenant(tenant)}
+    return {"tenant_id": tenant, "items": await store.audit_for_tenant(tenant)}

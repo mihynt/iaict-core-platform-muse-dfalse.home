@@ -127,12 +127,15 @@ def test_viewer_cannot_write_objects(client):
 def test_data_survives_a_fresh_store_instance(client):
     """A second PgStore on the same database sees what the API wrote:
     state lives in PostgreSQL, not in the process."""
+    import asyncio
+
     from app.pgstore import PgStore
 
     _farm(client)
     client.post("/api/v1/zones", headers=A, json={"code": "Z-77", "name": "Persisted"})
     other = PgStore(os.environ["TEST_DATABASE_URL"])
-    assert other.get_tenant("farm-a") is not None
-    rec = other.get_record_by_code("farm-a", "zones", "Z-77")
+    assert asyncio.run(other.get_tenant("farm-a")) is not None
+    rec = asyncio.run(other.get_record_by_code("farm-a", "zones", "Z-77"))
     assert rec is not None and rec["name"] == "Persisted"
-    assert any(e["action"] == "ZON_CREATE" for e in other.audit_for_tenant("farm-a"))
+    assert any(e["action"] == "ZON_CREATE"
+               for e in asyncio.run(other.audit_for_tenant("farm-a")))

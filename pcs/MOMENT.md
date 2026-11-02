@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 19 · **Updated:** 2026-11-02T15:48:19Z · **Phase:** DISCOVERY
+- **Revision:** 20 · **Updated:** 2026-11-02T19:30:46Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,18 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **D1 adopted — the intermittency is resolved (2026-11-03,
+  DEC-008 / T-014 TECH_DONE):** the Owner chose D1 after the spike.
+  The store interface went async; a new D1Store runs the SQLite port
+  of the 12-table schema (composite FKs verified enforced by D1
+  itself). Suite green in all four modes (memory / D1-shim /
+  psycopg / pg8000). Live on production D1 `iaict-core`: probes
+  **20/20 + 48/48** (Postgres path: 8/20, 19/48), tail cpuTime
+  median **42ms** (was ~1,241ms). Browser test: dashboard loads
+  completely on the FIRST try — 2/1/1/0, no warnings, reload clean.
+  T-013 cancelled as superseded; its Docker/Fly/Render packaging
+  stays in the repo as the exit path, next to the PostgreSQL stores.
 
 - **D1 spike measured — the failure classes disappear (2026-11-02,
   T-014 candidate):** a throwaway Python Worker on the same account
@@ -203,6 +215,5 @@
 
 ## Next action
 
-Owner chooses T-014 (adopt D1 on Workers) or T-013 (plain host).
-Then verify the chosen path live (probe + browser test), Owner UI
-feedback, and T-005 (M3a day-90 IoT gate).
+Owner UI feedback on the now-stable beta; then T-005 (M3a day-90
+IoT gate).

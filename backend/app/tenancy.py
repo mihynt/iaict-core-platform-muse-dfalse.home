@@ -27,7 +27,7 @@ async def require_tenant(x_tenant_id: str | None = Header(default=None)) -> str:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={"code": "TENANT_INVALID", "message": "X-Tenant-Id has an invalid format"},
         )
-    record = store.get_tenant(tenant)
+    record = await store.get_tenant(tenant)
     if record is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

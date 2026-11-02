@@ -76,7 +76,7 @@ class InMemoryStore:
         self.records: dict[str, dict[str, dict]] = {k: {} for k in RECORD_REFS}
         self._ids = {k: itertools.count(1) for k in RECORD_REFS}
 
-    def reset(self) -> None:
+    async def reset(self) -> None:
         with self._lock:
             self.tenants.clear()
             self.users.clear()
@@ -90,7 +90,7 @@ class InMemoryStore:
         return self.records[kind].setdefault(tenant, {"by_code": {}, "events": []})
 
     # ---- audit ---------------------------------------------------------
-    def record_audit(self, *, scope: str, tenant_id: str | None, actor: str,
+    async def record_audit(self, *, scope: str, tenant_id: str | None, actor: str,
                      action: str, target: str, outcome: str) -> dict:
         with self._lock:
             entry = {
@@ -106,14 +106,14 @@ class InMemoryStore:
             self.audit.append(entry)
             return entry
 
-    def list_audit(self) -> list[dict]:
+    async def list_audit(self) -> list[dict]:
         return list(self.audit)
 
-    def audit_for_tenant(self, tenant_id: str) -> list[dict]:
+    async def audit_for_tenant(self, tenant_id: str) -> list[dict]:
         return [e for e in self.audit if e["tenant_id"] == tenant_id]
 
     # ---- tenants -------------------------------------------------------
-    def create_tenant(self, slug: str, name: str) -> Tenant | None:
+    async def create_tenant(self, slug: str, name: str) -> Tenant | None:
         with self._lock:
             if slug in self.tenants:
                 return None
@@ -123,13 +123,13 @@ class InMemoryStore:
             self.workspaces.setdefault(slug, {})
             return tenant
 
-    def get_tenant(self, slug: str) -> Tenant | None:
+    async def get_tenant(self, slug: str) -> Tenant | None:
         return self.tenants.get(slug)
 
-    def list_tenants(self) -> list[Tenant]:
+    async def list_tenants(self) -> list[Tenant]:
         return sorted(self.tenants.values(), key=lambda t: t.slug)
 
-    def set_tenant_status(self, slug: str, status: str) -> Tenant | None:
+    async def set_tenant_status(self, slug: str, status: str) -> Tenant | None:
         with self._lock:
             tenant = self.tenants.get(slug)
             if tenant is None:
@@ -138,7 +138,7 @@ class InMemoryStore:
             return tenant
 
     # ---- users ---------------------------------------------------------
-    def create_user(self, tenant: str, username: str, display_name: str, role: str) -> User | None:
+    async def create_user(self, tenant: str, username: str, display_name: str, role: str) -> User | None:
         with self._lock:
             bucket = self.users.setdefault(tenant, {})
             if username in bucket:
@@ -147,17 +147,17 @@ class InMemoryStore:
             bucket[username] = user
             return user
 
-    def get_user(self, tenant: str, username: str) -> User | None:
+    async def get_user(self, tenant: str, username: str) -> User | None:
         return self.users.get(tenant, {}).get(username)
 
-    def list_users(self, tenant: str) -> list[User]:
+    async def list_users(self, tenant: str) -> list[User]:
         return sorted(self.users.get(tenant, {}).values(), key=lambda u: u.username)
 
-    def tenant_user_count(self, tenant: str) -> int:
+    async def tenant_user_count(self, tenant: str) -> int:
         return len(self.users.get(tenant, {}))
 
     # ---- workspaces ------------------------------------------------------
-    def create_workspace(self, tenant: str, name: str) -> bool:
+    async def create_workspace(self, tenant: str, name: str) -> bool:
         with self._lock:
             bucket = self.workspaces.setdefault(tenant, {})
             if name in bucket:
@@ -165,11 +165,11 @@ class InMemoryStore:
             bucket[name] = {"name": name}
             return True
 
-    def list_workspace_names(self, tenant: str) -> list[str]:
+    async def list_workspace_names(self, tenant: str) -> list[str]:
         return sorted(self.workspaces.get(tenant, {}).keys())
 
     # ---- production records ---------------------------------------------
-    def create_record(self, tenant: str, kind: str, fields: dict) -> dict | None:
+    async def create_record(self, tenant: str, kind: str, fields: dict) -> dict | None:
         """Insert a record. Returns None on a duplicate code within the
         tenant; raises RefUnknown for a reference that does not resolve."""
         refs = RECORD_REFS[kind]
@@ -189,13 +189,13 @@ class InMemoryStore:
                 bucket["events"].append(record)
             return record
 
-    def list_records(self, tenant: str, kind: str) -> list[dict]:
+    async def list_records(self, tenant: str, kind: str) -> list[dict]:
         bucket = self._bucket(kind, tenant)
         if kind in CODED_KINDS:
             return [bucket["by_code"][k] for k in sorted(bucket["by_code"])]
         return sorted(bucket["events"], key=lambda r: r["id"])
 
-    def get_record_by_code(self, tenant: str, kind: str, code: str) -> dict | None:
+    async def get_record_by_code(self, tenant: str, kind: str, code: str) -> dict | None:
         return self._bucket(kind, tenant)["by_code"].get(code)
 
 
@@ -237,66 +237,160 @@ class LazyWorkerStore:
             raise RuntimeError("store backend is not bound yet (no request env seen)")
         return self._impl
 
-    def reset(self):
-        return self._d().reset()
+    async def reset(self):
+        return await self._d().reset()
 
-    def record_audit(self, **kwargs):
-        return self._d().record_audit(**kwargs)
+    async def record_audit(self, **kwargs):
+        return await self._d().record_audit(**kwargs)
 
-    def list_audit(self):
-        return self._d().list_audit()
+    async def list_audit(self):
+        return await self._d().list_audit()
 
-    def audit_for_tenant(self, tenant_id):
-        return self._d().audit_for_tenant(tenant_id)
+    async def audit_for_tenant(self, tenant_id):
+        return await self._d().audit_for_tenant(tenant_id)
 
-    def create_tenant(self, slug, name):
-        return self._d().create_tenant(slug, name)
+    async def create_tenant(self, slug, name):
+        return await self._d().create_tenant(slug, name)
 
-    def get_tenant(self, slug):
-        return self._d().get_tenant(slug)
+    async def get_tenant(self, slug):
+        return await self._d().get_tenant(slug)
 
-    def list_tenants(self):
-        return self._d().list_tenants()
+    async def list_tenants(self):
+        return await self._d().list_tenants()
 
-    def set_tenant_status(self, slug, status):
-        return self._d().set_tenant_status(slug, status)
+    async def set_tenant_status(self, slug, status):
+        return await self._d().set_tenant_status(slug, status)
 
-    def create_user(self, tenant, username, display_name, role):
-        return self._d().create_user(tenant, username, display_name, role)
+    async def create_user(self, tenant, username, display_name, role):
+        return await self._d().create_user(tenant, username, display_name, role)
 
-    def get_user(self, tenant, username):
-        return self._d().get_user(tenant, username)
+    async def get_user(self, tenant, username):
+        return await self._d().get_user(tenant, username)
 
-    def list_users(self, tenant):
-        return self._d().list_users(tenant)
+    async def list_users(self, tenant):
+        return await self._d().list_users(tenant)
 
-    def tenant_user_count(self, tenant):
-        return self._d().tenant_user_count(tenant)
+    async def tenant_user_count(self, tenant):
+        return await self._d().tenant_user_count(tenant)
 
-    def create_workspace(self, tenant, name):
-        return self._d().create_workspace(tenant, name)
+    async def create_workspace(self, tenant, name):
+        return await self._d().create_workspace(tenant, name)
 
-    def list_workspace_names(self, tenant):
-        return self._d().list_workspace_names(tenant)
+    async def list_workspace_names(self, tenant):
+        return await self._d().list_workspace_names(tenant)
 
-    def create_record(self, tenant, kind, fields):
-        return self._d().create_record(tenant, kind, fields)
+    async def create_record(self, tenant, kind, fields):
+        return await self._d().create_record(tenant, kind, fields)
 
-    def list_records(self, tenant, kind):
-        return self._d().list_records(tenant, kind)
+    async def list_records(self, tenant, kind):
+        return await self._d().list_records(tenant, kind)
 
-    def get_record_by_code(self, tenant, kind, code):
-        return self._d().get_record_by_code(tenant, kind, code)
+    async def get_record_by_code(self, tenant, kind, code):
+        return await self._d().get_record_by_code(tenant, kind, code)
+
+
+class LazyD1Store:
+    """Defers D1 backend creation until the first request supplies the
+    Workers env (the DB binding only exists per-request there). Falls
+    back to in-memory storage when the binding is absent — observable
+    via .kind and the /health endpoint, never silent."""
+
+    def __init__(self) -> None:
+        self._impl = None
+        self._bind_lock = threading.Lock()
+
+    @property
+    def kind(self) -> str:
+        return self._impl.kind if self._impl is not None else "d1-unbound"
+
+    def bind_env(self, env) -> None:
+        if self._impl is not None or env is None:
+            return
+        with self._bind_lock:
+            if self._impl is not None:
+                return
+            binding = getattr(env, "DB", None)
+            if binding is not None:
+                from .d1store import D1Store  # lazy: keep D1 code out of other runtimes
+
+                self._impl = D1Store(binding)
+            else:
+                self._impl = InMemoryStore()
+
+    def bind_db(self, db) -> None:
+        """Direct binding injection (tests, non-Workers embeddings)."""
+        from .d1store import D1Store
+
+        self._impl = D1Store(db)
+
+    def _d(self):
+        if self._impl is None:
+            raise RuntimeError("store backend is not bound yet (no request env seen)")
+        return self._impl
+
+    async def reset(self):
+        return await self._d().reset()
+
+    async def record_audit(self, **kwargs):
+        return await self._d().record_audit(**kwargs)
+
+    async def list_audit(self):
+        return await self._d().list_audit()
+
+    async def audit_for_tenant(self, tenant_id):
+        return await self._d().audit_for_tenant(tenant_id)
+
+    async def create_tenant(self, slug, name):
+        return await self._d().create_tenant(slug, name)
+
+    async def get_tenant(self, slug):
+        return await self._d().get_tenant(slug)
+
+    async def list_tenants(self):
+        return await self._d().list_tenants()
+
+    async def set_tenant_status(self, slug, status):
+        return await self._d().set_tenant_status(slug, status)
+
+    async def create_user(self, tenant, username, display_name, role):
+        return await self._d().create_user(tenant, username, display_name, role)
+
+    async def get_user(self, tenant, username):
+        return await self._d().get_user(tenant, username)
+
+    async def list_users(self, tenant):
+        return await self._d().list_users(tenant)
+
+    async def tenant_user_count(self, tenant):
+        return await self._d().tenant_user_count(tenant)
+
+    async def create_workspace(self, tenant, name):
+        return await self._d().create_workspace(tenant, name)
+
+    async def list_workspace_names(self, tenant):
+        return await self._d().list_workspace_names(tenant)
+
+    async def create_record(self, tenant, kind, fields):
+        return await self._d().create_record(tenant, kind, fields)
+
+    async def list_records(self, tenant, kind):
+        return await self._d().list_records(tenant, kind)
+
+    async def get_record_by_code(self, tenant, kind, code):
+        return await self._d().get_record_by_code(tenant, kind, code)
 
 
 def make_store():
-    """DATABASE_URL set -> PostgreSQL (psycopg); IAICT_BACKEND=hyperdrive
-    (set by the Workers entrypoint) -> lazy Hyperdrive backend; otherwise
-    in-memory."""
+    """DATABASE_URL set -> PostgreSQL (psycopg); IAICT_BACKEND=d1 ->
+    lazy D1 backend (Workers, T-014); IAICT_BACKEND=hyperdrive
+    (set by the Workers entrypoint) -> lazy Hyperdrive backend (legacy
+    fallback); otherwise in-memory."""
     dsn = os.environ.get("DATABASE_URL")
     if dsn:
         from .pgstore import PgStore  # lazy: keeps psycopg out of serverless bundles
         return PgStore(dsn)
+    if os.environ.get("IAICT_BACKEND") == "d1":
+        return LazyD1Store()
     if os.environ.get("IAICT_BACKEND") == "hyperdrive":
         return LazyWorkerStore()
     return InMemoryStore()
