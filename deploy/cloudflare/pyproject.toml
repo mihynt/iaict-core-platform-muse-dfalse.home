@@ -1,13 +1,22 @@
 [project]
-name = "iaict-core-platform-worker"
+name = "iaict-core-platform"
 version = "0.2.0"
 description = "IAICT Core Platform API packaged as a Cloudflare Python Worker (beta hosting, DEC-006)"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.115",
     "pydantic>=2",
 ]
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+# Cloudflare Python Workers tooling, per the official FastAPI guide:
+# pywrangler (from workers-py) vendors Pyodide-compatible wheels and
+# drives wrangler. Deploy with: uv run pywrangler deploy
+[dependency-groups]
+dev = [
+    "workers-py",
+    "workers-runtime-sdk",
+]
+
+# Application-style project: nothing of its own to build into a wheel.
+[tool.uv]
+package = false

@@ -5,7 +5,7 @@ enforcement (deny by default), tenant identity skeleton, append-only audit,
 and tenant-isolated workspaces. Storage is in-memory at this stage; the M2
 persistence work does not change the tenant-isolation contract tested here.
 """
-from fastapi import Depends, FastAPI, status
+from fastapi import Depends, FastAPI, Request, status
 from pydantic import BaseModel, Field
 
 from . import identity, platform
@@ -24,8 +24,12 @@ class WorkspaceIn(BaseModel):
 
 
 @app.get("/health")
-async def health() -> dict:
-    return {"status": "ok", "service": settings.app_name, "env": settings.app_env,
+async def health(request: Request) -> dict:
+    env_name = settings.app_env
+    scope_env = request.scope.get("env")
+    if scope_env is not None and getattr(scope_env, "APP_ENV", None):
+        env_name = scope_env.APP_ENV
+    return {"status": "ok", "service": settings.app_name, "env": env_name,
             "version": app.version}
 
 

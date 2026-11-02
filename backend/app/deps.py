@@ -11,7 +11,7 @@ Skeleton-stage authentication:
 """
 import os
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Request, status
 
 from .store import User, store
 from .tenancy import require_tenant
@@ -19,8 +19,22 @@ from .tenancy import require_tenant
 ROLE_ORDER = {"VIEWER": 1, "OPERATOR": 2, "TENANT_ADMIN": 3}
 
 
-async def require_platform_key(x_platform_key: str | None = Header(default=None)) -> str:
-    configured = os.environ.get("PLATFORM_ADMIN_KEY")
+def _configured_platform_key(request: Request) -> str | None:
+    """Platform key from the process environment (uvicorn/VPS), falling back
+    to the ASGI scope `env` binding (serverless hosts such as Cloudflare
+    Workers expose variables/secrets there instead of os.environ)."""
+    key = os.environ.get("PLATFORM_ADMIN_KEY")
+    if key:
+        return key
+    env = request.scope.get("env") if request is not None else None
+    if env is not None:
+        return getattr(env, "PLATFORM_ADMIN_KEY", None)
+    return None
+
+
+async def require_platform_key(request: Request,
+                               x_platform_key: str | None = Header(default=None)) -> str:
+    configured = _configured_platform_key(request)
     if not configured:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

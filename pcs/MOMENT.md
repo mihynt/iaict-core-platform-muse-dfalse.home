@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 5 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
+- **Revision:** 6 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,18 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **Beta is LIVE (2026-11-02):** https://iaict-core-platform.iaict-coreplatform-mhy.workers.dev
+  — the M1 API running as a Cloudflare Python Worker on the Owner's account.
+  Verified live: `/health` 200 (`env: beta`), deny-by-default 400/403/503,
+  tenant creation 201 with a temporary platform secret (deleted after the
+  check; platform admin stays disabled until the Owner sets their own
+  `PLATFORM_ADMIN_KEY` secret). Packaging lessons recorded in the runbook:
+  deploy via `uv run pywrangler deploy`; Workers expose variables/secrets
+  through the ASGI scope `env`, not `os.environ` (the app reads both).
+  Known limit, verified live: in-memory state is per-isolate and not shared
+  between requests — multi-request flows arrive with T-004 persistence.
+
 
 - **DEC-006 (Owner, 2026-11-02): beta hosting = Cloudflare Workers Free +
   Neon PostgreSQL Free via Hyperdrive**, under binding portability rules

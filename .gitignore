@@ -30,3 +30,6 @@ logs/
 
 # Cloudflare Worker build artifact (assembled by deploy/cloudflare/build.sh)
 deploy/cloudflare/src/app/
+deploy/cloudflare/python_modules/
+deploy/cloudflare/.venv/
+.wrangler/

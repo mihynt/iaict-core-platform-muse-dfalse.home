@@ -58,10 +58,23 @@ wrangler secret put PLATFORM_ADMIN_KEY   # choose a strong value; it guards /api
 
 ```bash
 ./build.sh
-wrangler deploy
+uv run pywrangler deploy
 ```
 
-The Worker is published at `https://iaict-core-platform.<your-subdomain>.workers.dev`.
+Use **pywrangler**, not plain `wrangler deploy`: pywrangler vendors
+Pyodide-compatible wheels (a hand-rolled `uv pip install` produces native
+wheels whose `pydantic_core` cannot load under Pyodide). The project
+layout follows Cloudflare's official FastAPI guide — entrypoint at
+`src/entry.py`, `workers-py`/`workers-runtime-sdk` in the pyproject
+`dev` dependency group, `requires-python >= 3.13`.
+
+First live deployment (2026-11-02):
+`https://iaict-core-platform.iaict-coreplatform-mhy.workers.dev`
+— verified: `/health` 200 (`env: beta`), deny-by-default responses
+(400 TENANT_REQUIRED, 403 TENANT_UNKNOWN, 503 PLATFORM_DISABLED), and
+tenant creation (201) with a platform key held as a Worker secret.
+Note: on Workers, variables/secrets arrive through the ASGI scope `env`
+binding, not `os.environ`; the app reads both (see `backend/app/deps.py`).
 
 ## Step 5 — Verify the deployment
 
@@ -78,8 +91,11 @@ curl -X POST https://iaict-core-platform.<your-subdomain>.workers.dev/api/v1/pla
 ## Known limits at this stage
 
 - Until T-004 lands the PostgreSQL persistence layer, the API keeps data in
-  process memory: a smoke deploy proves reachability and behavior, but data
-  resets when the Worker recycles. Do not put real pilot data on it yet.
+  process memory. On Workers that state is per-isolate and is **not shared
+  between requests** — verified live on 2026-11-02: a tenant created in one
+  request was already unknown to the next one. A smoke deploy therefore
+  proves reachability and per-request behavior only. Do not put real pilot
+  data on it yet; multi-request flows start working when persistence lands.
 - Workers Free allows 100,000 requests/day; Hyperdrive Free 100,000
   queries/day — ample for beta, monitored in the Cloudflare dashboard.
 - Neon Free: 100 CU-hours/month per project. At the 0.25 CU minimum that is

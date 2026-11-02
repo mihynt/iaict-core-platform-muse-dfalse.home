@@ -1,5 +1,5 @@
 {
-  "revision": 5,
+  "revision": 6,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,8 +29,8 @@
     ],
     "current": {
       "active_task": "T-004",
-      "last_completed_step": "DEC-006 recorded (beta stack: Cloudflare Workers + Neon); Cloudflare packaging prepared and adapter verified locally through the Worker entrypoint",
-      "next_action": "T-004 (M2): data model (ERD) for core production objects (ZON/MPL/FLD/LOT) and the PostgreSQL persistence layer behind the store boundary, per DEC-006 (local database for daily development; Neon only for shared beta)",
+      "last_completed_step": "Beta deployment LIVE and verified on Cloudflare Workers (DEC-006); adapter/config fixes from live verification merged (scope-env fallback, pywrangler layout)",
+      "next_action": "Owner sets their own PLATFORM_ADMIN_KEY as a Worker secret when they want platform administration enabled on the beta. Engineering continues with T-004 (M2): ERD for ZON/MPL/FLD/LOT + PostgreSQL persistence behind the store boundary (local DB for dev, Neon for beta via Hyperdrive).",
       "blockers": []
     },
     "decisions": [
@@ -68,7 +68,7 @@
         "id": "DEC-006",
         "date": "2026-11-02",
         "classification": "PUBLIC",
-        "decision": "Beta hosting decided by Owner (2026-11-02): Cloudflare Workers Free runs the API and web UI; Neon Free provides PostgreSQL, reached from Workers through Hyperdrive Free; Supabase was evaluated and kept as a fully compatible alternative. Portability rules are binding: (1) only deploy/cloudflare/src/entry.py knows about Cloudflare - no Cloudflare-proprietary APIs (D1/KV/Durable Objects) in core logic; (2) persistence uses standard SQL and widely-available PostgreSQL extensions only, no Neon/Supabase platform extras (their Auth/Storage/Realtime) in the product core; (3) the app stays stateless, all durable state in PostgreSQL; daily development and tests use a local database, Neon is reserved for the shared beta/staging environments (separate Neon project per environment, compute kept at the 0.25 CU minimum). Rationale: the whole beta stack costs 0; PostgreSQL-to-PostgreSQL migration between Neon and Supabase, or out to a VPS/AWS/Azure/GCP running the same ASGI app under uvicorn, stays a pg_dump/pg_restore operation. Deployment packaging prepared in deploy/cloudflare/ with runbook docs/DEPLOY_CLOUDFLARE_NEON.md; actual deployment awaits the Owner's Cloudflare and Neon accounts."
+        "decision": "Beta hosting decided by Owner (2026-11-02): Cloudflare Workers Free runs the API and web UI; Neon Free provides PostgreSQL, reached from Workers through Hyperdrive Free; Supabase was evaluated and kept as a fully compatible alternative. Portability rules are binding: (1) only deploy/cloudflare/src/entry.py knows about Cloudflare - no Cloudflare-proprietary APIs (D1/KV/Durable Objects) in core logic; (2) persistence uses standard SQL and widely-available PostgreSQL extensions only, no Neon/Supabase platform extras (their Auth/Storage/Realtime) in the product core; (3) the app stays stateless, all durable state in PostgreSQL; daily development and tests use a local database, Neon is reserved for the shared beta/staging environments (separate Neon project per environment, compute kept at the 0.25 CU minimum). Rationale: the whole beta stack costs 0; PostgreSQL-to-PostgreSQL migration between Neon and Supabase, or out to a VPS/AWS/Azure/GCP running the same ASGI app under uvicorn, stays a pg_dump/pg_restore operation. Deployment packaging prepared in deploy/cloudflare/ with runbook docs/DEPLOY_CLOUDFLARE_NEON.md; actual deployment awaits the Owner's Cloudflare and Neon accounts. DEPLOYED 2026-11-02: the API is live at https://iaict-core-platform.iaict-coreplatform-mhy.workers.dev (Cloudflare account subdomain iaict-coreplatform-mhy; deployed via uv run pywrangler deploy after the browser-OAuth route failed on wrangler's ~2-minute authorization window and the Owner chose the one-time API-token route; the token was used transiently and never stored). Live verification: /health 200 with env=beta, deny-by-default 400/403/503 responses, tenant creation 201 with a temporary platform secret that was deleted right after the check (platform administration stays disabled at 503 until the Owner sets their own PLATFORM_ADMIN_KEY secret). Verified platform constraint: in-memory state is per-isolate and is not shared between Worker requests, so multi-request flows only become meaningful when the T-004 PostgreSQL layer lands - as planned."
       }
     ],
     "features": [
@@ -230,5 +230,5 @@
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-02T06:36:37Z"
+  "updated_at": "2026-11-02T07:11:53Z"
 }
