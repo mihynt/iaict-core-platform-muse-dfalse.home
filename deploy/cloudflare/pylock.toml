@@ -18,6 +18,11 @@ version = "4.16.0"
 wheels = [{ url = "https://files.pythonhosted.org/packages/a9/16/7757fb84c819accc7d7e9af5291b261e4abb8627ee040f99e7d35ef2457a/anyio-4.16.0-py3-none-any.whl", upload-time = 2026-11-01T11:20:05Z, size = 134521, hashes = { sha256 = "c66ae634e0b8228396b801741beb3294326d4b6102f7bba4041c0dfb58c29026" } }]
 
 [[packages]]
+name = "asn1crypto"
+version = "1.5.1"
+wheels = [{ url = "https://files.pythonhosted.org/packages/c9/7f/09065fd9e27da0eda08b4d6897f1c13535066174cc023af248fc2a8d5e5a/asn1crypto-1.5.1-py2.py3-none-any.whl", upload-time = 2022-03-15T14:46:51Z, size = 105045, hashes = { sha256 = "db4e40728b728508912cbb3d44f19ce188f218e9eba635821bb4b68564f8fd67" } }]
+
+[[packages]]
 name = "fastapi"
 version = "0.162.0"
 wheels = [{ url = "https://files.pythonhosted.org/packages/b4/4f/3f2c25c9b43970b5e9a08beb5e04776247edea684ddc0930f4f02f0bb6cb/fastapi-0.162.0-py3-none-any.whl", upload-time = 2026-10-23T18:47:31Z, size = 148912, hashes = { sha256 = "3785963de305dd09912426cb81f2d230fce98ab3521cdfe97265c8d14983128c" } }]
@@ -33,6 +38,11 @@ version = "1.45.2"
 wheels = [{ url = "https://files.pythonhosted.org/packages/a9/2d/610db864d7513158cebb8f36cc88e67e73bd6c7aa1905ef18d89e1281c81/opentelemetry_api-1.45.2-py3-none-any.whl", upload-time = 2026-10-29T17:29:06Z, size = 60335, hashes = { sha256 = "2cbd737377e710ee740d261c94e93fa0f08e6d037c18f17513cc0a2d94479a34" } }]
 
 [[packages]]
+name = "pg8000"
+version = "1.31.6"
+wheels = [{ url = "https://files.pythonhosted.org/packages/a4/f6/28aa670fead0076daf55a59cbcfa1bb0ace9568427eb2c463f2598e8bb23/pg8000-1.31.6-py3-none-any.whl", upload-time = 2026-10-26T17:58:55Z, size = 57878, hashes = { sha256 = "1ffe27af94fa5b37ce6885b98d591dc75562ff076859bf50ca7729af59345a80" } }]
+
+[[packages]]
 name = "pydantic"
 version = "2.14.2"
 wheels = [{ url = "https://files.pythonhosted.org/packages/97/01/c71a71258b58659c72504e5fd65b451f6e36e34dc931d0b237ded213c814/pydantic-2.14.2-py3-none-any.whl", upload-time = 2026-10-29T16:37:10Z, size = 490403, hashes = { sha256 = "7efbf7507b937931cd32a5755acb00ea1cf5ccb1d4e8067a5850d5069e382118" } }]
@@ -41,6 +51,16 @@ wheels = [{ url = "https://files.pythonhosted.org/packages/97/01/c71a71258b58659
 name = "pydantic-core"
 version = "2.50.2"
 wheels = [{ url = "https://files.pythonhosted.org/packages/b8/8e/72556126c8b6154fe7acaf757b96b2daa37aeffc3a517deb76e272f5ad09/pydantic_core-2.50.2-cp314-cp314-pyemscripten_2026_0_wasm32.whl", upload-time = 2026-10-29T16:33:15Z, size = 1491226, hashes = { sha256 = "9a8a62281fd9c6a373b3fd3d473685e6838d43341eecde5f47729748e2c11ee3" } }]
+
+[[packages]]
+name = "python-dateutil"
+version = "4.0.0"
+wheels = [{ url = "https://files.pythonhosted.org/packages/2f/a9/52b89563d154433d79b51ed1eb4842bf7334cb2696891a7fe135618853d7/python_dateutil-4.0.0-py3-none-any.whl", upload-time = 2026-11-01T07:02:40Z, size = 92853, hashes = { sha256 = "a5e246f79eb80475e691bf93862cead98decd8a498cf53ba0516fcdc0f50dc1c" } }]
+
+[[packages]]
+name = "scramp"
+version = "1.5.0"
+wheels = [{ url = "https://files.pythonhosted.org/packages/ff/62/231ee179d8995d28981414432bf79492f0b909f5820452b77f422fdce259/scramp-1.5.0-py3-none-any.whl", upload-time = 2026-10-25T17:43:17Z, size = 20233, hashes = { sha256 = "8280608f568e81da9e9c9d69cac1331b836622d9b48bf5c5e400e16129c6d1fa" } }]
 
 [[packages]]
 name = "starlette"
@@ -56,6 +76,11 @@ wheels = [{ url = "https://files.pythonhosted.org/packages/49/d3/b8441a820a491dd
 name = "typing-inspection"
 version = "0.4.4"
 wheels = [{ url = "https://files.pythonhosted.org/packages/67/81/4add07e5172b7ac40d8ed5ff580409a7801a4fe26d529bdd915401dabfbe/typing_inspection-0.4.4-py3-none-any.whl", upload-time = 2026-08-12T12:37:24Z, size = 14750, hashes = { sha256 = "65b8397ba37ccbce054456aaccddfc91e6e3083c92824df348d96ca832f3f147" } }]
+
+[[packages]]
+name = "tzdata"
+version = "2026.6"
+wheels = [{ url = "https://files.pythonhosted.org/packages/0a/66/9a06c2227fedfd4919f0eaaa8b94377d9730882a7e4f95823c9a331ab5e1/tzdata-2026.6-py2.py3-none-any.whl", upload-time = 2026-10-28T09:57:07Z, size = 348210, hashes = { sha256 = "0a10eec6e13ef16b627fabed9a5f2ba61a62b1c67f327305f4e7e412a70b4aec" } }]
 
 [[packages]]
 name = "workers-runtime-sdk"

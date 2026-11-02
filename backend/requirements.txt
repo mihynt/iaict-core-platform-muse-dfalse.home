@@ -4,3 +4,6 @@ pydantic>=2
 # PostgreSQL backend (app/pgstore.py), imported lazily only when
 # DATABASE_URL is set — serverless bundles without a database never load it.
 psycopg[binary]>=3.2
+# Hyperdrive/Workers backend (app/workerstore.py), imported lazily only
+# behind the lazy store; also used by the test suite's worker mode.
+pg8000>=1.31

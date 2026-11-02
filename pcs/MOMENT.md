@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 7 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
+- **Revision:** 8 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,19 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **Neon wired, one dashboard step left (2026-11-02):** the Owner's Neon
+  project (Singapore, PG 18.6) is verified — schema applied (12 tables),
+  cross-tenant FK rejection reproduced on Neon itself. The Workers store
+  backend is built on **pg8000** (Cloudflare-supported for Hyperdrive;
+  asyncpg's wheel CDN is unreachable from this build VM, and direct TLS
+  to Neon fails in the Python runtime — Hyperdrive's plaintext local leg
+  is the sanctioned answer). Suite: 31/31 in all three store modes. The
+  beta already runs the new build and reports `storage: memory` via
+  `/health`; it flips to durable `postgresql-hyperdrive` as soon as the
+  Hyperdrive config exists (Owner creates it in the dashboard — the API
+  token lacks Hyperdrive permission) and the binding is uncommented.
+
 
 - **T-004 TECH_DONE (2026-11-02):** real SQL. ERD (`docs/DATA_MODEL.md`)
   grounded in the SRS v2.0 group texts; 12-table PostgreSQL schema with

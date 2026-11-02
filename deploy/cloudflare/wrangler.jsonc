@@ -10,8 +10,12 @@
   }
   // Secrets (never commit values):
   //   wrangler secret put PLATFORM_ADMIN_KEY
-  // Hyperdrive binding — added when the M2 persistence layer lands (T-004):
+  // Hyperdrive binding — the store layer (app/workerstore.py, pg8000) is
+  // ready and selected by src/entry.py; activate by creating the config
+  // (dashboard: Workers & Pages -> Hyperdrive -> Create, name iaict-neon,
+  // direct Neon connection string) and uncommenting with its id:
   //   "hyperdrive": [
-  //     { "binding": "HYPERDRIVE", "id": "<id returned by: wrangler hyperdrive create>" }
+  //     { "binding": "HYPERDRIVE", "id": "<hyperdrive config id>" }
   //   ]
+  // Until then /health reports storage "memory" (the in-memory fallback).
 }

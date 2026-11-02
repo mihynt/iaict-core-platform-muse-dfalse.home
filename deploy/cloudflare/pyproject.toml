@@ -6,6 +6,10 @@ requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.115",
     "pydantic>=2",
+    # Pure-Python PostgreSQL driver supported by Cloudflare for Hyperdrive
+    # in Python Workers (used by app/workerstore.py). asyncpg's Pyodide
+    # wheel is served from a CDN this build environment cannot reach.
+    "pg8000>=1.31",
 ]
 
 # Cloudflare Python Workers tooling, per the official FastAPI guide:

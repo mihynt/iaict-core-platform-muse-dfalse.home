@@ -63,6 +63,8 @@ class RefUnknown(ValueError):
 
 
 class InMemoryStore:
+    kind = "memory"
+
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self.tenants: dict[str, Tenant] = {}
@@ -197,12 +199,106 @@ class InMemoryStore:
         return self._bucket(kind, tenant)["by_code"].get(code)
 
 
+class LazyWorkerStore:
+    """Defers backend creation until the first request supplies the Workers
+    env (the Hyperdrive binding only exists per-request there). Falls back
+    to in-memory storage when the binding is absent — observable via .kind
+    and the /health endpoint, never silent in the response payload.
+    """
+
+    def __init__(self) -> None:
+        self._impl = None
+        self._bind_lock = threading.Lock()
+
+    @property
+    def kind(self) -> str:
+        return self._impl.kind if self._impl is not None else "hyperdrive-unbound"
+
+    def bind_env(self, env) -> None:
+        if self._impl is not None or env is None:
+            return
+        with self._bind_lock:
+            if self._impl is not None:
+                return
+            binding = getattr(env, "HYPERDRIVE", None)
+            if binding is not None:
+                from .workerstore import WorkerPgStore  # lazy: pg8000 stays out of other runtimes
+                self._impl = WorkerPgStore.from_binding(binding)
+            else:
+                self._impl = InMemoryStore()
+
+    def bind_params(self, **params) -> None:
+        """Direct parameter binding (tests, non-Workers embeddings)."""
+        from .workerstore import WorkerPgStore
+        self._impl = WorkerPgStore(**params)
+
+    def _d(self):
+        if self._impl is None:
+            raise RuntimeError("store backend is not bound yet (no request env seen)")
+        return self._impl
+
+    def reset(self):
+        return self._d().reset()
+
+    def record_audit(self, **kwargs):
+        return self._d().record_audit(**kwargs)
+
+    def list_audit(self):
+        return self._d().list_audit()
+
+    def audit_for_tenant(self, tenant_id):
+        return self._d().audit_for_tenant(tenant_id)
+
+    def create_tenant(self, slug, name):
+        return self._d().create_tenant(slug, name)
+
+    def get_tenant(self, slug):
+        return self._d().get_tenant(slug)
+
+    def list_tenants(self):
+        return self._d().list_tenants()
+
+    def set_tenant_status(self, slug, status):
+        return self._d().set_tenant_status(slug, status)
+
+    def create_user(self, tenant, username, display_name, role):
+        return self._d().create_user(tenant, username, display_name, role)
+
+    def get_user(self, tenant, username):
+        return self._d().get_user(tenant, username)
+
+    def list_users(self, tenant):
+        return self._d().list_users(tenant)
+
+    def tenant_user_count(self, tenant):
+        return self._d().tenant_user_count(tenant)
+
+    def create_workspace(self, tenant, name):
+        return self._d().create_workspace(tenant, name)
+
+    def list_workspace_names(self, tenant):
+        return self._d().list_workspace_names(tenant)
+
+    def create_record(self, tenant, kind, fields):
+        return self._d().create_record(tenant, kind, fields)
+
+    def list_records(self, tenant, kind):
+        return self._d().list_records(tenant, kind)
+
+    def get_record_by_code(self, tenant, kind, code):
+        return self._d().get_record_by_code(tenant, kind, code)
+
+
 def make_store():
-    """DATABASE_URL set -> PostgreSQL backend; otherwise in-memory."""
+    """DATABASE_URL set -> PostgreSQL (psycopg); IAICT_BACKEND=hyperdrive
+    (set by the Workers entrypoint) -> lazy Hyperdrive backend; otherwise
+    in-memory."""
     dsn = os.environ.get("DATABASE_URL")
     if dsn:
         from .pgstore import PgStore  # lazy: keeps psycopg out of serverless bundles
         return PgStore(dsn)
+    if os.environ.get("IAICT_BACKEND") == "hyperdrive":
+        return LazyWorkerStore()
     return InMemoryStore()
 
 

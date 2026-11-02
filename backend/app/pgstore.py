@@ -16,54 +16,14 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
+from .records_spec import REF_ID_COLUMN, SPECS, conv as _conv
 from .store import CODED_KINDS, RECORD_REFS, RefUnknown, Tenant, User
 
 _SCHEMA = pathlib.Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
 
-# kind -> (table, {column: kind}) where column kinds: text | int | float |
-# num (Decimal) | date | ts (timestamp) | json. Reference code fields are
-# declared in store.RECORD_REFS and map to <stem>_id FK columns.
-SPECS: dict[str, tuple[str, dict[str, str]]] = {
-    "zones": ("zones", {
-        "name": "text", "area_ha": "num", "address": "text", "lat": "float",
-        "lon": "float", "geom": "json", "crop_group": "text", "season": "text",
-        "water_source": "text", "managing_entity": "text", "status": "text",
-    }),
-    "mother_plants": ("mother_plants", {
-        "species": "text", "variety": "text", "scientific_name": "text",
-        "origin": "text", "planting_year": "int", "lat": "float", "lon": "float",
-        "owner_manager": "text", "recognition_no": "text",
-        "issuing_authority": "text", "valid_from": "date", "valid_to": "date",
-        "status": "text",
-    }),
-    "crop_plans": ("crop_plans", {
-        "name": "text", "crop_name": "text", "start_date": "date",
-        "end_date": "date", "target_yield_kg": "num", "status": "text",
-    }),
-    "field_events": ("field_events", {
-        "event_type": "text", "occurred_at": "ts", "lat": "float", "lon": "float",
-        "actor": "text", "device": "text", "notes": "text", "materials": "json",
-    }),
-    "lots": ("lots", {
-        "harvest_date": "date", "quantity": "num", "unit": "text",
-        "harvested_by": "text", "quality_grade": "text", "status": "text",
-        "expiry_date": "date",
-    }),
-}
-REF_ID_COLUMN = {"zone_code": "zone_id", "plant_code": "plant_id", "plan_code": "plan_id"}
-
-
-def _conv(value, kind: str):
-    if value is None:
-        return None
-    if kind == "num" and isinstance(value, Decimal):
-        return float(value)
-    if kind in ("date", "ts") and isinstance(value, (date, datetime)):
-        return value.isoformat()
-    return value
-
-
 class PgStore:
+    kind = "postgresql"
+
     def __init__(self, dsn: str) -> None:
         self._lock = threading.Lock()
         self._conn = psycopg.connect(dsn, autocommit=True, row_factory=dict_row)

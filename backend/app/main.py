@@ -25,6 +25,17 @@ class WorkspaceIn(BaseModel):
     name: str = Field(min_length=1, max_length=120)
 
 
+@app.middleware("http")
+async def _bind_store_backend(request: Request, call_next):
+    """On serverless Workers the Hyperdrive binding arrives per-request in
+    the ASGI scope env; hand it to the lazy store backend when present."""
+    bind = getattr(store, "bind_env", None)
+    scope_env = request.scope.get("env")
+    if bind is not None and scope_env is not None:
+        bind(scope_env)
+    return await call_next(request)
+
+
 @app.get("/health")
 async def health(request: Request) -> dict:
     env_name = settings.app_env
@@ -32,7 +43,7 @@ async def health(request: Request) -> dict:
     if scope_env is not None and getattr(scope_env, "APP_ENV", None):
         env_name = scope_env.APP_ENV
     return {"status": "ok", "service": settings.app_name, "env": env_name,
-            "version": app.version}
+            "version": app.version, "storage": getattr(store, "kind", "unknown")}
 
 
 @app.get(f"{settings.api_prefix}/context")
