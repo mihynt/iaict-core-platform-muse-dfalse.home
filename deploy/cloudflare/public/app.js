@@ -87,10 +87,13 @@ async function api(path, { method = "GET", body, platform = false, tenant, actor
     if (t) headers["X-Tenant-Id"] = t;
     if (a) headers["X-Actor"] = a;
   }
-  // GETs are retried once on network/5xx failures: the free-tier Worker
-  // occasionally drops a cold request (observed as Cloudflare 1102), and a
-  // single retry turns most of those into a normal response.
-  const attempts = method === "GET" ? 2 : 1;
+  // GETs are retried on ANY transient failure: HTTP 5xx from the free-tier
+  // Worker (observed as Cloudflare 1102) AND network-level failures
+  // (fetch rejects / our own 20s abort — the connection-drop class seen
+  // live on 2026-11-02, which an earlier version of this loop never
+  // retried because those errors are not ApiError instances).
+  const attempts = method === "GET" ? 3 : 1;
+  const backoff = [700, 1600];
   let lastErr;
   for (let attempt = 1; attempt <= attempts; attempt++) {
     const ctrl = new AbortController();
@@ -105,10 +108,11 @@ async function api(path, { method = "GET", body, platform = false, tenant, actor
       return data;
     } catch (err) {
       lastErr = err;
-      const retryable = err instanceof ApiError &&
-        (err.code === "NETWORK" || (err.status ?? 0) >= 500 || (!err.code && !err.status));
+      const retryable = err instanceof ApiError
+        ? (err.code === "NETWORK" || (err.status ?? 0) >= 500 || err.status === 429)
+        : true; // fetch-level failure: network drop, DNS, or abort timeout
       if (!retryable || attempt === attempts) throw err;
-      await new Promise((r) => setTimeout(r, 900));
+      await new Promise((r) => setTimeout(r, backoff[attempt - 1] ?? 1600));
     } finally {
       clearTimeout(timer);
     }

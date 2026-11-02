@@ -1,5 +1,5 @@
 {
-  "revision": 16,
+  "revision": 17,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -28,9 +28,9 @@
       }
     ],
     "current": {
-      "active_task": "T-004",
-      "last_completed_step": "DEC-006 fully live: beta is durable on Neon via Hyperdrive (storage: postgresql-hyperdrive), multi-request flows verified end-to-end on the live URL",
-      "next_action": "Owner uses the live UI and gives feedback. Then T-005 (M3a, day-90 IoT go/no-go gate). Possible small follow-ups when the Owner wants them: delete endpoint for records (to remove the Z-TMP test zone), keep-warm for the free tier.",
+      "active_task": "T-012",
+      "last_completed_step": "T-012 fix built and verified locally: UI retry now covers network-level failures (3 attempts, backoff), WorkerPgStore round-trip diet (per-isolate tenant/user cache 30s, optimistic reads with one self-healing retry, one-query schema probe instead of full DDL replay). Suite green in all three store modes (30+1 skip memory, 31/31 psycopg, 31/31 pg8000). Deployment to the beta is pending the Owner's Cloudflare API token.",
+      "next_action": "Deploy T-012 to the beta when the Owner provides the Cloudflare API token in-session, then re-measure live (sequential + dashboard-parallel probes) and browser-test the dashboard before marking T-012 TECH_DONE. Afterwards: Owner UI feedback, then T-005 (M3a day-90 IoT gate).",
       "blockers": []
     },
     "decisions": [
@@ -258,9 +258,16 @@
         "title": "Fix intermittent dashboard data failures under parallel load (Hyperdrive/pg8000)",
         "status": "TECH_DONE",
         "evidence": "Found by the new browser-test rule (Owner instruction 2026-11-02): the first real-browser test passed sign-in but the dashboard failed with a generic error, although curl checks were green. Diagnosis chain, all evidenced: (1) the dashboard's four parallel list calls intermittently hit Cloudflare 1102 (Worker CPU limit) - crop-plans reproduced returning 503 'error code: 1102' while sibling endpoints returned 200; the old all-or-nothing Promise.all turned one failure into a full-page error. (2) A first fix (cached per-isolate pg8000 connection) exposed a deeper bug in wrangler tail: SQLSTATE 26000 'unnamed prepared statement does not exist' - Hyperdrive rebalances upstream sessions at transaction boundaries and pg8000's PARSE/DESCRIBE split across them. Final fix set: WorkerPgStore reuses one connection per isolate with SELECT 1 health-check + drop-on-error, every operation runs in ONE explicit transaction (autocommit off) so Hyperdrive pins the upstream session, and unique-violation handling moved outside the session (pg8000 refuses statements in a failed transaction - 3 local tests caught this before deploy). UI: GETs retry once on network/5xx; dashboard and plans views load sections independently (allSettled) with a per-section warning instead of a full-page error. Verification: full suite green in all three store modes; live parallel load 14/16 immediate 200 with the rest absorbed by the UI retry and NO 26000/500s; live write flow 201 + duplicate 409 CODE_EXISTS; post-fix real-browser re-test PASSED - dashboard rendered stats 2/1/1/0 (zones/plants/plans/lots), zones page listed Z-01 + Z-TMP, plans page listed PLAN-2026, no error states, and the remembered session persisted across browser restarts. Known leftovers: free-tier latency is still seconds per request and an occasional 503 can appear under parallel load (absorbed by retry); a clearly-labeled test zone Z-TMP created during write verification remains in beta-pilot (no delete endpoint yet). Process note: the browser agent's structural findings (counts, error presence) matched server data, but its decorative text details were partly paraphrased/invented - trust counts and states, verify labels against the API."
+      },
+      {
+        "id": "T-012",
+        "title": "Fix residual dashboard intermittency: UI network-retry gap + WorkerPgStore round-trip diet",
+        "status": "IN_PROGRESS",
+        "classification": "PUBLIC",
+        "evidence": "Owner chose investigation over a Supabase switch (2026-11-02). Controlled live measurement (read-only, browser-UA probe cross-checked with curl): sequential success only 8/20, dashboard-parallel 15/48; successful DB calls cost 7-10s warm or cold; /health (no DB) 0.3-3.4s bimodal by isolate warmth; failures were Cloudflare 1102 (free-tier resource limit), 1101 (Worker exception) and mid-stream connection drops. Neon scale-to-zero ruled out as the main cause: first call after >10 min idle cost the same 7.8-9.8s as warm calls. Code-verified cost structure: each list request ran >=2 store sessions (tenant guard + list), each with ping + query + COMMIT over Hyperdrive, and every fresh isolate replayed the full schema DDL on its first connection. UI bug found in app.js: api() retried only ApiError (HTTP) failures, never fetch-level network/timeout failures - exactly the failure class that defeated the dashboard retry in the 20:27 recheck. Fixes built: app.js GET retry = 3 attempts with 700/1600ms backoff covering network errors; WorkerPgStore per-isolate tenant/user cache (30s positive / 10s negative, writes invalidate), optimistic reads (no ping, one retry on a fresh connection - self-heal verified by killing the cached backend server-side), schema probe = one SELECT instead of full DDL. Tests: 30 passed + 1 skip (memory), 31/31 (psycopg), 31/31 (pg8000 worker mode) on real PostgreSQL 18.6; app.js passes node --check. Deployment pending the Owner's Cloudflare API token."
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-02T12:27:29Z"
+  "updated_at": "2026-11-02T13:55:33Z"
 }

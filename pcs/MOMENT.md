@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 16 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
+- **Revision:** 17 · **Updated:** 2026-11-02T13:55:33Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,21 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **Intermittency investigated, fix built (2026-11-02, T-012):** the
+  Owner chose investigation over switching to Supabase. Controlled live
+  measurement: sequential success only 8/20, dashboard-parallel 15/48,
+  successful DB calls 7-10s warm or cold — Neon scale-to-zero ruled out
+  as the main cause; the cost sits in per-request protocol chatter
+  (2 store sessions per list, ping + COMMIT each, full schema DDL
+  replayed by every fresh isolate) plus a UI bug: the GET retry never
+  fired for network-level failures. Fixes: UI retry 3 attempts with
+  backoff covering network errors; WorkerPgStore tenant/user cache
+  (30s, per isolate), optimistic reads with one self-healing retry,
+  one-query schema probe. Suite green in all three store modes
+  (30+1 skip / 31/31 / 31/31). **Deploy pending** the Owner's
+  Cloudflare API token; live re-measurement + browser test follow.
+
 
 - **Dashboard load failures fixed (2026-11-02):** the first mandated
   browser test caught the dashboard failing under parallel load
@@ -159,6 +174,6 @@
 
 ## Next action
 
-T-004 (M2): data model (ERD) for the core production objects
-(ZON/MPL/FLD/LOT) and a persistence layer that replaces the in-memory
-stores behind the same API contracts.
+Deploy T-012 (token from the Owner), re-measure the live beta
+(sequential + dashboard-parallel probes) and browser-test the
+dashboard; then Owner UI feedback and T-005 (M3a day-90 IoT gate).

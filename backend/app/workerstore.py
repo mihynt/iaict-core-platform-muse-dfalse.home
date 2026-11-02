@@ -26,12 +26,29 @@ with SQLSTATE 26000 "unnamed prepared statement does not exist"
 (observed live in wrangler tail after the first connection-reuse
 deploy). Inside a transaction Hyperdrive pins the upstream session for
 the whole operation.
+
+Round-trip diet (revised 2026-11-02, T-012): live measurement showed a
+successful list call still cost 7-10s and only ~40% of sequential calls
+succeeded — the per-request protocol chatter, not the database, was the
+bottleneck. Three cuts:
+- Tenant and user lookups (the guard runs on EVERY request) are cached
+  per isolate for 30s (unknown slugs for 10s); writes through this
+  instance update/invalidate the cache immediately. Worst case, a
+  status change made through another isolate takes up to 30s to be
+  seen here — accepted for the beta and documented, not silent.
+- Read operations skip the SELECT 1 ping and instead run optimistically
+  on the cached connection, retrying ONCE on a fresh connection when
+  the cached one turns out stale. Writes keep the pinged path.
+- A fresh connection probes the schema with ONE cheap query
+  (SELECT 1 FROM tenants) instead of replaying the whole DDL file;
+  the full DDL runs only when the probe shows the tables are missing.
 """
 from __future__ import annotations
 
 import json
 import pathlib
 import threading
+import time
 from contextlib import contextmanager
 
 import pg8000
@@ -56,6 +73,9 @@ class WorkerPgStore:
                             password=password, database=database)
         self._schema_done = False
         self._conn = None
+        # Per-isolate lookup caches (T-012, see module docstring).
+        self._tenant_cache: dict[str, tuple[float, Tenant | None]] = {}
+        self._user_cache: dict[tuple[str, str], tuple[float, User | None]] = {}
 
     def _drop_conn(self) -> None:
         if self._conn is not None:
@@ -65,10 +85,37 @@ class WorkerPgStore:
                 pass
             self._conn = None
 
-    def _get_conn(self):
-        """Return the cached connection, pinging it first; reconnect when
-        the ping fails. Applies the schema once per store instance."""
+    def _ensure_schema(self, conn) -> None:
+        """One cheap probe instead of replaying the whole DDL file on
+        every fresh isolate (T-012); the full DDL runs only when the
+        probe shows the tables are not there yet."""
+        if self._schema_done:
+            return
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT 1 FROM tenants LIMIT 1")
+            cur.fetchall()
+            conn.commit()
+        except Exception:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            cur = conn.cursor()
+            for stmt in _SCHEMA.split(";\n"):
+                stmt = stmt.strip()
+                if stmt:
+                    cur.execute(stmt)
+            conn.commit()
+        self._schema_done = True
+
+    def _get_conn(self, ping: bool = True):
+        """Return the cached connection; reconnect when it is missing or
+        (with ping=True) fails its SELECT 1 health check. Applies the
+        schema once per store instance."""
         if self._conn is not None:
+            if not ping:
+                return self._conn
             try:
                 cur = self._conn.cursor()
                 cur.execute("SELECT 1")
@@ -80,14 +127,7 @@ class WorkerPgStore:
         # transaction so Hyperdrive pins the upstream session (see the
         # module docstring on SQLSTATE 26000).
         conn = pg8000.connect(**self._params, timeout=15)
-        if not self._schema_done:
-            cur = conn.cursor()
-            for stmt in _SCHEMA.split(";\n"):
-                stmt = stmt.strip()
-                if stmt:
-                    cur.execute(stmt)
-            conn.commit()
-            self._schema_done = True
+        self._ensure_schema(conn)
         self._conn = conn
         return conn
 
@@ -107,6 +147,27 @@ class WorkerPgStore:
             self._drop_conn()
             raise
 
+    def _run_read(self, work):
+        """Run work(cursor) as one read transaction (T-012): optimistic
+        first attempt on the cached connection without the ping round
+        trip; on failure, drop the connection and retry ONCE on a fresh,
+        pinged connection. Returns work's result."""
+        for attempt in (1, 2):
+            conn = self._get_conn(ping=(attempt == 2))
+            try:
+                cur = conn.cursor()
+                result = work(cur)
+                conn.commit()
+                return result
+            except Exception:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+                self._drop_conn()
+                if attempt == 2:
+                    raise
+
     @classmethod
     def from_binding(cls, binding) -> "WorkerPgStore":
         """Build from a Hyperdrive binding object (host/port/user/password/
@@ -124,6 +185,8 @@ class WorkerPgStore:
         return rows[0] if rows else None
 
     def reset(self) -> None:
+        self._tenant_cache.clear()
+        self._user_cache.clear()
         with self._lock, self._session() as cur:
             cur.execute(
                 "TRUNCATE audit_log, lot_relations, field_events, lots, crop_plans,"
@@ -146,9 +209,11 @@ class WorkerPgStore:
                 "target": target, "outcome": outcome}
 
     def _audit_rows(self, where: str, params: tuple) -> list[dict]:
-        with self._lock, self._session() as cur:
+        def work(cur):
             cur.execute(f"SELECT * FROM audit_log {where} ORDER BY seq", params)
-            rows = self._rows(cur)
+            return self._rows(cur)
+        with self._lock:
+            rows = self._run_read(work)
         return [{**r, "ts": r["ts"].isoformat()} for r in rows]
 
     def list_audit(self) -> list[dict]:
@@ -173,21 +238,37 @@ class WorkerPgStore:
             if _is_unique_violation(exc):
                 return None
             raise
-        return Tenant(slug=slug, name=name, created_at=created.isoformat())
+        tenant = Tenant(slug=slug, name=name, created_at=created.isoformat())
+        self._tenant_cache[slug] = (time.monotonic(), tenant)
+        return tenant
 
     def get_tenant(self, slug: str) -> Tenant | None:
-        with self._lock, self._session() as cur:
+        now = time.monotonic()
+        hit = self._tenant_cache.get(slug)
+        if hit is not None:
+            ts, val = hit
+            if now - ts < (30.0 if val is not None else 10.0):
+                return val
+
+        def work(cur):
             cur.execute("SELECT * FROM tenants WHERE slug = %s", (slug,))
-            row = self._one(cur)
-        if row is None:
-            return None
-        return Tenant(slug=row["slug"], name=row["name"], status=row["status"],
-                      created_at=row["created_at"].isoformat())
+            return self._one(cur)
+
+        with self._lock:
+            row = self._run_read(work)
+        result = None if row is None else Tenant(
+            slug=row["slug"], name=row["name"], status=row["status"],
+            created_at=row["created_at"].isoformat())
+        self._tenant_cache[slug] = (now, result)
+        return result
 
     def list_tenants(self) -> list[Tenant]:
-        with self._lock, self._session() as cur:
+        def work(cur):
             cur.execute("SELECT * FROM tenants ORDER BY slug")
-            rows = self._rows(cur)
+            return self._rows(cur)
+
+        with self._lock:
+            rows = self._run_read(work)
         return [Tenant(slug=r["slug"], name=r["name"], status=r["status"],
                        created_at=r["created_at"].isoformat()) for r in rows]
 
@@ -198,9 +279,12 @@ class WorkerPgStore:
             )
             row = self._one(cur)
         if row is None:
+            self._tenant_cache.pop(slug, None)
             return None
-        return Tenant(slug=row["slug"], name=row["name"], status=row["status"],
-                      created_at=row["created_at"].isoformat())
+        tenant = Tenant(slug=row["slug"], name=row["name"], status=row["status"],
+                        created_at=row["created_at"].isoformat())
+        self._tenant_cache[slug] = (time.monotonic(), tenant)
+        return tenant
 
     # ---- users ---------------------------------------------------------
     def create_user(self, tenant: str, username: str, display_name: str, role: str) -> User | None:
@@ -216,30 +300,48 @@ class WorkerPgStore:
             if _is_unique_violation(exc):
                 return None
             raise
+        self._user_cache.pop((tenant, username), None)
         return User(username=username, display_name=display_name, role=role,
                     created_at=created.isoformat())
 
     def get_user(self, tenant: str, username: str) -> User | None:
-        with self._lock, self._session() as cur:
+        now = time.monotonic()
+        hit = self._user_cache.get((tenant, username))
+        if hit is not None:
+            ts, val = hit
+            if now - ts < (30.0 if val is not None else 10.0):
+                return val
+
+        def work(cur):
             cur.execute("SELECT * FROM users WHERE tenant_id = %s AND username = %s",
                         (tenant, username))
-            row = self._one(cur)
-        if row is None:
-            return None
-        return User(username=row["username"], display_name=row["display_name"],
-                    role=row["role"], created_at=row["created_at"].isoformat())
+            return self._one(cur)
+
+        with self._lock:
+            row = self._run_read(work)
+        result = None if row is None else User(
+            username=row["username"], display_name=row["display_name"],
+            role=row["role"], created_at=row["created_at"].isoformat())
+        self._user_cache[(tenant, username)] = (now, result)
+        return result
 
     def list_users(self, tenant: str) -> list[User]:
-        with self._lock, self._session() as cur:
+        def work(cur):
             cur.execute("SELECT * FROM users WHERE tenant_id = %s ORDER BY username", (tenant,))
-            rows = self._rows(cur)
+            return self._rows(cur)
+
+        with self._lock:
+            rows = self._run_read(work)
         return [User(username=r["username"], display_name=r["display_name"], role=r["role"],
                      created_at=r["created_at"].isoformat()) for r in rows]
 
     def tenant_user_count(self, tenant: str) -> int:
-        with self._lock, self._session() as cur:
+        def work(cur):
             cur.execute("SELECT count(*) AS n FROM users WHERE tenant_id = %s", (tenant,))
             return self._one(cur)["n"]
+
+        with self._lock:
+            return self._run_read(work)
 
     # ---- workspaces ------------------------------------------------------
     def create_workspace(self, tenant: str, name: str) -> bool:
@@ -252,10 +354,13 @@ class WorkerPgStore:
             return cur.rowcount == 1
 
     def list_workspace_names(self, tenant: str) -> list[str]:
-        with self._lock, self._session() as cur:
+        def work(cur):
             cur.execute("SELECT name FROM workspaces WHERE tenant_id = %s ORDER BY name",
                         (tenant,))
             return [r["name"] for r in self._rows(cur)]
+
+        with self._lock:
+            return self._run_read(work)
 
     # ---- production records ---------------------------------------------
     def _resolve_ref(self, cur, tenant: str, ref_kind: str, code: str) -> int | None:
@@ -327,15 +432,23 @@ class WorkerPgStore:
     def list_records(self, tenant: str, kind: str) -> list[dict]:
         table, _ = SPECS[kind]
         order = "code" if kind in CODED_KINDS else "id"
-        with self._lock, self._session() as cur:
+
+        def work(cur):
             cur.execute(f"SELECT * FROM {table} WHERE tenant_id = %s ORDER BY {order}",
                         (tenant,))
             return [self._row_to_record(r, kind) for r in self._rows(cur)]
 
+        with self._lock:
+            return self._run_read(work)
+
     def get_record_by_code(self, tenant: str, kind: str, code: str) -> dict | None:
         table, _ = SPECS[kind]
-        with self._lock, self._session() as cur:
+
+        def work(cur):
             cur.execute(f"SELECT * FROM {table} WHERE tenant_id = %s AND code = %s",
                         (tenant, code))
-            row = self._one(cur)
+            return self._one(cur)
+
+        with self._lock:
+            row = self._run_read(work)
         return None if row is None else self._row_to_record(row, kind)
