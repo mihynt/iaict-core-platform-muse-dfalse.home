@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 10 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
+- **Revision:** 11 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,15 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **Web UI built (2026-11-02):** mobile-first SPA in
+  `deploy/cloudflare/public/` (dashboard, zones, plants, plans + field
+  journal, lots, users + audit, tenant admin, settings), served by the
+  Worker via the assets binding + guarded catch-all. All backend tests
+  green in the three store modes. **Deploy pending**: wrangler needs the
+  Owner's Cloudflare API token again (tokens are never stored; the
+  session copy was lost on an environment restart).
+
 
 - **Beta address renamed (2026-11-02):** the Owner changed the account
   subdomain — canonical URL is now

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c5a34">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>IAICT Core — Nền tảng Nông · Lâm · Ngư nghiệp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">🌱</div>
+      <div class="brand-text">
+        <strong>IAICT Core</strong>
+        <span>Nông · Lâm · Ngư nghiệp</span>
+      </div>
+    </div>
+    <nav class="side-nav" id="sideNav"></nav>
+    <div class="side-foot">
+      <div class="tenant-chip" id="tenantChipSide"></div>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="brand brand-mobile">
+        <div class="brand-mark">🌱</div>
+        <div class="brand-text">
+          <strong>IAICT Core</strong>
+          <span id="envLabel">beta</span>
+        </div>
+      </div>
+      <button class="tenant-chip" id="tenantChipTop" type="button"></button>
+    </header>
+
+    <main id="view" class="view" aria-live="polite"></main>
+  </div>
+
+  <nav class="tabbar" id="tabBar"></nav>
+</div>
+
+<div class="sheet-backdrop" id="sheetBackdrop" hidden></div>
+<section class="sheet" id="sheet" hidden role="dialog" aria-modal="true">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <h3 id="sheetTitle"></h3>
+    <button class="icon-btn" id="sheetClose" type="button" aria-label="Đóng">✕</button>
+  </div>
+  <form id="sheetForm" autocomplete="off"></form>
+</section>
+
+<div class="setup" id="setup" hidden>
+  <div class="setup-card">
+    <div class="setup-hero">🌱</div>
+    <h2>Kết nối không gian làm việc</h2>
+    <p>Nhập mã đơn vị (tenant) và tên người dùng của bạn để bắt đầu. Khóa quản trị platform chỉ cần khi quản lý danh sách tenant.</p>
+    <form id="setupForm" autocomplete="off">
+      <label>Mã tenant
+        <input name="tenant" required placeholder="vd: beta-pilot" autocapitalize="none">
+      </label>
+      <label>Tên người dùng (actor)
+        <input name="actor" required placeholder="vd: admin" autocapitalize="none">
+      </label>
+      <label>Khóa platform (tùy chọn)
+        <input name="pkey" type="password" placeholder="Chỉ khi bạn là quản trị platform">
+      </label>
+      <button class="btn btn-primary btn-block" type="submit">Vào không gian làm việc</button>
+    </form>
+    <p class="setup-note">Thông tin chỉ lưu trên thiết bị này và gửi kèm mỗi yêu cầu tới API của chính hệ thống.</p>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

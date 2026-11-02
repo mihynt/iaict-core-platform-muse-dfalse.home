@@ -116,3 +116,18 @@ curl -X POST https://iaict-core-platform.<your-subdomain>.workers.dev/api/v1/pla
    application tables and move with the data.
 3. Repoint DNS. Estimated effort at beta data volumes: hours, dominated by
    verification.
+
+## Web UI
+
+The beta serves a mobile-first web UI from the same Worker (same origin
+as the API — no CORS). Static files live in `deploy/cloudflare/public/`
+(`index.html`, `styles.css`, `app.js`; vanilla, no build step) and are
+wired through the `assets` block in `wrangler.jsonc` (binding `ASSETS`,
+`run_worker_first`). `backend/app/main.py` has a guarded catch-all route
+that proxies non-API paths to the assets binding in Workers and returns
+a plain JSON 404 everywhere else, so local/test behavior is unchanged.
+
+The UI talks to `/api/v1` with the beta header model: tenant slug +
+actor username, and the optional platform key for tenant administration.
+Credentials are stored only in the browser's localStorage on the user's
+device. First run asks for tenant + actor (pilot: `beta-pilot` / `admin`).

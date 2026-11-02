@@ -8,6 +8,14 @@
   "vars": {
     "APP_ENV": "beta"
   },
+  // Web UI: static files in ./public, served through the Worker so the
+  // app can proxy them behind the API origin (see the catch-all route in
+  // backend/app/main.py). run_worker_first keeps API routes authoritative.
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
   // Hyperdrive config "iaict-neon" (created by the Owner in the dashboard
   // on 2026-11-02; direct Neon connection string, caching disabled).
   // The store layer (app/workerstore.py, pg8000) binds it from the first

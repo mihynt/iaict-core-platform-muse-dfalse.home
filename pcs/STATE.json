@@ -1,5 +1,5 @@
 {
-  "revision": 10,
+  "revision": 11,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -30,7 +30,7 @@
     "current": {
       "active_task": "T-004",
       "last_completed_step": "DEC-006 fully live: beta is durable on Neon via Hyperdrive (storage: postgresql-hyperdrive), multi-request flows verified end-to-end on the live URL",
-      "next_action": "Product work continues with T-005 (M3a, day-90 IoT go/no-go gate).",
+      "next_action": "Deploy the web UI once the Owner re-issues the Cloudflare API token, verify it live (root HTML, assets, API unaffected), then mark T-008/F-005 TECH_DONE. Product stages after that: T-005 (M3a IoT gate).",
       "blockers": []
     },
     "decisions": [
@@ -121,6 +121,12 @@
           "NFR-36"
         ],
         "evidence": "backend/tests/test_m1.py identity/audit tests within the 24/24 passing suite"
+      },
+      {
+        "id": "F-005",
+        "name": "Mobile-first web UI served by the Worker",
+        "status": "IN_PROGRESS",
+        "evidence": "UI built and test-verified locally (see T-008); awaiting the Owner's Cloudflare API token to deploy and verify live at https://iaict-core-platform.mihy.workers.dev."
       }
     ],
     "flows": [],
@@ -228,9 +234,15 @@
         "status": "PLANNED",
         "title": "M7 commercial readiness: full applicable UAT set and CMP rule-pack enforcement evidence",
         "classification": "PUBLIC"
+      },
+      {
+        "id": "T-008",
+        "title": "Web UI for the beta (mobile-first, served by the Worker)",
+        "status": "IN_PROGRESS",
+        "evidence": "Built 2026-11-02: deploy/cloudflare/public/{index.html,styles.css,app.js} - a vanilla SPA (no build step) covering dashboard, zones, mother plants, crop plans + field events, lots, users + audit, platform tenant administration (uses the Owner's own platform key) and connection settings; Vietnamese UI, bottom tab bar + bottom-sheet forms on mobile, sidebar + grid on desktop. Serving: wrangler.jsonc assets block (ASSETS binding, run_worker_first) plus a guarded catch-all route in backend/app/main.py that proxies non-API paths to the assets binding on Workers and returns plain JSON 404 elsewhere (local behavior unchanged, root still 404 without ASSETS). Regression: app.js passes node --check; backend suite green in all three store modes after the change (30 passed + 1 skip in-memory; 31/31 psycopg; 31/31 pg8000). Deployment to the beta is PENDING: wrangler needs the CLOUDFLARE_API_TOKEN, which is only ever held transiently per session and was lost when the environment restarted; the Owner has been asked to re-issue it."
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-02T09:46:04Z"
+  "updated_at": "2026-11-02T10:07:30Z"
 }
