@@ -1,0 +1,184 @@
+{
+  "revision": 2,
+  "schema": "pcs.solo.v1",
+  "state": {
+    "architecture_map": {
+      "status": "DRAFT",
+      "summary": "API-first modular monolith (Python 3.12 + FastAPI, versioned OpenAPI /api/v1) with deny-by-default tenant isolation on every tenant-scoped resource. Android offline-first field client, IoT device ingestion and a public traceability page follow the SRS milestone order. Persistence layer arrives at M2 without changing the tenant-isolation contract."
+    },
+    "artifacts": [
+      {
+        "name": "SRS v2.0 — requirements baseline (document file)",
+        "published": false,
+        "ref": "IAICT/SRS-CORE/2026/V2.0",
+        "sha256": "3a5d21e1bf34650dd3fdb4af844eccc34823cbaa7a48bc4d2fd0beec66866fe1",
+        "classification": "PUBLIC"
+      },
+      {
+        "name": "Requirement-level traceability matrix for SRS v2.0 (CSV/XLSX)",
+        "published": false,
+        "ref": "ma-tran-truy-vet-muc-ma-SRS-v2.0",
+        "classification": "PUBLIC"
+      }
+    ],
+    "current": {
+      "active_task": "T-001",
+      "last_completed_step": "GitHub connected and identity verified as mihynt; local checkpoint at STATE revision 2 ready to push",
+      "next_action": "Create public repository mihynt/iaict-core-platform, push this checkpoint in one snapshot commit, re-read HEAD and pcs/STATE.json to verify",
+      "blockers": []
+    },
+    "decisions": [
+      {
+        "date": "2026-11-02",
+        "decision": "Repository visibility PUBLIC for dungnt-mhy/iaict-core-platform, chosen by the Owner in chat on 2026-11-02. Full SOW/SRS documents are NOT classified for publication: only hashes and public-safe summaries are recorded in this repository.",
+        "id": "DEC-001",
+        "classification": "PUBLIC"
+      },
+      {
+        "date": "2026-11-02",
+        "decision": "Backend stack for the first milestones: Python 3.12 + FastAPI modular monolith; Android client and IoT ingestion follow the SRS milestone order.",
+        "id": "DEC-002",
+        "classification": "PUBLIC"
+      },
+      {
+        "date": "2026-11-02",
+        "decision": "Requirements baseline is SRS v2.0 (IAICT/SRS-CORE/2026/V2.0) derived from SOW R21. Requirement changes are appended to pcs/SRS_CHANGES.md as deltas; the baseline itself is never edited.",
+        "id": "DEC-003",
+        "classification": "PUBLIC"
+      },
+      {
+        "id": "DEC-004",
+        "date": "2026-11-02",
+        "classification": "PUBLIC",
+        "decision": "Correction by Owner (2026-11-02): the connected GitHub account is mihynt (verified via get_me, account id 351337042), not dungnt-mhy. Repository target corrected to mihynt/iaict-core-platform. DEC-001 is otherwise unchanged: visibility PUBLIC, full SOW/SRS not published."
+      }
+    ],
+    "features": [
+      {
+        "evidence": "backend/tests/test_api.py — 7 tests passed locally on 2026-11-02 (health open; tenant header required; invalid tenant rejected; cross-tenant isolation verified)",
+        "id": "F-001",
+        "name": "Tenant-scoped API foundation: /health, tenant context enforcement, tenant-isolated workspaces",
+        "srs_refs": [
+          "TEN-01",
+          "GEN-07"
+        ],
+        "status": "TECH_DONE",
+        "classification": "PUBLIC"
+      },
+      {
+        "id": "F-002",
+        "name": "Compliance Rule Pack CMP-01..12 enforcement for Vertical Pack 01",
+        "srs_refs": [
+          "CMP-01..CMP-12",
+          "FLD-15",
+          "FLD-16",
+          "LOT-11",
+          "LOT-12",
+          "MPL-11"
+        ],
+        "status": "PLANNED",
+        "classification": "PUBLIC"
+      }
+    ],
+    "flows": [],
+    "name": "IAICT Core Platform",
+    "phase": "DISCOVERY",
+    "policy": {
+      "content_classification": "PUBLIC",
+      "destructive": "EXPLICIT_VERIFIED_OWNER_APPROVAL",
+      "production": "EXPLICIT_VERIFIED_OWNER_APPROVAL",
+      "public_content_reviewed": true,
+      "repository_visibility": "PUBLIC",
+      "secrets": "NEVER_COMMIT",
+      "source_of_truth": "PROJECT_GITHUB_WHEN_CONNECTED"
+    },
+    "product_map": {
+      "status": "DRAFT",
+      "summary": "Multi-tenant SaaS core platform for agriculture-forestry-aquaculture production management: shared Core + Vertical Packs. Baseline scope: 302 functional requirements in 22 groups, 56 NFR, 31 security controls, 11 hardware baselines, 12 compliance rules (CMP-01..12), 115 UAT scenarios, 64 deliverables, 82 minimum reports. Milestones M0-M7 over 240 days; hard day-90 gate M3a; pilot go-live M5; commercial readiness M7."
+    },
+    "releases": [],
+    "risks": [
+      {
+        "id": "R-001",
+        "mitigation": "Push immediately after connection, then re-read branch HEAD and STATE revision to verify the checkpoint.",
+        "risk": "Repository target was initially recorded under the wrong account (dungnt-mhy); corrected at revision 2 after Owner clarification and get_me verification.",
+        "classification": "PUBLIC"
+      },
+      {
+        "id": "R-002",
+        "mitigation": "Classification recorded in policy; .gitignore covers env/keys/credentials; every push is content-reviewed before commit.",
+        "risk": "Public repository: accidental publication of internal documents, pilot data or secrets.",
+        "classification": "PUBLIC"
+      }
+    ],
+    "schema": "pcs.solo.project.v1",
+    "slug": "iaict-core-platform",
+    "source_refs": [
+      {
+        "date": "2026-11-02",
+        "id": "IAICT/SRS-CORE/2026/V2.0",
+        "sha256": "3a5d21e1bf34650dd3fdb4af844eccc34823cbaa7a48bc4d2fd0beec66866fe1",
+        "storage": "OWNER_LOCAL_NOT_PUBLISHED",
+        "type": "SRS",
+        "version": "2.0",
+        "classification": "PUBLIC"
+      },
+      {
+        "date": "2026-10-31",
+        "id": "IAICT/SOW-CORE/2026/V2.2.0-R21",
+        "sha256": "3a05a6d7fd03062fad550cccc8557355140cbad46d4842f6c647900eac909ba6",
+        "storage": "OWNER_LOCAL_NOT_PUBLISHED",
+        "type": "SOW",
+        "version": "2.2.0-R21",
+        "classification": "PUBLIC"
+      }
+    ],
+    "tasks": [
+      {
+        "id": "T-001",
+        "status": "IN_PROGRESS",
+        "title": "Create public GitHub repository mihynt/iaict-core-platform and push the initial checkpoint",
+        "classification": "PUBLIC"
+      },
+      {
+        "evidence": "Local git repository with initial commit; backend pytest 7/7 passed (2026-11-02); pcs_solo.py verify result recorded in pcs/MOMENT.md",
+        "id": "T-002",
+        "status": "TECH_DONE",
+        "title": "Initialize PCS state, public-safe docs and backend foundation skeleton (local portable checkpoint)",
+        "classification": "PUBLIC"
+      },
+      {
+        "id": "T-003",
+        "status": "PLANNED",
+        "title": "M1 foundation: tenancy, identity/access and audit skeleton (SRS TEN/ADM groups, SEC controls)",
+        "classification": "PUBLIC"
+      },
+      {
+        "id": "T-004",
+        "status": "PLANNED",
+        "title": "M2: data model (ERD) and core production objects (ZON/MPL/FLD/LOT) with persistence",
+        "classification": "PUBLIC"
+      },
+      {
+        "id": "T-005",
+        "status": "PLANNED",
+        "title": "M3a day-90 hard gate: IoT gateway baseline and device ingestion evidence (UAT-60)",
+        "classification": "PUBLIC"
+      },
+      {
+        "id": "T-006",
+        "status": "PLANNED",
+        "title": "M5 pilot go-live scope per SRS section 9.1 / Q.1 activation rules",
+        "classification": "PUBLIC"
+      },
+      {
+        "id": "T-007",
+        "status": "PLANNED",
+        "title": "M7 commercial readiness: full applicable UAT set and CMP rule-pack enforcement evidence",
+        "classification": "PUBLIC"
+      }
+    ],
+    "version": "0.1.0"
+  },
+  "updated_at": "2026-11-02T05:37:23Z"
+}
