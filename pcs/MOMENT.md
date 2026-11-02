@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 11 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
+- **Revision:** 12 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,13 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **Web UI LIVE (2026-11-02):** deployed with a fresh Owner-issued API
+  token (transient use only). Verified at the canonical URL: `/` serves
+  the UI (200 text/html), CSS/JS with correct content types, `/health`
+  unchanged, beta-pilot data intact, unknown API paths still JSON 404.
+  T-008 / F-005 TECH_DONE. First run: tenant `beta-pilot`, actor `admin`.
+
 
 - **Web UI built (2026-11-02):** mobile-first SPA in
   `deploy/cloudflare/public/` (dashboard, zones, plants, plans + field
