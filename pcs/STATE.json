@@ -1,5 +1,5 @@
 {
-  "revision": 13,
+  "revision": 14,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -30,7 +30,7 @@
     "current": {
       "active_task": "T-004",
       "last_completed_step": "DEC-006 fully live: beta is durable on Neon via Hyperdrive (storage: postgresql-hyperdrive), multi-request flows verified end-to-end on the live URL",
-      "next_action": "Deploy the T-009 login fix once the Owner provides the Cloudflare API token, verify the login flow live, then mark T-009 TECH_DONE. After Owner feedback on the UI: T-005 (M3a IoT gate).",
+      "next_action": "Owner signs in on the live UI (tenant beta-pilot -> tap 'Pilot Admin') and gives UI feedback. Then T-005 (M3a, day-90 IoT go/no-go gate).",
       "blockers": []
     },
     "decisions": [
@@ -244,11 +244,11 @@
       {
         "id": "T-009",
         "title": "Login support: account picker on the sign-in screen + remember-me",
-        "status": "IN_PROGRESS",
-        "evidence": "Owner reported 2026-11-02 they could not sign in with the type-it-yourself tenant+actor form. Fix built the same day (UI only, no backend change needed): verified in backend/app/identity.py that GET /users requires only the tenant guard, and verified live that GET /api/v1/users with only the beta-pilot tenant header returns its account list (admin / 'Pilot Admin' / TENANT_ADMIN). Login screen now: (1) loads and shows the tenant's accounts as tappable cards (tap = sign in with that account), auto-loads on tenant field change, with a bootstrap note when a tenant has no users yet; (2) validates tenant + actor membership BEFORE entering and shows the translated error on the login card itself; (3) normalizes the tenant slug (trim + lowercase); (4) 'remember me' checkbox - localStorage when on, sessionStorage when off; (5) all storage access is defensive with an in-memory fallback so a browser blocking storage can no longer kill the login silently. Checks: app.js passes node --check; backend suite still green (30 passed + 1 skip in-memory, 31/31 psycopg; backend code untouched). Deployment pending the Owner's Cloudflare API token (transient per deploy, never stored)."
+        "status": "TECH_DONE",
+        "evidence": "Owner reported 2026-11-02 they could not sign in with the type-it-yourself tenant+actor form. Fix built the same day (UI only, no backend change needed): verified in backend/app/identity.py that GET /users requires only the tenant guard, and verified live that GET /api/v1/users with only the beta-pilot tenant header returns its account list (admin / 'Pilot Admin' / TENANT_ADMIN). Login screen now: (1) loads and shows the tenant's accounts as tappable cards (tap = sign in with that account), auto-loads on tenant field change, with a bootstrap note when a tenant has no users yet; (2) validates tenant + actor membership BEFORE entering and shows the translated error on the login card itself; (3) normalizes the tenant slug (trim + lowercase); (4) 'remember me' checkbox - localStorage when on, sessionStorage when off; (5) all storage access is defensive with an in-memory fallback so a browser blocking storage can no longer kill the login silently. Checks: app.js passes node --check; backend suite still green (30 passed + 1 skip in-memory, 31/31 psycopg; backend code untouched). Deployment pending the Owner's Cloudflare API token (transient per deploy, never stored). DEPLOYED AND VERIFIED LIVE 2026-11-02 (token supplied by the Owner in-session, used transiently): GET / serves the new sign-in screen (3918 bytes, up from 3310; contains the account-picker and remember-me markup), the served app.js contains the account-loading and sessionStorage logic, /health unchanged (postgresql-hyperdrive), and the exact request the login page makes returns beta-pilot's account (admin / Pilot Admin / TENANT_ADMIN). Owner flow now: type tenant -> tap the account card -> inside; remember-me defaults on."
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-02T10:56:18Z"
+  "updated_at": "2026-11-02T11:17:21Z"
 }

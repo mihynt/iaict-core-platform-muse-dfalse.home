@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 13 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
+- **Revision:** 14 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,13 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **Login fix LIVE (2026-11-02):** the new sign-in screen is deployed
+  and verified at the canonical URL (page grew 3310 -> 3918 bytes with
+  the account picker; the login page's own request returns beta-pilot's
+  Pilot Admin account). T-009 TECH_DONE. Sign-in is now: type tenant,
+  tap your account card, done — with remember-me on by default.
+
 
 - **Login fix built (2026-11-02):** the Owner could not sign in, so the
   sign-in screen now lists the tenant's accounts as tappable cards
