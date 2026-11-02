@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 17 · **Updated:** 2026-11-02T13:55:33Z · **Phase:** DISCOVERY
+- **Revision:** 18 · **Updated:** 2026-11-02T15:35:39Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,24 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **Database exonerated; runtime relocation prepared (2026-11-02,
+  DEC-007 / T-013):** the beta now runs on Supabase (Singapore) via a
+  new Hyperdrive config; beta-pilot was rebuilt from an API snapshot
+  with a temporary platform secret (deleted right after — the Owner
+  had forgotten their key; platform admin is disabled until they set
+  a fresh one). Same-probe re-measurement: sequential 8/20, parallel
+  19/48 — the failure rate did NOT improve with the database switch;
+  latency did (5-6s vs 7-10s). `wrangler tail` shows why: 4 of 14
+  sampled requests were canceled by the runtime's hang detector and 1
+  exceeded CPU; successful requests burn ~1.2-1.9s CPU each — the
+  Python Workers runtime (Pyodide + synchronous pg8000) is the
+  bottleneck, not the DB. T-012 closed TECH_DONE with that partial
+  outcome recorded. Plain-host packaging is ready (Dockerfile,
+  fly.toml, render.yaml; the app serves the UI itself off-Workers)
+  and smoke-proven locally: list calls ~2ms under uvicorn + psycopg
+  with identical code. Waiting on the Owner's host choice.
+
 
 - **Intermittency investigated, fix built (2026-11-02, T-012):** the
   Owner chose investigation over switching to Supabase. Controlled live
@@ -174,6 +192,7 @@
 
 ## Next action
 
-Deploy T-012 (token from the Owner), re-measure the live beta
-(sequential + dashboard-parallel probes) and browser-test the
-dashboard; then Owner UI feedback and T-005 (M3a day-90 IoT gate).
+Owner chooses the plain host for T-013 (Fly.io always-on vs Render
+free) and creates the account; deploy the prepared Docker image
+against Supabase, verify live, switch the canonical URL. Then Owner
+UI feedback and T-005 (M3a day-90 IoT gate).

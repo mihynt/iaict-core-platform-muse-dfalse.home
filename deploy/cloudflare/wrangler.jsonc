@@ -16,12 +16,14 @@
     "binding": "ASSETS",
     "run_worker_first": true
   },
-  // Hyperdrive config "iaict-neon" (created by the Owner in the dashboard
-  // on 2026-11-02; direct Neon connection string, caching disabled).
+  // Hyperdrive config "iaict-supabase" (created by the Owner in the
+  // dashboard on 2026-11-02; Supabase direct connection string, caching
+  // disabled). Switched from "iaict-neon" (id 3cdbf0e61cfc4a078ea1f4790200a65f,
+  // kept intact for instant rollback) for the Supabase trial at STATE rev 18.
   // The store layer (app/workerstore.py, pg8000) binds it from the first
   // request's env; /health reports storage "postgresql-hyperdrive".
   "hyperdrive": [
-    { "binding": "HYPERDRIVE", "id": "3cdbf0e61cfc4a078ea1f4790200a65f" }
+    { "binding": "HYPERDRIVE", "id": "4ee90fdeba69436493d69e11fd7a870b" }
   ]
   // Secrets (never commit values):
   //   wrangler secret put PLATFORM_ADMIN_KEY

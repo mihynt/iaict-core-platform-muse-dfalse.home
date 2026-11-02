@@ -1,0 +1,17 @@
+# Render blueprint (T-013) — free web service; note the free tier sleeps
+# after ~15 minutes idle and takes ~1 minute to wake. Set the two secret
+# env vars in the Render dashboard (they are marked sync: false).
+services:
+  - type: web
+    name: iaict-core-platform
+    runtime: docker
+    dockerfilePath: ./deploy/docker/Dockerfile
+    plan: free
+    region: singapore
+    envVars:
+      - key: APP_ENV
+        value: beta
+      - key: DATABASE_URL
+        sync: false
+      - key: PLATFORM_ADMIN_KEY
+        sync: false

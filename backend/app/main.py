@@ -6,8 +6,11 @@ and tenant-isolated workspaces. M2 adds the production core objects
 (ZON/MPL/FLD/LOT) and the PostgreSQL persistence backend behind the same
 store boundary; the tenant-isolation contract does not change with storage.
 """
+import os
+import pathlib
+
 from fastapi import Depends, FastAPI, HTTPException, Request, status
-from fastapi.responses import Response
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
 from . import identity, platform, production
@@ -69,17 +72,23 @@ async def list_workspaces(tenant: str = Depends(require_tenant)) -> dict:
 
 @app.get("/{path:path}")
 async def frontend(path: str, request: Request):
-    """Serve the web UI from Workers Static Assets when the ASSETS binding
-    is present (Cloudflare deployment). Everywhere else this is a plain
-    404, and API paths never fall through to the asset store. The pattern
-    follows Cloudflare's official FastAPI guide."""
+    """Serve the web UI. On Workers the files come from the Static Assets
+    binding (ASSETS); on a plain host (uvicorn/container) they come from
+    the directory named by IAICT_PUBLIC_DIR when set. Everywhere else
+    this is a plain 404, and API paths never fall through to the assets."""
     if path.startswith(("api/", "docs", "redoc", "openapi", "health")):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
     env = request.scope.get("env")
     assets = getattr(env, "ASSETS", None) if env is not None else None
-    if assets is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
-    asset_url = f"https://assets.local/{path}" if path else "https://assets.local/"
-    resp = await assets.fetch(asset_url)
-    body = await resp.bytes()
-    return Response(content=body, status_code=resp.status, headers=resp.headers)
+    if assets is not None:
+        asset_url = f"https://assets.local/{path}" if path else "https://assets.local/"
+        resp = await assets.fetch(asset_url)
+        body = await resp.bytes()
+        return Response(content=body, status_code=resp.status, headers=resp.headers)
+    public_dir = os.environ.get("IAICT_PUBLIC_DIR")
+    if public_dir:
+        root = pathlib.Path(public_dir).resolve()
+        target = (root / (path or "index.html")).resolve()
+        if target.is_relative_to(root) and target.is_file():
+            return FileResponse(target)
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")

@@ -1,0 +1,22 @@
+# Fly.io blueprint (T-013) — deploy with: fly launch --no-deploy, set the
+# two secrets below, then fly deploy from the repository root.
+#   fly secrets set DATABASE_URL=<supabase-or-neon-direct-connection-string>
+#   fly secrets set PLATFORM_ADMIN_KEY=<a new key the Owner chooses>
+app = "iaict-core-platform"
+primary_region = "sin"
+
+[build]
+  dockerfile = "deploy/docker/Dockerfile"
+
+[env]
+  APP_ENV = "beta"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "off"
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
