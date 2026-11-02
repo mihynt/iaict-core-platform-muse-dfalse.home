@@ -27,3 +27,6 @@ dist/
 *.sqlite3
 data/
 logs/
+
+# Cloudflare Worker build artifact (assembled by deploy/cloudflare/build.sh)
+deploy/cloudflare/src/app/

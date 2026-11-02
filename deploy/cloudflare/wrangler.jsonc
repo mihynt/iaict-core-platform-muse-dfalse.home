@@ -1,0 +1,17 @@
+{
+  // IAICT Core Platform — Cloudflare Python Worker (beta hosting, DEC-006).
+  // Run ./build.sh first so src/ contains entry.py + the app package.
+  "name": "iaict-core-platform",
+  "main": "src/entry.py",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["python_workers"],
+  "vars": {
+    "APP_ENV": "beta"
+  }
+  // Secrets (never commit values):
+  //   wrangler secret put PLATFORM_ADMIN_KEY
+  // Hyperdrive binding — added when the M2 persistence layer lands (T-004):
+  //   "hyperdrive": [
+  //     { "binding": "HYPERDRIVE", "id": "<id returned by: wrangler hyperdrive create>" }
+  //   ]
+}

@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 4 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
+- **Revision:** 5 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,15 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **DEC-006 (Owner, 2026-11-02): beta hosting = Cloudflare Workers Free +
+  Neon PostgreSQL Free via Hyperdrive**, under binding portability rules
+  (no platform-proprietary APIs in the core; standard SQL only; local DB
+  for daily development). Packaging is ready in `deploy/cloudflare/` with
+  the runbook `docs/DEPLOY_CLOUDFLARE_NEON.md`; the adapter wiring was
+  verified locally end-to-end. Actual deployment waits for the Owner's
+  Cloudflare and Neon accounts.
+
 
 - **T-003 (M1 foundation) TECH_DONE:** platform tenant registry with
   lifecycle (ACTIVE/SUSPENDED), registry-aware tenant guard (unknown or

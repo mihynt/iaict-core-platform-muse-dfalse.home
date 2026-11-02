@@ -1,5 +1,5 @@
 {
-  "revision": 4,
+  "revision": 5,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,8 +29,8 @@
     ],
     "current": {
       "active_task": "T-004",
-      "last_completed_step": "T-003 TECH_DONE: M1 foundation implemented and verified (pytest 24/24)",
-      "next_action": "T-004 (M2): data model (ERD) for core production objects (ZON/MPL/FLD/LOT) and persistence layer replacing in-memory stores behind the same API contracts",
+      "last_completed_step": "DEC-006 recorded (beta stack: Cloudflare Workers + Neon); Cloudflare packaging prepared and adapter verified locally through the Worker entrypoint",
+      "next_action": "T-004 (M2): data model (ERD) for core production objects (ZON/MPL/FLD/LOT) and the PostgreSQL persistence layer behind the store boundary, per DEC-006 (local database for daily development; Neon only for shared beta)",
       "blockers": []
     },
     "decisions": [
@@ -63,6 +63,12 @@
         "date": "2026-11-02",
         "classification": "PUBLIC",
         "decision": "Repository created by the Owner as mihynt/iaict-core-platform-muse-dfalse.home (PUBLIC) because the Muse GitHub App lacks repository-creation permission (403). This actual repository is the project's canonical GitHub home; it supersedes the proposed name in DEC-004."
+      },
+      {
+        "id": "DEC-006",
+        "date": "2026-11-02",
+        "classification": "PUBLIC",
+        "decision": "Beta hosting decided by Owner (2026-11-02): Cloudflare Workers Free runs the API and web UI; Neon Free provides PostgreSQL, reached from Workers through Hyperdrive Free; Supabase was evaluated and kept as a fully compatible alternative. Portability rules are binding: (1) only deploy/cloudflare/src/entry.py knows about Cloudflare - no Cloudflare-proprietary APIs (D1/KV/Durable Objects) in core logic; (2) persistence uses standard SQL and widely-available PostgreSQL extensions only, no Neon/Supabase platform extras (their Auth/Storage/Realtime) in the product core; (3) the app stays stateless, all durable state in PostgreSQL; daily development and tests use a local database, Neon is reserved for the shared beta/staging environments (separate Neon project per environment, compute kept at the 0.25 CU minimum). Rationale: the whole beta stack costs 0; PostgreSQL-to-PostgreSQL migration between Neon and Supabase, or out to a VPS/AWS/Azure/GCP running the same ASGI app under uvicorn, stays a pg_dump/pg_restore operation. Deployment packaging prepared in deploy/cloudflare/ with runbook docs/DEPLOY_CLOUDFLARE_NEON.md; actual deployment awaits the Owner's Cloudflare and Neon accounts."
       }
     ],
     "features": [
@@ -224,5 +230,5 @@
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-02T05:52:28Z"
+  "updated_at": "2026-11-02T06:36:37Z"
 }
