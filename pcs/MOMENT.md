@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 6 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
+- **Revision:** 7 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,19 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **T-004 TECH_DONE (2026-11-02):** real SQL. ERD (`docs/DATA_MODEL.md`)
+  grounded in the SRS v2.0 group texts; 12-table PostgreSQL schema with
+  composite tenant foreign keys — a cross-tenant reference is rejected by
+  the database itself (verified by negative INSERT test). `PgStore` sits
+  behind the same store boundary (`DATABASE_URL` selects it; in-memory
+  remains the default; psycopg is lazy-imported so the Workers bundle is
+  unaffected). CRUD APIs for zones / mother-plants / crop-plans /
+  field-events / lots with tenant-scoped code references and audit.
+  Evidence: 31/31 tests pass on a real PostgreSQL 18.6, 30+1 skip in
+  in-memory mode. Next: Neon project (Owner) -> Hyperdrive -> beta redeploy
+  with durable state.
+
 
 - **Beta is LIVE (2026-11-02):** https://iaict-core-platform.iaict-coreplatform-mhy.workers.dev
   — the M1 API running as a Cloudflare Python Worker on the Owner's account.

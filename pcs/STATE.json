@@ -1,5 +1,5 @@
 {
-  "revision": 6,
+  "revision": 7,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,8 +29,8 @@
     ],
     "current": {
       "active_task": "T-004",
-      "last_completed_step": "Beta deployment LIVE and verified on Cloudflare Workers (DEC-006); adapter/config fixes from live verification merged (scope-env fallback, pywrangler layout)",
-      "next_action": "Owner sets their own PLATFORM_ADMIN_KEY as a Worker secret when they want platform administration enabled on the beta. Engineering continues with T-004 (M2): ERD for ZON/MPL/FLD/LOT + PostgreSQL persistence behind the store boundary (local DB for dev, Neon for beta via Hyperdrive).",
+      "last_completed_step": "T-004 TECH_DONE: data model (ERD) + PostgreSQL persistence verified on real PostgreSQL 18.6; production object CRUD (ZON/MPL/FLD/LOT) live in the API",
+      "next_action": "Owner creates the Neon project (Singapore, PG 17) and shares the connection string once; assistant then wires Hyperdrive, redeploys the beta with durable state and re-verifies the multi-request flows live. Product work continues with T-005 (M3a day-90 IoT go/no-go gate).",
       "blockers": []
     },
     "decisions": [
@@ -94,8 +94,9 @@
           "LOT-12",
           "MPL-11"
         ],
-        "status": "PLANNED",
-        "classification": "PUBLIC"
+        "status": "TECH_DONE",
+        "classification": "PUBLIC",
+        "note": "PostgreSQL persistence delivered with T-004 (schema + PgStore behind the store boundary); Neon/Hyperdrive wiring for the shared beta is the remaining deployment step."
       },
       {
         "id": "F-003",
@@ -205,9 +206,10 @@
       },
       {
         "id": "T-004",
-        "status": "IN_PROGRESS",
+        "status": "TECH_DONE",
         "title": "M2: data model (ERD) and core production objects (ZON/MPL/FLD/LOT) with persistence",
-        "classification": "PUBLIC"
+        "classification": "PUBLIC",
+        "note": "Done 2026-11-02. ERD in docs/DATA_MODEL.md grounded in SRS v2.0 group definitions; physical schema backend/app/schema.sql (12 tables). PgStore backend (psycopg, lazy-imported) behind the same store boundary; DATABASE_URL selects it, in-memory stays the default. Composite tenant foreign keys (tenant_id, ref_id) make cross-tenant references impossible at the database level - verified by a rejected cross-tenant INSERT. CRUD APIs for zones, mother-plants, crop-plans, field-events, lots with tenant-scoped code references (400 REF_UNKNOWN / 409 CODE_EXISTS), OPERATOR+ writes, per-create audit. Test evidence: 31/31 pytest pass against a real PostgreSQL 18.6 (binaries via the postgresql-binaries wheel; apt mirrors hang through this VM's proxy), 30 passed + 1 PG-only skip in in-memory mode, including a persistence test proving a second store instance sees API-written data. Schema-ready for later slices: zone boundary versions (ZON-04), plant status history (MPL-04), lot lineage graph (LOT-02). Remaining to production beta: Owner creates the Neon project, then Hyperdrive wiring + redeploy."
       },
       {
         "id": "T-005",
@@ -230,5 +232,5 @@
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-02T07:11:53Z"
+  "updated_at": "2026-11-02T07:41:42Z"
 }

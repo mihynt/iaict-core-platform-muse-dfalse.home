@@ -1,4 +1,10 @@
-import itertools
+import os
+
+# Optional: run the whole suite against a real PostgreSQL backend.
+#   TEST_DATABASE_URL=postgresql://user:pass@host/db pytest
+# The URL is bridged to DATABASE_URL before the app (and its store) imports.
+if os.environ.get("TEST_DATABASE_URL"):
+    os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
 
 import pytest
 from fastapi.testclient import TestClient
@@ -13,11 +19,7 @@ PK = {"X-Platform-Key": PLATFORM_KEY}
 @pytest.fixture(autouse=True)
 def reset_state(monkeypatch):
     monkeypatch.setenv("PLATFORM_ADMIN_KEY", PLATFORM_KEY)
-    store.tenants.clear()
-    store.users.clear()
-    store.workspaces.clear()
-    store.audit.clear()
-    store._seq = itertools.count(1)
+    store.reset()
     yield
 
 

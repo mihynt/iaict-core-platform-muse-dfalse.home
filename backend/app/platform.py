@@ -48,8 +48,7 @@ async def create_tenant(body: TenantIn, actor: str = Depends(require_platform_ke
 
 @router.get("/tenants")
 async def list_tenants(_: str = Depends(require_platform_key)) -> dict:
-    items = [_tenant_view(t) for t in sorted(store.tenants.values(), key=lambda t: t.slug)]
-    return {"items": items}
+    return {"items": [_tenant_view(t) for t in store.list_tenants()]}
 
 
 @router.get("/tenants/{slug}")
@@ -75,4 +74,4 @@ async def set_tenant_status(slug: str, body: TenantStatusIn,
 
 @router.get("/audit")
 async def platform_audit(_: str = Depends(require_platform_key)) -> dict:
-    return {"items": list(store.audit)}
+    return {"items": store.list_audit()}

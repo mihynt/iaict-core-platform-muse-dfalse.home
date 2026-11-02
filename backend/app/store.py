@@ -1,14 +1,21 @@
-"""In-memory stores for the foundation stage.
+"""Storage boundary for the platform.
 
-All state lives in process memory until the M2 persistence work. The store
-keeps the platform's core invariants in one place:
+Two backends implement the same interface, so the API contracts and the
+tenant-isolation rules tested against them do not change with storage:
+- InMemoryStore: process memory; the default for local runs and the
+  Cloudflare Workers beta (no database configured there yet).
+- PgStore (app.pgstore): PostgreSQL, selected when DATABASE_URL is set.
+
+Invariants kept here for every backend:
 - tenants are registered before use (deny by default),
-- users exist only inside a tenant,
+- users and records exist only inside a tenant,
+- object references resolve only inside the caller's tenant,
 - the audit log is append-only.
 """
 from __future__ import annotations
 
 import itertools
+import os
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -34,14 +41,51 @@ class User:
     created_at: str = field(default_factory=utcnow)
 
 
-class Store:
+# Production record kinds (SRS v2.0 groups ZON/MPL/FLD/LOT): reference fields
+# map to the kind they must resolve to *within the same tenant*. Coded kinds
+# carry a tenant-unique `code`; field_events are append-style (no code).
+RECORD_REFS: dict[str, dict[str, str]] = {
+    "zones": {},
+    "mother_plants": {"zone_code": "zones"},
+    "crop_plans": {"zone_code": "zones", "plant_code": "mother_plants"},
+    "field_events": {"plan_code": "crop_plans", "zone_code": "zones"},
+    "lots": {"zone_code": "zones", "plan_code": "crop_plans"},
+}
+CODED_KINDS = {"zones", "mother_plants", "crop_plans", "lots"}
+
+
+class RefUnknown(ValueError):
+    """A record field references an object that does not exist in the tenant."""
+
+    def __init__(self, field_name: str):
+        super().__init__(f"REF_UNKNOWN:{field_name}")
+        self.field_name = field_name
+
+
+class InMemoryStore:
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self.tenants: dict[str, Tenant] = {}
-        self.users: dict[str, dict[str, User]] = {}  # tenant_slug -> {username: User}
-        self.workspaces: dict[str, dict[str, dict]] = {}  # tenant_slug -> {name: record}
+        self.users: dict[str, dict[str, User]] = {}
+        self.workspaces: dict[str, dict[str, dict]] = {}
         self.audit: list[dict] = []
         self._seq = itertools.count(1)
+        # records[kind][tenant] = {"by_code": {code: record}, "events": [record]}
+        self.records: dict[str, dict[str, dict]] = {k: {} for k in RECORD_REFS}
+        self._ids = {k: itertools.count(1) for k in RECORD_REFS}
+
+    def reset(self) -> None:
+        with self._lock:
+            self.tenants.clear()
+            self.users.clear()
+            self.workspaces.clear()
+            self.audit.clear()
+            self._seq = itertools.count(1)
+            self.records = {k: {} for k in RECORD_REFS}
+            self._ids = {k: itertools.count(1) for k in RECORD_REFS}
+
+    def _bucket(self, kind: str, tenant: str) -> dict:
+        return self.records[kind].setdefault(tenant, {"by_code": {}, "events": []})
 
     # ---- audit ---------------------------------------------------------
     def record_audit(self, *, scope: str, tenant_id: str | None, actor: str,
@@ -60,6 +104,9 @@ class Store:
             self.audit.append(entry)
             return entry
 
+    def list_audit(self) -> list[dict]:
+        return list(self.audit)
+
     def audit_for_tenant(self, tenant_id: str) -> list[dict]:
         return [e for e in self.audit if e["tenant_id"] == tenant_id]
 
@@ -76,6 +123,9 @@ class Store:
 
     def get_tenant(self, slug: str) -> Tenant | None:
         return self.tenants.get(slug)
+
+    def list_tenants(self) -> list[Tenant]:
+        return sorted(self.tenants.values(), key=lambda t: t.slug)
 
     def set_tenant_status(self, slug: str, status: str) -> Tenant | None:
         with self._lock:
@@ -104,5 +154,59 @@ class Store:
     def tenant_user_count(self, tenant: str) -> int:
         return len(self.users.get(tenant, {}))
 
+    # ---- workspaces ------------------------------------------------------
+    def create_workspace(self, tenant: str, name: str) -> bool:
+        with self._lock:
+            bucket = self.workspaces.setdefault(tenant, {})
+            if name in bucket:
+                return False
+            bucket[name] = {"name": name}
+            return True
 
-store = Store()
+    def list_workspace_names(self, tenant: str) -> list[str]:
+        return sorted(self.workspaces.get(tenant, {}).keys())
+
+    # ---- production records ---------------------------------------------
+    def create_record(self, tenant: str, kind: str, fields: dict) -> dict | None:
+        """Insert a record. Returns None on a duplicate code within the
+        tenant; raises RefUnknown for a reference that does not resolve."""
+        refs = RECORD_REFS[kind]
+        with self._lock:
+            bucket = self._bucket(kind, tenant)
+            for ref_field, ref_kind in refs.items():
+                code = fields.get(ref_field)
+                if code is not None and code not in self._bucket(ref_kind, tenant)["by_code"]:
+                    raise RefUnknown(ref_field)
+            record = {"id": next(self._ids[kind]), "tenant_id": tenant, **fields,
+                      "created_at": utcnow(), "updated_at": utcnow()}
+            if kind in CODED_KINDS:
+                if fields.get("code") in bucket["by_code"]:
+                    return None
+                bucket["by_code"][fields["code"]] = record
+            else:
+                bucket["events"].append(record)
+            return record
+
+    def list_records(self, tenant: str, kind: str) -> list[dict]:
+        bucket = self._bucket(kind, tenant)
+        if kind in CODED_KINDS:
+            return [bucket["by_code"][k] for k in sorted(bucket["by_code"])]
+        return sorted(bucket["events"], key=lambda r: r["id"])
+
+    def get_record_by_code(self, tenant: str, kind: str, code: str) -> dict | None:
+        return self._bucket(kind, tenant)["by_code"].get(code)
+
+
+def make_store():
+    """DATABASE_URL set -> PostgreSQL backend; otherwise in-memory."""
+    dsn = os.environ.get("DATABASE_URL")
+    if dsn:
+        from .pgstore import PgStore  # lazy: keeps psycopg out of serverless bundles
+        return PgStore(dsn)
+    return InMemoryStore()
+
+
+store = make_store()
+
+# Backwards-compatible alias (the in-memory backend was the original Store).
+Store = InMemoryStore
