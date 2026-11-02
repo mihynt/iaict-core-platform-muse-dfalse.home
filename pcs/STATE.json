@@ -1,5 +1,5 @@
 {
-  "revision": 18,
+  "revision": 19,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -28,9 +28,9 @@
       }
     ],
     "current": {
-      "active_task": "T-013",
-      "last_completed_step": "DEC-007: beta migrated to Supabase and re-measured - database leg exonerated; wrangler tail pins the intermittency on the Python Workers runtime (hang cancellations + CPU). T-012 TECH_DONE (deployed, partial outcome). T-013 plain-host packaging built and smoke-proven locally (list calls ~2ms vs 5-10s on Workers).",
-      "next_action": "Owner chooses the plain host for T-013 (Fly.io always-on vs Render free) and creates the account; then deploy the prepared Docker image, point it at Supabase via DATABASE_URL, set a fresh PLATFORM_ADMIN_KEY, verify live (probe + browser test), and switch the canonical beta URL. Cloudflare Workers deployment stays as fallback until then. Afterwards: Owner UI feedback, then T-005 (M3a day-90 IoT gate).",
+      "active_task": "T-014",
+      "last_completed_step": "D1 spike measured: 68/68 requests ok, cpuTime median 26ms vs ~1,241ms on the Postgres path - the D1 route is evidence-backed; awaiting the Owner's adoption decision (T-014 vs T-013).",
+      "next_action": "Owner chooses: adopt D1 (T-014: async store refactor + SQLite schema port + DEC-006 amendment, beta stays on Cloudflare free at the same URL) or relocate the runtime to a plain host (T-013, packaging ready). Then verify live (probe + browser test) and continue to Owner UI feedback and T-005.",
       "blockers": []
     },
     "decisions": [
@@ -278,9 +278,16 @@
         "status": "IN_PROGRESS",
         "classification": "PUBLIC",
         "evidence": "Diagnosis: DEC-007 (wrangler tail hang-cancellations + exceededCpu; ~1.2-1.9s CPU per successful request). Local preparation complete 2026-11-02: the app now serves the web UI itself from IAICT_PUBLIC_DIR when no Workers ASSETS binding exists (backend/app/main.py; Workers behavior unchanged); deploy/docker/Dockerfile packages the same app + UI; fly.toml and render.yaml blueprints prepared. Regression suite green in all three store modes after the change (30+1 skip / 31/31 / 31/31). Plain-host smoke proof on this machine (uvicorn + PgStore on local PostgreSQL): UI 200 in 31ms, tenant/bootstrap/zone creates 5-6ms, list calls ~2ms each, 5/5 - versus 5-10s and ~40% success on Workers with identical application code. Remaining: Owner chooses the host (Fly.io always-on ~$2-5/mo vs Render free with sleep-after-idle), creates the account, and sets DATABASE_URL + a fresh PLATFORM_ADMIN_KEY there."
+      },
+      {
+        "id": "T-014",
+        "title": "Adopt D1 as the Workers-side store (async store refactor + SQLite dialect migration), per spike evidence",
+        "status": "PLANNED",
+        "classification": "PUBLIC",
+        "evidence": "SPIKE MEASURED 2026-11-02 (separate throwaway Worker 'iaict-d1-spike', same Cloudflare account/runtime, D1 database id 956d373b-5f72-4413-bff0-af5513ded7ee): the /list pattern mirrors the real read path (tenant-guard lookup + list query, two sequential awaited D1 queries, beta-pilot-equivalent data). Results: sequential 20/20 and dashboard-parallel 48/48 succeeded (Postgres-via-Hyperdrive baseline: 8/20 and 19/48); wrangler tail 68/68 outcomes 'ok', zero hang-cancellations, zero exceededCpu; cpuTime median 26ms / max 68ms (baseline: ~1,241ms average, 1,902ms max); server wallTime median 127ms (baseline ~5,097ms); client-observed median ~0.9s including network and cold isolates. Conclusion: the D1 leg removes the failure classes entirely on the same free Python Workers runtime. NOT yet proven: write load, the FastAPI framework overhead on top, D1 foreign-key enforcement (a load-bearing property verified on PostgreSQL), and the real dashboard pattern. Integration cost if adopted: the store boundary must become async (D1 has no synchronous API - the current sync pg8000 store cannot call it), the 12-table schema must be ported to the SQLite dialect, and DEC-006 must be amended (D1 is a Cloudflare-proprietary API; the PostgreSQL stores and the Supabase dataset stay in place as the documented exit path). Spike code lives outside the repo at ~/workspace/projects/iaict-d1-spike (not committed). Awaiting the Owner's choice between T-014 (D1 adoption), T-013 (plain-host relocation) or deferring."
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-02T15:35:39Z"
+  "updated_at": "2026-11-02T15:48:19Z"
 }

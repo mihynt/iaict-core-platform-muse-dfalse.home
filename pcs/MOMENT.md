@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 18 · **Updated:** 2026-11-02T15:35:39Z · **Phase:** DISCOVERY
+- **Revision:** 19 · **Updated:** 2026-11-02T15:48:19Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,17 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **D1 spike measured — the failure classes disappear (2026-11-02,
+  T-014 candidate):** a throwaway Python Worker on the same account
+  serving the real read pattern (tenant lookup + list query) from D1
+  scored sequential **20/20** and parallel **48/48** (Postgres path:
+  8/20 and 19/48); tail showed 68/68 ok, cpuTime median **26ms** vs
+  ~1,241ms, no hang-cancellations, no exceededCpu. D1 is therefore
+  evidence-backed as a fix on Cloudflare free — at the price of an
+  async store refactor, a SQLite schema port and a DEC-006 amendment
+  (PostgreSQL stores + Supabase stay as the exit). Owner decision
+  pending between T-014 (D1) and T-013 (plain host).
 
 - **Database exonerated; runtime relocation prepared (2026-11-02,
   DEC-007 / T-013):** the beta now runs on Supabase (Singapore) via a
@@ -192,7 +203,6 @@
 
 ## Next action
 
-Owner chooses the plain host for T-013 (Fly.io always-on vs Render
-free) and creates the account; deploy the prepared Docker image
-against Supabase, verify live, switch the canonical URL. Then Owner
-UI feedback and T-005 (M3a day-90 IoT gate).
+Owner chooses T-014 (adopt D1 on Workers) or T-013 (plain host).
+Then verify the chosen path live (probe + browser test), Owner UI
+feedback, and T-005 (M3a day-90 IoT gate).
