@@ -1,8 +1,8 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 2 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
+- **Revision:** 3 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
-- **Target repository:** `mihynt/iaict-core-platform` (PUBLIC, Owner-selected 2026-11-02) — creation in progress
+- **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
 ## Where the project stands
 
@@ -21,11 +21,15 @@
 
 ## Status note
 
-- GitHub is now connected; identity verified as **mihynt** (the account is
+- GitHub is connected; identity verified as **mihynt** (the account is
   `mihynt`, not `dungnt-mhy` — corrected at STATE revision 2, DEC-004).
+- The Owner created the repository as
+  `mihynt/iaict-core-platform-muse-dfalse.home` (the Muse app has no
+  repository-creation permission). The initial checkpoint was pushed as
+  commit `2b354557` and verified: HEAD and `pcs/STATE.json` revision 2 read
+  back from GitHub match this project.
 
 ## Next action
 
-Create the public repository `mihynt/iaict-core-platform`, push this
-checkpoint in one snapshot commit, re-read HEAD and STATE revision to
-verify, then start T-003 (M1 foundation).
+T-003 (M1 foundation): tenant registry, identity/access skeleton and audit
+log on the existing tenant-isolation contract, with tests.

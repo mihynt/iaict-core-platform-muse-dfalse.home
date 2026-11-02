@@ -1,5 +1,5 @@
 {
-  "revision": 2,
+  "revision": 3,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -19,12 +19,18 @@
         "published": false,
         "ref": "ma-tran-truy-vet-muc-ma-SRS-v2.0",
         "classification": "PUBLIC"
+      },
+      {
+        "name": "Project GitHub repository",
+        "classification": "PUBLIC",
+        "ref": "https://github.com/mihynt/iaict-core-platform-muse-dfalse.home",
+        "published": true
       }
     ],
     "current": {
-      "active_task": "T-001",
-      "last_completed_step": "GitHub connected and identity verified as mihynt; local checkpoint at STATE revision 2 ready to push",
-      "next_action": "Create public repository mihynt/iaict-core-platform, push this checkpoint in one snapshot commit, re-read HEAD and pcs/STATE.json to verify",
+      "active_task": "T-003",
+      "last_completed_step": "T-001 TECH_DONE: repository live, initial checkpoint (STATE rev 2) pushed as commit 2b354557 and verified by read-back",
+      "next_action": "Start T-003 (M1 foundation): tenant registry, identity/access skeleton and audit log on the existing tenant-isolation contract, with tests",
       "blockers": []
     },
     "decisions": [
@@ -51,6 +57,12 @@
         "date": "2026-11-02",
         "classification": "PUBLIC",
         "decision": "Correction by Owner (2026-11-02): the connected GitHub account is mihynt (verified via get_me, account id 351337042), not dungnt-mhy. Repository target corrected to mihynt/iaict-core-platform. DEC-001 is otherwise unchanged: visibility PUBLIC, full SOW/SRS not published."
+      },
+      {
+        "id": "DEC-005",
+        "date": "2026-11-02",
+        "classification": "PUBLIC",
+        "decision": "Repository created by the Owner as mihynt/iaict-core-platform-muse-dfalse.home (PUBLIC) because the Muse GitHub App lacks repository-creation permission (403). This actual repository is the project's canonical GitHub home; it supersedes the proposed name in DEC-004."
       }
     ],
     "features": [
@@ -100,9 +112,9 @@
     "risks": [
       {
         "id": "R-001",
-        "mitigation": "Push immediately after connection, then re-read branch HEAD and STATE revision to verify the checkpoint.",
-        "risk": "Repository target was initially recorded under the wrong account (dungnt-mhy); corrected at revision 2 after Owner clarification and get_me verification.",
-        "classification": "PUBLIC"
+        "classification": "PUBLIC",
+        "risk": "GitHub persistence was blocked until the connection and repository existed (resolved 2026-11-02: initial checkpoint pushed and verified on GitHub).",
+        "mitigation": "Every future checkpoint re-reads HEAD and STATE revision after pushing; sync provenance kept in the local snapshot record."
       },
       {
         "id": "R-002",
@@ -136,9 +148,10 @@
     "tasks": [
       {
         "id": "T-001",
-        "status": "IN_PROGRESS",
-        "title": "Create public GitHub repository mihynt/iaict-core-platform and push the initial checkpoint",
-        "classification": "PUBLIC"
+        "status": "TECH_DONE",
+        "title": "Create public GitHub repository for the project and push the initial checkpoint",
+        "classification": "PUBLIC",
+        "evidence": "Repository mihynt/iaict-core-platform-muse-dfalse.home (created by Owner); initial snapshot commit 2b354557f0b4c54eae4740bfb04943ee03cbb836 pushed 2026-11-02; HEAD and pcs/STATE.json revision 2 read back and verified from GitHub"
       },
       {
         "evidence": "Local git repository with initial commit; backend pytest 7/7 passed (2026-11-02); pcs_solo.py verify result recorded in pcs/MOMENT.md",
@@ -149,7 +162,7 @@
       },
       {
         "id": "T-003",
-        "status": "PLANNED",
+        "status": "IN_PROGRESS",
         "title": "M1 foundation: tenancy, identity/access and audit skeleton (SRS TEN/ADM groups, SEC controls)",
         "classification": "PUBLIC"
       },
@@ -180,5 +193,5 @@
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-02T05:37:23Z"
+  "updated_at": "2026-11-02T05:47:10Z"
 }
