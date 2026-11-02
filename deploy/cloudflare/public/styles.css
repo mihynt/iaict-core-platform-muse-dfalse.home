@@ -185,6 +185,24 @@ a{color:var(--brand)}
 .setup-card input:focus{border-color:var(--leaf); background:#fff}
 .setup-card .btn{margin-top:20px}
 .setup-note{margin-top:12px !important; font-size:12px !important; color:var(--muted) !important}
+.setup-card .banner{margin-top:12px; margin-bottom:2px; text-align:left}
+.setup-accounts{margin-top:14px; border:1.5px solid var(--line); border-radius:16px; padding:10px; background:var(--surface-2)}
+.setup-accounts-title{font-size:12.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin:2px 4px 8px}
+.acct-card{
+  width:100%; display:flex; align-items:center; gap:11px; text-align:left; border:1px solid var(--line);
+  background:var(--surface); border-radius:13px; padding:10px 12px; margin-top:8px; min-height:56px;
+}
+.acct-card:active{transform:scale(.985)}
+.acct-card .avatar{
+  width:40px; height:40px; flex:none; border-radius:12px; display:grid; place-items:center;
+  background:var(--brand-soft); color:var(--brand-deep); font-weight:800; font-size:16px;
+}
+.acct-card .who{flex:1; min-width:0}
+.acct-card .who b{display:block; font-size:14.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.acct-card .who span{color:var(--muted); font-size:12.5px}
+.acct-note{font-size:13px; color:var(--ink-2); padding:8px 4px 2px}
+.check{display:flex !important; align-items:center; gap:10px; font-weight:600 !important; cursor:pointer}
+.check input{width:21px !important; height:21px; margin:0 !important; min-height:0 !important; accent-color:var(--brand); flex:none}
 
 /* ---------- feedback ---------- */
 .toasts{position:fixed; left:16px; right:16px; bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 14px); z-index:70; display:flex; flex-direction:column; gap:8px; pointer-events:none}

@@ -61,16 +61,26 @@
   <div class="setup-card">
     <div class="setup-hero">🌱</div>
     <h2>Kết nối không gian làm việc</h2>
-    <p>Nhập mã đơn vị (tenant) và tên người dùng của bạn để bắt đầu. Khóa quản trị platform chỉ cần khi quản lý danh sách tenant.</p>
+    <p>Nhập mã đơn vị (tenant), rồi chọn tài khoản của bạn trong danh sách để vào ngay — không cần gõ tay tên người dùng. Khóa quản trị platform chỉ cần khi quản lý danh sách tenant.</p>
+    <div class="banner red" id="setupError" hidden></div>
     <form id="setupForm" autocomplete="off">
       <label>Mã tenant
         <input name="tenant" required placeholder="vd: beta-pilot" autocapitalize="none">
       </label>
+      <button class="btn btn-ghost btn-block" type="button" id="loadAccounts">👥 Xem tài khoản của tenant này</button>
+      <div class="setup-accounts" id="accountBox" hidden>
+        <div class="setup-accounts-title">Chọn tài khoản để đăng nhập</div>
+        <div id="accountList"></div>
+      </div>
       <label>Tên người dùng (actor)
         <input name="actor" required placeholder="vd: admin" autocapitalize="none">
       </label>
       <label>Khóa platform (tùy chọn)
         <input name="pkey" type="password" placeholder="Chỉ khi bạn là quản trị platform">
+      </label>
+      <label class="check">
+        <input type="checkbox" name="remember" checked>
+        <span>Ghi nhớ thông tin trên thiết bị này</span>
       </label>
       <button class="btn btn-primary btn-block" type="submit">Vào không gian làm việc</button>
     </form>

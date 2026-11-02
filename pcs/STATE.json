@@ -1,5 +1,5 @@
 {
-  "revision": 12,
+  "revision": 13,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -30,7 +30,7 @@
     "current": {
       "active_task": "T-004",
       "last_completed_step": "DEC-006 fully live: beta is durable on Neon via Hyperdrive (storage: postgresql-hyperdrive), multi-request flows verified end-to-end on the live URL",
-      "next_action": "Owner tries the live UI (tenant beta-pilot, actor admin) and gives feedback. Product stages after that: T-005 (M3a, day-90 IoT go/no-go gate), then T-006/T-007.",
+      "next_action": "Deploy the T-009 login fix once the Owner provides the Cloudflare API token, verify the login flow live, then mark T-009 TECH_DONE. After Owner feedback on the UI: T-005 (M3a IoT gate).",
       "blockers": []
     },
     "decisions": [
@@ -240,9 +240,15 @@
         "title": "Web UI for the beta (mobile-first, served by the Worker)",
         "status": "TECH_DONE",
         "evidence": "Built 2026-11-02: deploy/cloudflare/public/{index.html,styles.css,app.js} - a vanilla SPA (no build step) covering dashboard, zones, mother plants, crop plans + field events, lots, users + audit, platform tenant administration (uses the Owner's own platform key) and connection settings; Vietnamese UI, bottom tab bar + bottom-sheet forms on mobile, sidebar + grid on desktop. Serving: wrangler.jsonc assets block (ASSETS binding, run_worker_first) plus a guarded catch-all route in backend/app/main.py that proxies non-API paths to the assets binding on Workers and returns plain JSON 404 elsewhere (local behavior unchanged, root still 404 without ASSETS). Regression: app.js passes node --check; backend suite green in all three store modes after the change (30 passed + 1 skip in-memory; 31/31 psycopg; 31/31 pg8000). Deployment to the beta is PENDING: wrangler needs the CLOUDFLARE_API_TOKEN, which is only ever held transiently per session and was lost when the environment restarted; the Owner has been asked to re-issue it. DEPLOYED AND VERIFIED LIVE 2026-11-02: the Owner re-issued a Cloudflare API token (used transiently for this deploy only, never stored); pywrangler uploaded the 3 UI assets and the new Worker version. Live checks at https://iaict-core-platform.mihy.workers.dev: GET / -> 200 text/html (the UI, 3310 bytes, correct Vietnamese title), /styles.css -> 200 text/css, /app.js -> 200 text/javascript, /health unchanged (storage postgresql-hyperdrive), beta-pilot real data still served by the API, unknown API paths still JSON 404, /docs still 200. The root URL no longer returns {'detail':'Not Found'}. Note on terminology recorded for the Owner: 'static' describes only how the UI shell files are delivered; every screen reads/writes live API data - nothing is hard-coded."
+      },
+      {
+        "id": "T-009",
+        "title": "Login support: account picker on the sign-in screen + remember-me",
+        "status": "IN_PROGRESS",
+        "evidence": "Owner reported 2026-11-02 they could not sign in with the type-it-yourself tenant+actor form. Fix built the same day (UI only, no backend change needed): verified in backend/app/identity.py that GET /users requires only the tenant guard, and verified live that GET /api/v1/users with only the beta-pilot tenant header returns its account list (admin / 'Pilot Admin' / TENANT_ADMIN). Login screen now: (1) loads and shows the tenant's accounts as tappable cards (tap = sign in with that account), auto-loads on tenant field change, with a bootstrap note when a tenant has no users yet; (2) validates tenant + actor membership BEFORE entering and shows the translated error on the login card itself; (3) normalizes the tenant slug (trim + lowercase); (4) 'remember me' checkbox - localStorage when on, sessionStorage when off; (5) all storage access is defensive with an in-memory fallback so a browser blocking storage can no longer kill the login silently. Checks: app.js passes node --check; backend suite still green (30 passed + 1 skip in-memory, 31/31 psycopg; backend code untouched). Deployment pending the Owner's Cloudflare API token (transient per deploy, never stored)."
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-02T10:24:51Z"
+  "updated_at": "2026-11-02T10:56:18Z"
 }

@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 12 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
+- **Revision:** 13 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,15 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **Login fix built (2026-11-02):** the Owner could not sign in, so the
+  sign-in screen now lists the tenant's accounts as tappable cards
+  (verified live: beta-pilot returns admin / Pilot Admin), validates
+  before entering with inline errors, normalizes the tenant slug, adds a
+  remember-me checkbox (localStorage vs sessionStorage) and defensive
+  storage with an in-memory fallback. UI-only change; backend tests
+  green. Deploy pending the Owner's API token.
+
 
 - **Web UI LIVE (2026-11-02):** deployed with a fresh Owner-issued API
   token (transient use only). Verified at the canonical URL: `/` serves

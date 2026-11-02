@@ -44,24 +44,48 @@ class ApiError extends Error {
   }
 }
 
+/* Connection info lives in localStorage when "remember me" is on, and in
+   sessionStorage otherwise. All access is defensive: if the browser blocks
+   storage (private mode etc.), an in-memory fallback keeps the app usable
+   for the session instead of dying silently on the login screen. */
+const memFallback = {};
+function safeArea(area) {
+  try { area.setItem("__iaict_t", "1"); area.removeItem("__iaict_t"); return area; }
+  catch { return null; }
+}
+const LS = safeArea(window.localStorage);
+const SS = safeArea(window.sessionStorage);
+function areaGet(area, k) { try { return area ? area.getItem(k) : null; } catch { return null; } }
+function areaSet(area, k, v) {
+  try { if (area) { area.setItem(k, v); return; } } catch { /* fall through */ }
+  memFallback[k] = v;
+}
+function areaDel(area, k) { try { if (area) area.removeItem(k); } catch { /* ignore */ } delete memFallback[k]; }
+const LS_KEYS = ["iaict.tenant", "iaict.actor", "iaict.pkey"];
 const store = {
-  get tenant() { return localStorage.getItem("iaict.tenant") || ""; },
-  get actor() { return localStorage.getItem("iaict.actor") || ""; },
-  get pkey() { return localStorage.getItem("iaict.pkey") || ""; },
-  save(tenant, actor, pkey) {
-    localStorage.setItem("iaict.tenant", tenant);
-    localStorage.setItem("iaict.actor", actor);
-    if (pkey) localStorage.setItem("iaict.pkey", pkey); else localStorage.removeItem("iaict.pkey");
+  _get(k) { return areaGet(LS, k) ?? areaGet(SS, k) ?? memFallback[k] ?? ""; },
+  get tenant() { return this._get("iaict.tenant"); },
+  get actor() { return this._get("iaict.actor"); },
+  get pkey() { return this._get("iaict.pkey"); },
+  remembered() { return areaGet(LS, "iaict.tenant") !== null; },
+  save(tenant, actor, pkey, remember = true) {
+    this.clear();
+    const area = remember ? LS : SS;
+    areaSet(area, "iaict.tenant", tenant);
+    areaSet(area, "iaict.actor", actor);
+    if (pkey) areaSet(area, "iaict.pkey", pkey);
   },
-  clear() { ["iaict.tenant", "iaict.actor", "iaict.pkey"].forEach((k) => localStorage.removeItem(k)); },
+  clear() { LS_KEYS.forEach((k) => { areaDel(LS, k); areaDel(SS, k); }); },
 };
 
-async function api(path, { method = "GET", body, platform = false } = {}) {
+async function api(path, { method = "GET", body, platform = false, tenant, actor } = {}) {
   const headers = { "Content-Type": "application/json" };
   if (platform) headers["X-Platform-Key"] = store.pkey;
   else {
-    if (store.tenant) headers["X-Tenant-Id"] = store.tenant;
-    if (store.actor) headers["X-Actor"] = store.actor;
+    const t = tenant ?? store.tenant;
+    const a = actor ?? store.actor;
+    if (t) headers["X-Tenant-Id"] = t;
+    if (a) headers["X-Actor"] = a;
   }
   let res;
   try {
@@ -555,7 +579,8 @@ VIEWS.settings = () => {
   $("#settingsForm").addEventListener("submit", (e) => {
     e.preventDefault();
     const fd = new FormData(e.target);
-    store.save(String(fd.get("tenant")).trim(), String(fd.get("actor")).trim(), String(fd.get("pkey")).trim());
+    store.save(normTenant(fd.get("tenant")), String(fd.get("actor")).trim(),
+      String(fd.get("pkey")).trim(), store.remembered());
     state.cache = {};
     toast("Đã lưu cài đặt kết nối.");
     navigate("dashboard", true);
@@ -563,13 +588,83 @@ VIEWS.settings = () => {
   $("#disconnect").onclick = () => { store.clear(); location.reload(); };
 };
 
-/* ---------------- boot ---------------- */
-$("#setupForm").addEventListener("submit", (e) => {
+/* ---------------- boot & login ---------------- */
+const normTenant = (v) => String(v || "").trim().toLowerCase();
+let setupUsers = null; // users of the tenant currently typed on the login form
+let setupUsersFor = "";
+
+function setupFail(msg) {
+  const box = $("#setupError");
+  box.textContent = "⚠️ " + msg;
+  box.hidden = false;
+}
+function setupClearError() { $("#setupError").hidden = true; }
+
+async function loadAccounts() {
+  const form = $("#setupForm");
+  const tenant = normTenant(form.elements.tenant.value);
+  form.elements.tenant.value = tenant;
+  setupClearError();
+  if (!tenant) { setupFail("Hãy nhập mã tenant trước (vd: beta-pilot)."); return; }
+  const btn = $("#loadAccounts");
+  btn.disabled = true; btn.textContent = "⏳ Đang tải tài khoản…";
+  try {
+    const data = await api("/api/v1/users", { tenant, actor: "" });
+    setupUsers = data.items; setupUsersFor = tenant;
+    const box = $("#accountBox");
+    box.hidden = false;
+    $("#accountList").innerHTML = setupUsers.length ? setupUsers.map((u) => `
+      <button type="button" class="acct-card" data-user="${esc(u.username)}">
+        <span class="avatar">${esc((u.display_name || u.username).trim().charAt(0).toUpperCase())}</span>
+        <span class="who"><b>${esc(u.display_name)}</b><span>@${esc(u.username)}</span></span>
+        <span class="chip ${u.role === "TENANT_ADMIN" ? "violet" : u.role === "OPERATOR" ? "" : "grey"}">${esc(ROLE_VI[u.role] || u.role)}</span>
+      </button>`).join("")
+      : `<div class="acct-note">Tenant này chưa có tài khoản nào. Người đầu tiên đăng nhập và tạo tài khoản sẽ trở thành Quản trị tenant (bootstrap).</div>`;
+    $("#accountList").querySelectorAll("[data-user]").forEach((b) => b.onclick = () => {
+      form.elements.actor.value = b.dataset.user;
+      if (form.requestSubmit) form.requestSubmit();
+      else form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+    });
+  } catch (err) {
+    setupUsers = null; setupUsersFor = "";
+    $("#accountBox").hidden = true;
+    setupFail(err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = "👥 Xem tài khoản của tenant này";
+  }
+}
+$("#loadAccounts").addEventListener("click", loadAccounts);
+$("#setupForm").elements.tenant.addEventListener("change", () => {
+  if (normTenant($("#setupForm").elements.tenant.value)) loadAccounts();
+});
+
+$("#setupForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const fd = new FormData(e.target);
-  store.save(String(fd.get("tenant")).trim(), String(fd.get("actor")).trim(), String(fd.get("pkey")).trim());
-  $("#setup").hidden = true;
-  boot();
+  const form = e.target;
+  const fd = new FormData(form);
+  const tenant = normTenant(fd.get("tenant"));
+  const actor = String(fd.get("actor") || "").trim();
+  const pkey = String(fd.get("pkey") || "").trim();
+  const remember = fd.get("remember") !== null;
+  setupClearError();
+  if (!tenant || !actor) { setupFail("Cần nhập đủ mã tenant và tên người dùng, hoặc chạm vào một tài khoản trong danh sách."); return; }
+  const btn = form.querySelector('[type="submit"]');
+  btn.disabled = true; btn.textContent = "Đang kết nối…";
+  try {
+    if (setupUsersFor !== tenant) {
+      const data = await api("/api/v1/users", { tenant, actor: "" });
+      setupUsers = data.items; setupUsersFor = tenant;
+    }
+    if (setupUsers.length && !setupUsers.some((u) => u.username === actor)) {
+      throw new ApiError("ACTOR_UNKNOWN");
+    }
+    store.save(tenant, actor, pkey, remember);
+    $("#setup").hidden = true;
+    boot();
+  } catch (err) {
+    setupFail(err.message);
+    btn.disabled = false; btn.textContent = "Vào không gian làm việc";
+  }
 });
 async function boot() {
   paintNav();
