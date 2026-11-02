@@ -69,7 +69,7 @@ layout follows Cloudflare's official FastAPI guide — entrypoint at
 `dev` dependency group, `requires-python >= 3.13`.
 
 First live deployment (2026-11-02):
-`https://iaict-core-platform.iaict-coreplatform-mhy.workers.dev`
+`https://iaict-core-platform.mihy.workers.dev`
 — verified: `/health` 200 (`env: beta`), deny-by-default responses
 (400 TENANT_REQUIRED, 403 TENANT_UNKNOWN, 503 PLATFORM_DISABLED), and
 tenant creation (201) with a platform key held as a Worker secret.

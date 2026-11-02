@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 9 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
+- **Revision:** 10 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,14 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **Beta address renamed (2026-11-02):** the Owner changed the account
+  subdomain — canonical URL is now
+  https://iaict-core-platform.mihy.workers.dev (old address no longer
+  resolves; data in Neon untouched, beta-pilot records verified at the
+  new address). The Owner also set their own `PLATFORM_ADMIN_KEY` secret
+  (active: wrong key -> 401).
+
 
 - **Beta is DURABLE (2026-11-02):** the Owner created the Hyperdrive
   config `iaict-neon` in the dashboard; the binding is live and `/health`
