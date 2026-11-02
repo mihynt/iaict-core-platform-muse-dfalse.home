@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 8 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
+- **Revision:** 9 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,19 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **Beta is DURABLE (2026-11-02):** the Owner created the Hyperdrive
+  config `iaict-neon` in the dashboard; the binding is live and `/health`
+  reports `storage: postgresql-hyperdrive`. Verified end-to-end on the
+  live URL with a temporary platform secret (deleted after): tenant
+  `beta-pilot` created in one request, then admin bootstrap, zone Z-01,
+  plant MPL-001 and plan PLAN-2026 in later requests — all persisted in
+  Neon and readable back, audit trail complete. One transient 500 led to
+  switching WorkerPgStore to a fresh connection per operation
+  (Cloudflare's prescribed pattern); repeated checks are clean. The
+  in-memory era of the beta is over; next product stage is T-005 (M3a
+  day-90 IoT gate).
+
 
 - **Neon wired, one dashboard step left (2026-11-02):** the Owner's Neon
   project (Singapore, PG 18.6) is verified — schema applied (12 tables),

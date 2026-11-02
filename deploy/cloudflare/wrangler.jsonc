@@ -7,15 +7,14 @@
   "compatibility_flags": ["python_workers"],
   "vars": {
     "APP_ENV": "beta"
-  }
+  },
+  // Hyperdrive config "iaict-neon" (created by the Owner in the dashboard
+  // on 2026-11-02; direct Neon connection string, caching disabled).
+  // The store layer (app/workerstore.py, pg8000) binds it from the first
+  // request's env; /health reports storage "postgresql-hyperdrive".
+  "hyperdrive": [
+    { "binding": "HYPERDRIVE", "id": "3cdbf0e61cfc4a078ea1f4790200a65f" }
+  ]
   // Secrets (never commit values):
   //   wrangler secret put PLATFORM_ADMIN_KEY
-  // Hyperdrive binding — the store layer (app/workerstore.py, pg8000) is
-  // ready and selected by src/entry.py; activate by creating the config
-  // (dashboard: Workers & Pages -> Hyperdrive -> Create, name iaict-neon,
-  // direct Neon connection string) and uncommenting with its id:
-  //   "hyperdrive": [
-  //     { "binding": "HYPERDRIVE", "id": "<hyperdrive config id>" }
-  //   ]
-  // Until then /health reports storage "memory" (the in-memory fallback).
 }

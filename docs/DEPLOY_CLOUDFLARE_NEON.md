@@ -90,12 +90,17 @@ curl -X POST https://iaict-core-platform.<your-subdomain>.workers.dev/api/v1/pla
 
 ## Known limits at this stage
 
-- Until T-004 lands the PostgreSQL persistence layer, the API keeps data in
-  process memory. On Workers that state is per-isolate and is **not shared
-  between requests** — verified live on 2026-11-02: a tenant created in one
-  request was already unknown to the next one. A smoke deploy therefore
-  proves reachability and per-request behavior only. Do not put real pilot
-  data on it yet; multi-request flows start working when persistence lands.
+- Persistence status (2026-11-02): **durable**. The Hyperdrive config
+  `iaict-neon` (id in `wrangler.jsonc`) points at the Neon project; the
+  Worker store backend (`app/workerstore.py`, pg8000) binds it from the
+  first request's env and `/health` reports `storage:
+  postgresql-hyperdrive`. Multi-request flows were verified live end to
+  end, and the seed records (tenant `beta-pilot`, zone Z-01, plant
+  MPL-001, plan PLAN-2026) are stored in Neon. WorkerPgStore opens a
+  fresh connection per operation — the pattern Cloudflare prescribes for
+  Hyperdrive; a cached per-isolate connection produced one transient 500
+  during verification. The in-memory fallback remains only for runs
+  without the binding, and `/health` always says which mode is active.
 - Workers Free allows 100,000 requests/day; Hyperdrive Free 100,000
   queries/day — ample for beta, monitored in the Cloudflare dashboard.
 - Neon Free: 100 CU-hours/month per project. At the 0.25 CU minimum that is
