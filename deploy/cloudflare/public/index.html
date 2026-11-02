@@ -78,6 +78,11 @@
       <label>Khóa platform (tùy chọn)
         <input name="pkey" type="password" placeholder="Chỉ khi bạn là quản trị platform">
       </label>
+      <button class="btn btn-ghost btn-block" type="button" id="loadTenants">🏢 Xem danh sách tenant (dùng khóa platform ở trên)</button>
+      <div class="setup-accounts" id="tenantBox" hidden>
+        <div class="setup-accounts-title">Chọn tenant</div>
+        <div id="tenantList"></div>
+      </div>
       <label class="check">
         <input type="checkbox" name="remember" checked>
         <span>Ghi nhớ thông tin trên thiết bị này</span>

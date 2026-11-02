@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 14 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
+- **Revision:** 15 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,15 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **Stuck-login root cause fixed (2026-11-02):** the sign-in overlay
+  uses `display:flex`, which overrode the `hidden` attribute — after a
+  successful sign-in the overlay never disappeared and the button sat on
+  "connecting" forever. Global `[hidden]{display:none !important}` rule
+  added; tenant picker added to the sign-in screen (platform key typed
+  in the form); 20s request timeout so stalls surface as errors.
+  Deployed + verified live. T-010 TECH_DONE.
+
 
 - **Login fix LIVE (2026-11-02):** the new sign-in screen is deployed
   and verified at the canonical URL (page grew 3310 -> 3918 bytes with

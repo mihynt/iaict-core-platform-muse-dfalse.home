@@ -1,5 +1,5 @@
 {
-  "revision": 14,
+  "revision": 15,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -30,7 +30,7 @@
     "current": {
       "active_task": "T-004",
       "last_completed_step": "DEC-006 fully live: beta is durable on Neon via Hyperdrive (storage: postgresql-hyperdrive), multi-request flows verified end-to-end on the live URL",
-      "next_action": "Owner signs in on the live UI (tenant beta-pilot -> tap 'Pilot Admin') and gives UI feedback. Then T-005 (M3a, day-90 IoT go/no-go gate).",
+      "next_action": "Owner retries sign-in (tenant list via their platform key, or type beta-pilot -> tap Pilot Admin) and confirms entry; then UI feedback, then T-005 (M3a IoT gate).",
       "blockers": []
     },
     "decisions": [
@@ -246,9 +246,15 @@
         "title": "Login support: account picker on the sign-in screen + remember-me",
         "status": "TECH_DONE",
         "evidence": "Owner reported 2026-11-02 they could not sign in with the type-it-yourself tenant+actor form. Fix built the same day (UI only, no backend change needed): verified in backend/app/identity.py that GET /users requires only the tenant guard, and verified live that GET /api/v1/users with only the beta-pilot tenant header returns its account list (admin / 'Pilot Admin' / TENANT_ADMIN). Login screen now: (1) loads and shows the tenant's accounts as tappable cards (tap = sign in with that account), auto-loads on tenant field change, with a bootstrap note when a tenant has no users yet; (2) validates tenant + actor membership BEFORE entering and shows the translated error on the login card itself; (3) normalizes the tenant slug (trim + lowercase); (4) 'remember me' checkbox - localStorage when on, sessionStorage when off; (5) all storage access is defensive with an in-memory fallback so a browser blocking storage can no longer kill the login silently. Checks: app.js passes node --check; backend suite still green (30 passed + 1 skip in-memory, 31/31 psycopg; backend code untouched). Deployment pending the Owner's Cloudflare API token (transient per deploy, never stored). DEPLOYED AND VERIFIED LIVE 2026-11-02 (token supplied by the Owner in-session, used transiently): GET / serves the new sign-in screen (3918 bytes, up from 3310; contains the account-picker and remember-me markup), the served app.js contains the account-loading and sessionStorage logic, /health unchanged (postgresql-hyperdrive), and the exact request the login page makes returns beta-pilot's account (admin / Pilot Admin / TENANT_ADMIN). Owner flow now: type tenant -> tap the account card -> inside; remember-me defaults on."
+      },
+      {
+        "id": "T-010",
+        "title": "Fix stuck-at-connecting login + tenant picker on the sign-in screen",
+        "status": "TECH_DONE",
+        "evidence": "ROOT CAUSE FOUND 2026-11-02: the Owner reported the sign-in only ever showed the connecting state. The setup overlay is styled .setup{display:flex} in author CSS, which overrides the UA [hidden]{display:none} rule - so setting hidden=true after a successful sign-in never actually hid the overlay, and the button kept its 'connecting' label forever. The same flaw kept the inline error banner permanently displayed. Fix: a global [hidden]{display:none !important} rule. Also added per Owner request: a tenant picker on the sign-in screen (button reads the platform key typed into the form - tenant listing stays platform-privileged - renders tenant cards; tapping one fills the tenant and loads its accounts), and a 20s AbortController timeout on all API calls so a stalled network surfaces an error instead of an endless spinner. DEPLOYED AND VERIFIED LIVE 2026-11-02: sign-in page now 4232 bytes with the tenant-picker markup, served CSS contains the [hidden] fix, served app.js contains loadTenants + AbortController, /health unchanged (postgresql-hyperdrive)."
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-02T11:17:21Z"
+  "updated_at": "2026-11-02T11:43:59Z"
 }

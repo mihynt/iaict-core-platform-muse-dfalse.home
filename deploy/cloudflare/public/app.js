@@ -78,9 +78,9 @@ const store = {
   clear() { LS_KEYS.forEach((k) => { areaDel(LS, k); areaDel(SS, k); }); },
 };
 
-async function api(path, { method = "GET", body, platform = false, tenant, actor } = {}) {
+async function api(path, { method = "GET", body, platform = false, tenant, actor, pkey } = {}) {
   const headers = { "Content-Type": "application/json" };
-  if (platform) headers["X-Platform-Key"] = store.pkey;
+  if (platform) headers["X-Platform-Key"] = pkey ?? store.pkey;
   else {
     const t = tenant ?? store.tenant;
     const a = actor ?? store.actor;
@@ -88,10 +88,14 @@ async function api(path, { method = "GET", body, platform = false, tenant, actor
     if (a) headers["X-Actor"] = a;
   }
   let res;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 20000);
   try {
-    res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+    res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined, signal: ctrl.signal });
   } catch {
-    throw new ApiError("NETWORK", "Không kết nối được tới máy chủ. Kiểm tra mạng và thử lại.");
+    throw new ApiError("NETWORK", "Không kết nối được tới máy chủ (quá thời gian chờ). Kiểm tra mạng và thử lại.");
+  } finally {
+    clearTimeout(timer);
   }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -633,6 +637,35 @@ async function loadAccounts() {
     btn.disabled = false; btn.textContent = "👥 Xem tài khoản của tenant này";
   }
 }
+async function loadTenants() {
+  const form = $("#setupForm");
+  const pkey = String(form.elements.pkey.value || "").trim();
+  setupClearError();
+  if (!pkey) { setupFail("Hãy dán khóa platform vào ô ở trên trước, rồi mới xem được danh sách tenant."); return; }
+  const btn = $("#loadTenants");
+  btn.disabled = true; btn.textContent = "⏳ Đang tải danh sách tenant…";
+  try {
+    const data = await api("/api/v1/platform/tenants", { platform: true, pkey });
+    $("#tenantBox").hidden = false;
+    $("#tenantList").innerHTML = data.items.length ? data.items.map((t) => `
+      <button type="button" class="acct-card" data-tenant="${esc(t.slug)}">
+        <span class="avatar">🏢</span>
+        <span class="who"><b>${esc(t.name)}</b><span>${esc(t.slug)}</span></span>
+        ${chipFor(t.status)}
+      </button>`).join("")
+      : `<div class="acct-note">Chưa có tenant nào trên hệ thống.</div>`;
+    $("#tenantList").querySelectorAll("[data-tenant]").forEach((b) => b.onclick = () => {
+      form.elements.tenant.value = b.dataset.tenant;
+      loadAccounts();
+    });
+  } catch (err) {
+    $("#tenantBox").hidden = true;
+    setupFail(err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = "🏢 Xem danh sách tenant (dùng khóa platform ở trên)";
+  }
+}
+$("#loadTenants").addEventListener("click", loadTenants);
 $("#loadAccounts").addEventListener("click", loadAccounts);
 $("#setupForm").elements.tenant.addEventListener("change", () => {
   if (normTenant($("#setupForm").elements.tenant.value)) loadAccounts();
