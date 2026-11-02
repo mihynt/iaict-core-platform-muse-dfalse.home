@@ -1,5 +1,5 @@
 {
-  "revision": 15,
+  "revision": 16,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -30,7 +30,7 @@
     "current": {
       "active_task": "T-004",
       "last_completed_step": "DEC-006 fully live: beta is durable on Neon via Hyperdrive (storage: postgresql-hyperdrive), multi-request flows verified end-to-end on the live URL",
-      "next_action": "Owner retries sign-in (tenant list via their platform key, or type beta-pilot -> tap Pilot Admin) and confirms entry; then UI feedback, then T-005 (M3a IoT gate).",
+      "next_action": "Owner uses the live UI and gives feedback. Then T-005 (M3a, day-90 IoT go/no-go gate). Possible small follow-ups when the Owner wants them: delete endpoint for records (to remove the Z-TMP test zone), keep-warm for the free tier.",
       "blockers": []
     },
     "decisions": [
@@ -252,9 +252,15 @@
         "title": "Fix stuck-at-connecting login + tenant picker on the sign-in screen",
         "status": "TECH_DONE",
         "evidence": "ROOT CAUSE FOUND 2026-11-02: the Owner reported the sign-in only ever showed the connecting state. The setup overlay is styled .setup{display:flex} in author CSS, which overrides the UA [hidden]{display:none} rule - so setting hidden=true after a successful sign-in never actually hid the overlay, and the button kept its 'connecting' label forever. The same flaw kept the inline error banner permanently displayed. Fix: a global [hidden]{display:none !important} rule. Also added per Owner request: a tenant picker on the sign-in screen (button reads the platform key typed into the form - tenant listing stays platform-privileged - renders tenant cards; tapping one fills the tenant and loads its accounts), and a 20s AbortController timeout on all API calls so a stalled network surfaces an error instead of an endless spinner. DEPLOYED AND VERIFIED LIVE 2026-11-02: sign-in page now 4232 bytes with the tenant-picker markup, served CSS contains the [hidden] fix, served app.js contains loadTenants + AbortController, /health unchanged (postgresql-hyperdrive)."
+      },
+      {
+        "id": "T-011",
+        "title": "Fix intermittent dashboard data failures under parallel load (Hyperdrive/pg8000)",
+        "status": "TECH_DONE",
+        "evidence": "Found by the new browser-test rule (Owner instruction 2026-11-02): the first real-browser test passed sign-in but the dashboard failed with a generic error, although curl checks were green. Diagnosis chain, all evidenced: (1) the dashboard's four parallel list calls intermittently hit Cloudflare 1102 (Worker CPU limit) - crop-plans reproduced returning 503 'error code: 1102' while sibling endpoints returned 200; the old all-or-nothing Promise.all turned one failure into a full-page error. (2) A first fix (cached per-isolate pg8000 connection) exposed a deeper bug in wrangler tail: SQLSTATE 26000 'unnamed prepared statement does not exist' - Hyperdrive rebalances upstream sessions at transaction boundaries and pg8000's PARSE/DESCRIBE split across them. Final fix set: WorkerPgStore reuses one connection per isolate with SELECT 1 health-check + drop-on-error, every operation runs in ONE explicit transaction (autocommit off) so Hyperdrive pins the upstream session, and unique-violation handling moved outside the session (pg8000 refuses statements in a failed transaction - 3 local tests caught this before deploy). UI: GETs retry once on network/5xx; dashboard and plans views load sections independently (allSettled) with a per-section warning instead of a full-page error. Verification: full suite green in all three store modes; live parallel load 14/16 immediate 200 with the rest absorbed by the UI retry and NO 26000/500s; live write flow 201 + duplicate 409 CODE_EXISTS; post-fix real-browser re-test PASSED - dashboard rendered stats 2/1/1/0 (zones/plants/plans/lots), zones page listed Z-01 + Z-TMP, plans page listed PLAN-2026, no error states, and the remembered session persisted across browser restarts. Known leftovers: free-tier latency is still seconds per request and an occasional 503 can appear under parallel load (absorbed by retry); a clearly-labeled test zone Z-TMP created during write verification remains in beta-pilot (no delete endpoint yet). Process note: the browser agent's structural findings (counts, error presence) matched server data, but its decorative text details were partly paraphrased/invented - trust counts and states, verify labels against the API."
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-02T11:43:59Z"
+  "updated_at": "2026-11-02T12:27:29Z"
 }

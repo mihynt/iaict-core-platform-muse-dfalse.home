@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 15 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
+- **Revision:** 16 · **Updated:** 2026-11-02T05:20:21Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -30,6 +30,17 @@
   back from GitHub match this project.
 
 ## Latest progress
+
+- **Dashboard load failures fixed (2026-11-02):** the first mandated
+  browser test caught the dashboard failing under parallel load
+  (Cloudflare 1102 + a Hyperdrive prepared-statement bug, SQLSTATE
+  26000, found in wrangler tail). Fixes: per-isolate connection reuse
+  with health-check, one explicit transaction per store operation,
+  conflict handling moved outside the session, UI GET-retry + per-section
+  loading. Post-fix browser re-test PASSED (stats 2/1/1/0, no error
+  states). T-011 TECH_DONE. A labeled test zone Z-TMP remains in
+  beta-pilot (no delete endpoint yet).
+
 
 - **Stuck-login root cause fixed (2026-11-02):** the sign-in overlay
   uses `display:flex`, which overrode the `hidden` attribute — after a

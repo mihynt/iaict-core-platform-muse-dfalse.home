@@ -7,11 +7,25 @@ itself terminates TLS and pools connections to the database (Neon).
 Standard SQL only (app/schema.sql), so this backend and the psycopg one are
 interchangeable; the entrypoint chooses (see app.store.make_store).
 
-Connection policy: a fresh pg8000 connection per store operation, closed
-when the operation ends — the pattern Cloudflare prescribes for Hyperdrive
-(it maintains the real pool upstream). A cached per-isolate connection was
-observed to fail transiently on the live beta after isolate reuse
-(one 500 amid otherwise successful durable flows on 2026-11-02).
+Connection policy (revised 2026-11-02, T-011): one cached connection per
+store instance (i.e. per Worker isolate), health-checked with SELECT 1
+before each operation and dropped + re-established whenever an operation
+fails, so a stale connection self-heals instead of surfacing as a 500.
+The original per-operation-connection policy made every request pay a
+full pg8000 handshake through Hyperdrive; under parallel browser loads
+requests took 6-8s and intermittently died with Cloudflare error 1102
+(Worker CPU limit) — observed live on the dashboard's crop-plans call.
+
+Every operation runs inside ONE explicit transaction (autocommit off,
+commit at the end of the operation). This is load-bearing, not style:
+Hyperdrive pools upstream sessions at transaction boundaries, and
+pg8000's extended protocol splits a call into PARSE / DESCRIBE / BIND /
+EXECUTE messages — outside a transaction the unnamed prepared statement
+could land on a different upstream session than the DESCRIBE, failing
+with SQLSTATE 26000 "unnamed prepared statement does not exist"
+(observed live in wrangler tail after the first connection-reuse
+deploy). Inside a transaction Hyperdrive pins the upstream session for
+the whole operation.
 """
 from __future__ import annotations
 
@@ -41,27 +55,57 @@ class WorkerPgStore:
         self._params = dict(host=host, port=int(port), user=user,
                             password=password, database=database)
         self._schema_done = False
+        self._conn = None
+
+    def _drop_conn(self) -> None:
+        if self._conn is not None:
+            try:
+                self._conn.close()
+            except Exception:
+                pass
+            self._conn = None
+
+    def _get_conn(self):
+        """Return the cached connection, pinging it first; reconnect when
+        the ping fails. Applies the schema once per store instance."""
+        if self._conn is not None:
+            try:
+                cur = self._conn.cursor()
+                cur.execute("SELECT 1")
+                cur.fetchall()
+                return self._conn
+            except Exception:
+                self._drop_conn()
+        # autocommit stays OFF: every operation runs in one explicit
+        # transaction so Hyperdrive pins the upstream session (see the
+        # module docstring on SQLSTATE 26000).
+        conn = pg8000.connect(**self._params, timeout=15)
+        if not self._schema_done:
+            cur = conn.cursor()
+            for stmt in _SCHEMA.split(";\n"):
+                stmt = stmt.strip()
+                if stmt:
+                    cur.execute(stmt)
+            conn.commit()
+            self._schema_done = True
+        self._conn = conn
+        return conn
 
     @contextmanager
     def _session(self):
-        """One short-lived connection per operation (see module docstring).
-        Applies the schema once per store instance, on first use."""
-        conn = pg8000.connect(**self._params, timeout=30)
-        conn.autocommit = True
+        conn = self._get_conn()
         try:
-            if not self._schema_done:
-                cur = conn.cursor()
-                for stmt in _SCHEMA.split(";\n"):
-                    stmt = stmt.strip()
-                    if stmt:
-                        cur.execute(stmt)
-                self._schema_done = True
             yield conn.cursor()
-        finally:
+            conn.commit()
+        except Exception:
+            # Roll back the aborted transaction and drop the connection,
+            # so the next operation starts from a clean, known state.
             try:
-                conn.close()
+                conn.rollback()
             except Exception:
                 pass
+            self._drop_conn()
+            raise
 
     @classmethod
     def from_binding(cls, binding) -> "WorkerPgStore":
@@ -115,17 +159,20 @@ class WorkerPgStore:
 
     # ---- tenants -------------------------------------------------------
     def create_tenant(self, slug: str, name: str) -> Tenant | None:
-        with self._lock, self._session() as cur:
-            try:
+        # The unique-violation handler lives OUTSIDE the session on purpose:
+        # a swallowed server error would leave the transaction aborted and
+        # pg8000 refuses any further statement in a failed transaction.
+        try:
+            with self._lock, self._session() as cur:
                 cur.execute(
                     "INSERT INTO tenants (slug, name) VALUES (%s, %s) RETURNING created_at",
                     (slug, name),
                 )
                 created = self._one(cur)["created_at"]
-            except Exception as exc:
-                if _is_unique_violation(exc):
-                    return None
-                raise
+        except Exception as exc:
+            if _is_unique_violation(exc):
+                return None
+            raise
         return Tenant(slug=slug, name=name, created_at=created.isoformat())
 
     def get_tenant(self, slug: str) -> Tenant | None:
@@ -157,18 +204,18 @@ class WorkerPgStore:
 
     # ---- users ---------------------------------------------------------
     def create_user(self, tenant: str, username: str, display_name: str, role: str) -> User | None:
-        with self._lock, self._session() as cur:
-            try:
+        try:
+            with self._lock, self._session() as cur:
                 cur.execute(
                     "INSERT INTO users (tenant_id, username, display_name, role)"
                     " VALUES (%s, %s, %s, %s) RETURNING created_at",
                     (tenant, username, display_name, role),
                 )
                 created = self._one(cur)["created_at"]
-            except Exception as exc:
-                if _is_unique_violation(exc):
-                    return None
-                raise
+        except Exception as exc:
+            if _is_unique_violation(exc):
+                return None
+            raise
         return User(username=username, display_name=display_name, role=role,
                     created_at=created.isoformat())
 
@@ -219,6 +266,14 @@ class WorkerPgStore:
         return None if row is None else row["id"]
 
     def create_record(self, tenant: str, kind: str, fields: dict) -> dict | None:
+        try:
+            return self._create_record_inner(tenant, kind, fields)
+        except Exception as exc:
+            if _is_unique_violation(exc):
+                return None
+            raise
+
+    def _create_record_inner(self, tenant: str, kind: str, fields: dict) -> dict | None:
         table, columns = SPECS[kind]
         refs = RECORD_REFS[kind]
         with self._lock, self._session() as cur:
@@ -242,17 +297,12 @@ class WorkerPgStore:
                 names.insert(1, "code")
                 params.insert(1, fields.get("code"))
             placeholders = ", ".join(["%s"] * len(names))
-            try:
-                cur.execute(
-                    f"INSERT INTO {table} ({', '.join(names)}) VALUES ({placeholders})"
-                    " RETURNING id",
-                    params,
-                )
-                new_id = self._one(cur)["id"]
-            except Exception as exc:
-                if _is_unique_violation(exc):
-                    return None
-                raise
+            cur.execute(
+                f"INSERT INTO {table} ({', '.join(names)}) VALUES ({placeholders})"
+                " RETURNING id",
+                params,
+            )
+            new_id = self._one(cur)["id"]
             cur.execute(f"SELECT * FROM {table} WHERE id = %s", (new_id,))
             return self._row_to_record(self._one(cur), kind)
 

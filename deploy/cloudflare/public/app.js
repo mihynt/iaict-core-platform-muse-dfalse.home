@@ -87,22 +87,33 @@ async function api(path, { method = "GET", body, platform = false, tenant, actor
     if (t) headers["X-Tenant-Id"] = t;
     if (a) headers["X-Actor"] = a;
   }
-  let res;
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 20000);
-  try {
-    res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined, signal: ctrl.signal });
-  } catch {
-    throw new ApiError("NETWORK", "Không kết nối được tới máy chủ (quá thời gian chờ). Kiểm tra mạng và thử lại.");
-  } finally {
-    clearTimeout(timer);
+  // GETs are retried once on network/5xx failures: the free-tier Worker
+  // occasionally drops a cold request (observed as Cloudflare 1102), and a
+  // single retry turns most of those into a normal response.
+  const attempts = method === "GET" ? 2 : 1;
+  let lastErr;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20000);
+    try {
+      const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined, signal: ctrl.signal });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const d = data.detail || {};
+        throw new ApiError(typeof d === "string" ? "" : d.code, typeof d === "string" ? d : d.message, res.status);
+      }
+      return data;
+    } catch (err) {
+      lastErr = err;
+      const retryable = err instanceof ApiError &&
+        (err.code === "NETWORK" || (err.status ?? 0) >= 500 || (!err.code && !err.status));
+      if (!retryable || attempt === attempts) throw err;
+      await new Promise((r) => setTimeout(r, 900));
+    } finally {
+      clearTimeout(timer);
+    }
   }
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const d = data.detail || {};
-    throw new ApiError(typeof d === "string" ? "" : d.code, typeof d === "string" ? d : d.message, res.status);
-  }
-  return data;
+  throw lastErr;
 }
 const T = (p, o) => api(`/api/v1${p}`, o);            // tenant-scoped
 const P = (p, o) => api(`/api/v1${p}`, { ...o, platform: true }); // platform-scoped
@@ -248,12 +259,19 @@ VIEWS.dashboard = async () => {
   const el = $("#view");
   el.innerHTML = skeleton(4);
   try {
-    const health = await api("/health");
-    state.health = health;
-    const [zones, plants, plans, lots] = await Promise.all([
+    const health = await api("/health").catch(() => state.health);
+    if (health) state.health = health;
+    // Each section loads independently: one failing list must not take
+    // the whole dashboard down with it.
+    const sectionNames = ["Vùng", "Cây đầu dòng", "Mùa vụ", "Lô thu hoạch"];
+    const settled = await Promise.allSettled([
       ensure("zones", "/zones"), ensure("plants", "/mother-plants"),
       ensure("plans", "/crop-plans"), ensure("lots", "/lots"),
     ]);
+    const [zones, plants, plans, lots] = settled.map((r) => (r.status === "fulfilled" ? r.value : null));
+    const failed = settled.map((r, i) => (r.status === "rejected" ? sectionNames[i] : null)).filter(Boolean);
+    if (failed.length === 4) throw settled[0].reason;
+    const cnt = (a) => (a ? a.length : "—");
     let audit = [];
     try { audit = (await T("/audit")).items.slice(-5).reverse(); } catch { /* read-only tolerance */ }
     el.innerHTML = `
@@ -261,16 +279,17 @@ VIEWS.dashboard = async () => {
         <h1>Xin chào, ${esc(store.actor || "bạn")} 👋</h1>
         <p>Đơn vị <b>${esc(store.tenant)}</b> — tổng quan sản xuất hôm nay.</p>
         <div class="hero-meta">
-          <span class="pill">🌐 Môi trường: ${esc(health.env)}</span>
-          <span class="pill">🗄️ Lưu trữ: ${esc(health.storage)}</span>
-          <span class="pill">⚙️ Phiên bản: ${esc(health.version)}</span>
+          <span class="pill">🌐 Môi trường: ${esc(health?.env || "beta")}</span>
+          <span class="pill">🗄️ Lưu trữ: ${esc(health?.storage || "—")}</span>
+          <span class="pill">⚙️ Phiên bản: ${esc(health?.version || "—")}</span>
         </div>
       </section>
+      ${failed.length ? `<div class="banner"><span>⚠️</span><span>Chưa tải được: <b>${esc(failed.join(", "))}</b> (máy chủ đang bận). Các mục khác vẫn xem được — <a href="#" id="dashRetry">thử tải lại</a>.</span></div>` : ""}
       <div class="grid stats">
-        <button class="stat-card" data-go="zones"><span class="ic">🗺️</span><b>${zones.length}</b><span>Vùng nguyên liệu</span></button>
-        <button class="stat-card" data-go="plants"><span class="ic">🌳</span><b>${plants.length}</b><span>Cây đầu dòng</span></button>
-        <button class="stat-card" data-go="plans"><span class="ic">📅</span><b>${plans.length}</b><span>Kế hoạch mùa vụ</span></button>
-        <button class="stat-card" data-go="lots"><span class="ic">📦</span><b>${lots.length}</b><span>Lô thu hoạch</span></button>
+        <button class="stat-card" data-go="zones"><span class="ic">🗺️</span><b>${cnt(zones)}</b><span>Vùng nguyên liệu</span></button>
+        <button class="stat-card" data-go="plants"><span class="ic">🌳</span><b>${cnt(plants)}</b><span>Cây đầu dòng</span></button>
+        <button class="stat-card" data-go="plans"><span class="ic">📅</span><b>${cnt(plans)}</b><span>Kế hoạch mùa vụ</span></button>
+        <button class="stat-card" data-go="lots"><span class="ic">📦</span><b>${cnt(lots)}</b><span>Lô thu hoạch</span></button>
       </div>
       <div class="section-head"><h2>Hoạt động gần đây</h2><span class="hint">nhật ký hệ thống (audit)</span></div>
       ${audit.length ? `<div class="list">${audit.map((a) => `
@@ -281,6 +300,8 @@ VIEWS.dashboard = async () => {
         </div></div>`).join("")}</div>`
       : emptyState("🧾", "Chưa có hoạt động nào", "Các thao tác tạo/cập nhật sẽ được ghi lại tại đây.")}`;
     el.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => navigate(b.dataset.go));
+    const retry = $("#dashRetry");
+    if (retry) retry.onclick = (e) => { e.preventDefault(); state.cache = {}; navigate("dashboard", true); };
   } catch (err) {
     el.innerHTML = banner(err) + emptyState("🔌", "Chưa kết nối được dữ liệu",
       "Kiểm tra mã tenant và người dùng trong mục Cài đặt, hoặc nhờ quản trị platform kiểm tra trạng thái tenant.");
@@ -370,11 +391,16 @@ VIEWS.plans = async () => {
     <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(4);
   $("#reload").onclick = () => { invalidate("plans", "events"); navigate("plans", true); };
   try {
-    const [plans, events] = await Promise.all([
+    const settledP = await Promise.allSettled([
       ensure("plans", "/crop-plans"), ensure("events", "/field-events"),
     ]);
+    if (settledP.every((r) => r.status === "rejected")) throw settledP[0].reason;
+    const plans = settledP[0].status === "fulfilled" ? settledP[0].value : [];
+    const events = settledP[1].status === "fulfilled" ? settledP[1].value : [];
+    const partialFail = settledP.map((r, i) => (r.status === "rejected" ? ["Kế hoạch mùa vụ", "Nhật ký đồng ruộng"][i] : null)).filter(Boolean);
     el.querySelectorAll(".skel").forEach((s) => s.remove());
     el.insertAdjacentHTML("beforeend", `
+      ${partialFail.length ? `<div class="banner"><span>⚠️</span><span>Chưa tải được: <b>${esc(partialFail.join(", "))}</b> (máy chủ đang bận) — bấm Làm mới để thử lại.</span></div>` : ""}
       <div class="section-head"><h2 style="font-size:15.5px">Kế hoạch mùa vụ</h2></div>
       ${plans.length ? `<div class="list">${plans.map((p) => `
         <div class="card"><div class="thumb violet">📅</div><div class="body">
