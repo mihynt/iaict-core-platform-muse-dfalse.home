@@ -1,5 +1,5 @@
 {
-  "revision": 45,
+  "revision": 46,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "T-032 slice 1 DONE (lazy __getattr__ delegation, 44 boilerplate lines removed, suites green); architecture proposal delivered. T-031 awaits deploy token. Owner decisions open: T-032 slices 2-4 scope; Q-TX-01/02; phase 3 vs T-005; keep-warm; IAICT_PII_KEY.",
+      "last_completed_step": "T-032 slices 1-2 DONE (rev 46): lazy delegation + field registry/codegen with Protobuf + GraphQL contracts generated from the single registry; drift tests guard the boundary. T-031 awaits deploy token. Open: T-032 slices 3-4 on Owner request; Q-TX-01/02; phase 3 vs T-005; keep-warm; IAICT_PII_KEY.",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -523,13 +523,13 @@
         "title": "Change-in-one-place architecture (research-backed): slice 1 lazy delegation done; slices 2-4 proposed",
         "status": "IN_PROGRESS",
         "srs_refs": [],
-        "evidence": "Owner asked 2026-11-04 05:18 +07 to research how big companies structure code so changes do not scatter, and apply it. Deep web research completed (report in research notes 'big-tech-evolvable-architecture', 41 KB, sourced; Amazon API mandate flagged secondary-only). Core finding: one authoritative artefact + everything else generated + machine checks on the boundary (Protobuf/codegen, Stripe's single canonical spec, Shopify modular monolith + Packwerk, schema-generated UI with an 80/20 limit, Fowler expand-migrate-contract + versioned migrations, dialect/adapter isolation). Internal audit measured our own scatter: one new field = 7 files; one new store method = 4 store files + 44 hand-written delegate lines in the two lazy wrappers; one new record kind = ~10 touch points. Proposal document delivered to the Owner (de-an-thay-doi-mot-noi-04-11-2026.md): 4 independent slices. SLICE 1 APPLIED same day: LazyWorkerStore/LazyD1Store now forward via __getattr__ - all 44 delegate one-liners removed, new store methods need no wrapper edits; suites 71 passed + 2 skipped in both memory and D1 modes after the change. Slices 2 (single field registry + code generation for SPECS/DDL/RecordIn/UI meta + drift test), 3 (numbered migrations replacing ad-hoc ALTER lists), 4 (dialect-unified SQL store core) are PLANNED pending the Owner's choice.",
+        "evidence": "Owner asked 2026-11-04 05:18 +07 to research how big companies structure code so changes do not scatter, and apply it. Deep web research completed (report in research notes 'big-tech-evolvable-architecture', 41 KB, sourced; Amazon API mandate flagged secondary-only). Core finding: one authoritative artefact + everything else generated + machine checks on the boundary (Protobuf/codegen, Stripe's single canonical spec, Shopify modular monolith + Packwerk, schema-generated UI with an 80/20 limit, Fowler expand-migrate-contract + versioned migrations, dialect/adapter isolation). Internal audit measured our own scatter: one new field = 7 files; one new store method = 4 store files + 44 hand-written delegate lines in the two lazy wrappers; one new record kind = ~10 touch points. Proposal document delivered to the Owner (de-an-thay-doi-mot-noi-04-11-2026.md): 4 independent slices. SLICE 1 APPLIED same day: LazyWorkerStore/LazyD1Store now forward via __getattr__ - all 44 delegate one-liners removed, new store methods need no wrapper edits; suites 71 passed + 2 skipped in both memory and D1 modes after the change. Slices 2 (single field registry + code generation for SPECS/DDL/RecordIn/UI meta + drift test), 3 (numbered migrations replacing ad-hoc ALTER lists), 4 (dialect-unified SQL store core) are PLANNED pending the Owner's choice. SLICE 2 APPLIED 2026-11-04 per the Owner's follow-up directive (keep the microservices/GraphQL/Protobuf direction; build one more slice as proposed): backend/app/fields.py is now the single field registry (16 kinds, 241 fields, bootstrapped by extraction from the live sources so behavior is unchanged; labels/inputs/enums/refs/PII/dossier provenance declared once per field). tools/gen_fields.py generates: backend/app/records_spec.py (SPECS + RECORD_REFS + REF_ID_COLUMN + conv; store.py now re-exports RECORD_REFS from the generated module - verified byte-equal to the hand-kept original before rewiring), deploy/cloudflare/public/fields.js (window.IAICT_META: 151 labels incl. EXTRA_LABELS for system/extra keys, 14 detail specs, 8 enum lists; app.js literals replaced by references; build.sh stamps and ships fields.<stamp>.js; index.html loads it before app.js), contracts/iaict.proto (Protobuf, field numbers pinned append-only in contracts/field_numbers.json) and contracts/iaict.graphql (SDL) - the generated contracts are the kept path to microservices/GraphQL/Protobuf: a future split consumes them instead of re-deriving shapes; runtime stays a modular monolith (Shopify position recorded in the proposal). Drift guard test_fields_codegen.py (3 tests): regeneration byte-equality, registry principal columns present in BOTH SQL schemas, registry api fields declared on RecordIn. End-to-end proof on a scratch copy: one demo field added to the registry propagated to fields.js + .proto (new pinned number) + .graphql with --check green. Suites: 74 passed + 2 skipped in BOTH memory and D1 modes; UI build OK. Slices 3 (numbered migrations) and 4 (dialect-unified store) remain PLANNED.",
         "blockers": [
-          "Slices 2-4 await the Owner's go-ahead (options presented 2026-11-04)."
+          "Slices 3-4 not yet requested."
         ]
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T22:24:13Z"
+  "updated_at": "2026-11-03T22:34:18Z"
 }

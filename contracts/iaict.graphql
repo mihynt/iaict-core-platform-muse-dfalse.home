@@ -1,0 +1,328 @@
+# GENERATED from backend/app/fields.py by tools/gen_fields.py - do not edit by hand.
+
+# Generated contract surface. A future GraphQL gateway or
+# service split consumes this SDL; it is not served yet.
+
+type Actor {
+  id: ID
+  name: String
+  actor_type: String
+  gln_code: String
+  province_code: String
+  district_code: String
+  commune_code: String
+  address: String
+  phone: String
+  email: String
+  code: String
+  gs1_role_ai: String
+  parent_code: String
+  legal_id: String
+  legal_id_hash: String
+  forestry_enterprise_class: String
+  is_group_leader: Boolean
+  ics_training_completed: Boolean
+  valid_from: String
+  valid_to: String
+  status: String
+}
+
+type CropPlan {
+  id: ID
+  name: String
+  crop_name: String
+  variety_name: String
+  seed_origin: String
+  planting_density: Float
+  seed_origin_doc: String
+  start_date: String
+  end_date: String
+  target_yield_kg: Float
+  status: String
+  code: String
+  zone_code: String
+  plant_code: String
+  parcel_code: String
+  forest_harvest_plan_no: String
+  departure_port_code: String
+  arrival_port_code: String
+}
+
+type CteStage {
+  id: ID
+  traceability_code: String
+  stage_no: Int
+  stage_name: String
+  product_trace_code: String
+  location_trace_code: String
+  batch_lot_number: String
+  event_time: String
+  scheme_code: String
+}
+
+type FieldEvent {
+  id: ID
+  event_type: String
+  occurred_at: String
+  lat: Float
+  lon: Float
+  actor: String
+  device: String
+  notes: String
+  materials: String
+  growth_stage: String
+  target_pest: String
+  dosage: String
+  quantity_applied: Float
+  phi_days: Int
+  safe_harvest_date: String
+  application_method: String
+  fruit_bagging_count: Int
+  plan_code: String
+  zone_code: String
+  input_lot_code: String
+  dosage_concentration: String
+  total_quantity_applied: String
+  crop_animal_growth_stage: String
+  target_pest_disease_reason: String
+}
+
+type InputLot {
+  id: ID
+  name: String
+  category: String
+  substance_code: String
+  vn_registration_number: String
+  batch_no: String
+  purchase_date: String
+  quantity: Float
+  unit: String
+  phi_days: Int
+  expiry_date: String
+  purchase_invoice_no: String
+  qcvn_scheme_id: String
+  code: String
+  brand_name: String
+  supplier_code: String
+  status: String
+}
+
+type Lot {
+  id: ID
+  harvest_date: String
+  quantity: Float
+  unit: String
+  harvested_by: String
+  quality_grade: String
+  status: String
+  expiry_date: String
+  weigh_slip_number: String
+  traceability_code: String
+  data_retention_until: String
+  code: String
+  zone_code: String
+  plan_code: String
+  farmer_code: String
+  parcel_code: String
+  harvest_time: String
+}
+
+type MotherPlant {
+  id: ID
+  species: String
+  variety: String
+  scientific_name: String
+  origin: String
+  planting_year: Int
+  lat: Float
+  lon: Float
+  owner_manager: String
+  recognition_no: String
+  issuing_authority: String
+  valid_from: String
+  valid_to: String
+  status: String
+  code: String
+  cultivar_code: String
+  zone_code: String
+}
+
+type PackagingUnit {
+  id: ID
+  level: String
+  gtin_code: String
+  sscc_code: String
+  package_spec: String
+  units_count: Int
+  code: String
+  packing_lot_code: String
+  cites_specimen_mark_code: String
+  status: String
+}
+
+type PackingInput {
+  id: ID
+  allocated_weight_kg: Float
+  linked_at: String
+  packing_lot_code: String
+  harvest_lot_code: String
+}
+
+type PackingLot {
+  id: ID
+  phc_code: String
+  product_name: String
+  output_weight_kg: Float
+  yield_norm_ratio: Float
+  storage_type: String
+  packed_at: String
+  expiry_date: String
+  status: String
+  code: String
+  facility_code: String
+  food_safety_cert_id: String
+  carcass_serial_id: String
+  ecdt_cc_cert_number: String
+  cites_permit_number: String
+}
+
+type PhiValidation {
+  id: ID
+  lot_code: String
+  plan_code: String
+  max_safe_harvest_date: String
+  actual_harvest_date: String
+  outcome: String
+  last_treatment_ref: String
+  validation_outcome: String
+}
+
+type SpatialUnit {
+  id: ID
+  name: String
+  unit_type: String
+  national_land_parcel_id: String
+  map_sheet_number: String
+  parcel_number: String
+  land_tenure_doc_type: String
+  land_cert_serial: String
+  land_legal_owner_name: String
+  forest_subzone_code: String
+  forest_compartment_code: String
+  forest_plot_code: String
+  area_m2: Float
+  slope_degree: Float
+  code: String
+  operator_code: String
+  province_code: String
+  commune_code: String
+  owner_consent_doc_url: String
+  earth_terrace_compliant: Boolean
+  forest_origin_type: String
+  aquaculture_water_type: String
+  vessel_reg_number: String
+  vessel_length_max_m: Float
+  tech_safety_cert_no: String
+  vms_device_serial: String
+  valid_from: String
+  valid_to: String
+  status: String
+}
+
+type TraceabilityRecord {
+  id: ID
+  traceability_code: String
+  product_name: String
+  product_image_url: String
+  business_unit_name: String
+  business_unit_address: String
+  production_event_time: String
+  brand_trademark_serial: String
+  expiration_date: String
+  data_carrier_type: String
+  data_retention_until: String
+  sync_status: String
+  synced_at: String
+  packaging_unit_code: String
+  status: String
+}
+
+type ZoneParcelLink {
+  id: ID
+  registered_area_m2: Float
+  membership_status: String
+  joined_date: String
+  left_date: String
+  zone_code: String
+  parcel_code: String
+  status: String
+}
+
+type ZoneStatusHistory {
+  id: ID
+  zone_code: String
+  previous_status: String
+  new_status: String
+  trigger_reason_code: String
+  decision_doc_number: String
+  remediation_measures: String
+  changed_by: String
+}
+
+type Zone {
+  id: ID
+  name: String
+  area_ha: Float
+  address: String
+  lat: Float
+  lon: Float
+  geom: String
+  crop_group: String
+  season: String
+  water_source: String
+  managing_entity: String
+  status: String
+  owner_actor_code: String
+  puc_code: String
+  puc_status: String
+  sector_category: String
+  market_scope: String
+  primary_species: String
+  scientific_name: String
+  issue_date: String
+  issuing_authority: String
+  post_inspect_due_date: String
+  vsic_code: String
+  dist_to_residential_m: Float
+  dist_to_sensitive_zone_m: Float
+  bee_site_min_dist_km: Float
+  code: String
+  initial_declared_area_ha: String
+  province: String
+  district: String
+  ward: String
+  farm_scale_tier: String
+  submission_channel: String
+  application_received_at: String
+  valid_from: String
+  valid_to: String
+}
+
+type Query {
+  actors: [Actor!]!
+  crop_plans: [CropPlan!]!
+  cte_stages: [CteStage!]!
+  field_events: [FieldEvent!]!
+  input_lots: [InputLot!]!
+  lots: [Lot!]!
+  mother_plants: [MotherPlant!]!
+  packaging_units: [PackagingUnit!]!
+  packing_inputs: [PackingInput!]!
+  packing_lots: [PackingLot!]!
+  phi_validations: [PhiValidation!]!
+  spatial_units: [SpatialUnit!]!
+  traceability_records: [TraceabilityRecord!]!
+  zone_parcel_links: [ZoneParcelLink!]!
+  zone_status_history: [ZoneStatusHistory!]!
+  zones: [Zone!]!
+}

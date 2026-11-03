@@ -209,37 +209,14 @@ const fmtActorOpt = (a) => ({ v: a.code, t: `${a.code} · ${a.name || ""}` });
 const fmtPlantOpt = (pl) => ({ v: pl.code, t: `${pl.code} · ${pl.species || ""}` });
 const fmtParcelOpt = (u) => ({ v: u.code, t: `${u.code} · ${u.name || ""}` });
 const fmtInputOpt = (i) => ({ v: i.code, t: `${i.code} · ${i.name || i.substance_code || ""}${i.phi_days != null ? ` · cách ly ${i.phi_days} ngày` : ""}` });
-const PUC_STATUSES = [
-  { v: "", t: "— Chưa rõ —" }, { v: "PENDING_POST_INSPECTION", t: "Chờ hậu kiểm" },
-  { v: "ACTIVE_COMPLIANT", t: "Đang hiệu lực — đạt" }, { v: "SUSPENDED_TEMPORARILY", t: "Tạm đình chỉ" },
-  { v: "RESTORED", t: "Đã khôi phục" }, { v: "REVOKED_PERMANENTLY", t: "Thu hồi vĩnh viễn" }];
-const MEMBERSHIP_STATUSES = [
-  { v: "ACTIVE_MEMBER", t: "Đang tham gia" }, { v: "SUSPENDED_PLOT", t: "Tạm ngưng" },
-  { v: "WITHDRAWN_FROM_ZONE", t: "Đã rút khỏi vùng" }];
-const FARM_TIERS = [
-  { v: "", t: "— Không áp dụng —" }, { v: "HOUSEHOLD_SCALE", t: "Quy mô hộ chăn nuôi" },
-  { v: "SMALL_FARM", t: "Trang trại nhỏ" }, { v: "MEDIUM_FARM", t: "Trang trại vừa" },
-  { v: "LARGE_FARM", t: "Trang trại lớn" }];
-const SUBMIT_CHANNELS = [
-  { v: "", t: "— Chưa rõ —" }, { v: "ONLINE_NATIONAL_PORTAL", t: "Trực tuyến qua Cổng DVC Quốc gia" },
-  { v: "DIRECT_AT_COMMUNE_COUNTER", t: "Nộp trực tiếp tại UBND xã" },
-  { v: "POSTAL_MAIL_TO_COMMUNE", t: "Qua bưu điện về UBND xã" }];
-const FOREST_ORIGINS = [
-  { v: "", t: "— Không áp dụng —" }, { v: "NATURAL_FOREST", t: "Rừng tự nhiên" },
-  { v: "STATE_PLANTATION_FOREST", t: "Rừng trồng nhà nước" },
-  { v: "SELF_INVESTED_PROTECTION_FOREST", t: "Rừng phòng hộ tự đầu tư" },
-  { v: "PRODUCTION_PLANTATION_FOREST", t: "Rừng trồng sản xuất" },
-  { v: "SCATTERED_HOME_GARDEN_TREES", t: "Cây phân tán vườn nhà" }];
-const AQUA_WATERS = [
-  { v: "", t: "— Không áp dụng —" }, { v: "EARTHEN_POND", t: "Ao đất" },
-  { v: "LINED_POND", t: "Ao lót bạt" }, { v: "SALTWATER_TANK", t: "Bể nước mặn" },
-  { v: "MARINE_CAGE_RAFT", t: "Lồng bè biển" }, { v: "RIVER_CAGE_RAFT", t: "Lồng bè sông" },
-  { v: "INTERTIDAL_MUDFLAT", t: "Bãi triều" }];
-const FORESTRY_CLASSES = [
-  { v: "", t: "— Không áp dụng —" }, { v: "CLASS_I_COMPLIANT", t: "Loại I — tuân thủ" },
-  { v: "CLASS_II_NON_COMPLIANT", t: "Loại II — chưa tuân thủ" }, { v: "UNCLASSIFIED", t: "Chưa phân loại" }];
-const BOOL_OPTS = [
-  { v: "", t: "— Chưa rõ —" }, { v: "true", t: "Có" }, { v: "false", t: "Không" }];
+const PUC_STATUSES = window.IAICT_META.enums.PUC_STATUSES;
+const MEMBERSHIP_STATUSES = window.IAICT_META.enums.MEMBERSHIP_STATUSES;
+const FARM_TIERS = window.IAICT_META.enums.FARM_TIERS;
+const SUBMIT_CHANNELS = window.IAICT_META.enums.SUBMIT_CHANNELS;
+const FOREST_ORIGINS = window.IAICT_META.enums.FOREST_ORIGINS;
+const AQUA_WATERS = window.IAICT_META.enums.AQUA_WATERS;
+const FORESTRY_CLASSES = window.IAICT_META.enums.FORESTRY_CLASSES;
+const BOOL_OPTS = window.IAICT_META.enums.BOOL_OPTS;
 const ACTOR_TYPES = [
   { v: "HOUSEHOLD", t: "Nông hộ" }, { v: "COMPANY", t: "Doanh nghiệp" },
   { v: "COOPERATIVE", t: "Hợp tác xã" }, { v: "FACILITY", t: "Cơ sở đóng gói/chế biến" },
@@ -287,65 +264,7 @@ function quickParcel(done, back) {
   ], async (p) => { const r = await T("/spatial-units", { method: "POST", body: p }); invalidate("parcels"); toast("Đã thêm thửa " + r.code); done(r.code); }, { onCancel: back });
 }
 
-const DETAIL_LABELS = {
-  code: "Mã", name: "Tên", status: "Trạng thái", season: "Mùa vụ", province: "Tỉnh/TP",
-  district: "Quận/Huyện", ward: "Xã/Phường", area_ha: "Diện tích (ha)", area_m2: "Diện tích (m²)",
-  puc_code: "Mã số vùng trồng (PUC)", puc_status: "Trạng thái mã vùng", vsic_code: "Mã ngành VSIC",
-  sector_category: "Ngành", market_scope: "Thị trường", primary_species: "Đối tượng SX chính",
-  scientific_name: "Tên khoa học", issue_date: "Ngày cấp mã", issuing_authority: "Cơ quan cấp",
-  post_inspect_due_date: "Hạn hậu kiểm", dist_to_residential_m: "Cách khu dân cư (m)",
-  dist_to_sensitive_zone_m: "Cách vùng nhạy cảm (m)", bee_site_min_dist_km: "Cách điểm nuôi ong tối thiểu (km)",
-  species: "Loài", variety: "Giống", cultivar_code: "Mã giống", origin: "Nguồn gốc",
-  recognition_no: "Số quyết định công nhận", valid_to: "Công nhận đến", valid_from: "Hiệu lực từ",
-  zone_code: "Vùng", plant_code: "Cây đầu dòng", plan_code: "Kế hoạch", parcel_code: "Thửa đất",
-  crop_name: "Cây trồng", start_date: "Ngày bắt đầu", end_date: "Ngày kết thúc",
-  target_yield_kg: "Sản lượng mục tiêu (kg)", planting_density: "Mật độ trồng", seed_origin: "Nguồn giống",
-  seed_origin_doc: "Hồ sơ nguồn gốc giống", variety_name: "Tên giống", actor_type: "Loại chủ thể",
-  gln_code: "Mã GLN", parent_code: "Chủ thể cấp trên", phone: "Số điện thoại", email: "Email", legal_id: "Số CCCD / MST", legal_id_hash: "Mã băm số định danh (HMAC)",
-  address: "Địa chỉ", province_code: "Mã tỉnh", district_code: "Mã huyện", commune_code: "Mã xã",
-  unit_type: "Loại thửa", operator_code: "Chủ thể vận hành", joined_date: "Ngày tham gia vùng",
-  product_name: "Tên sản phẩm", brand_name: "Thương hiệu", registration_no: "Số đăng ký",
-  active_ingredient: "Hoạt chất", supplier_code: "Nhà cung cấp", quantity_received: "Số lượng nhập",
-  unit: "Đơn vị", purchase_invoice_no: "Số hóa đơn mua", qcvn_scheme_id: "Mã quy chuẩn (QCVN)",
-  purchase_date: "Ngày mua", expiry_date: "Hạn dùng", phi_days: "Ngày cách ly (PHI)",
-  harvest_date: "Ngày thu hoạch", harvest_time: "Giờ thu hoạch", farmer_code: "Nông hộ", weigh_slip_number: "Số phiếu cân",
-  quantity: "Sản lượng", quality_grade: "Phân loại chất lượng", harvested_by: "Người thu hoạch",
-  traceability_code: "Mã truy xuất", data_retention_until: "Lưu dữ liệu đến",
-  facility_code: "Cơ sở đóng gói", phc_code: "Mã cơ sở đóng gói (PHC)", output_weight_kg: "Sản lượng thành phẩm (kg)",
-  yield_norm_ratio: "Định mức thu hồi", storage_type: "Loại bảo quản", packed_at: "Thời điểm đóng gói",
-  event_type: "Loại sự kiện", occurred_at: "Thời điểm", input_lot_code: "Lô vật tư đã dùng",
-  safe_harvest_date: "Thu hoạch an toàn từ", application_method: "Phương pháp áp dụng",
-  fruit_bagging_count: "Số trái đã bao", max_safe_harvest_date: "Ngày thu hoạch an toàn",
-  actual_harvest_date: "Ngày thu hoạch thực tế", validation_outcome: "Kết luận",
-  last_treatment_ref: "Lần xử lý quyết định", sync_status: "Trạng thái đồng bộ", synced_at: "Đồng bộ lúc",
-  created_at: "Tạo lúc", updated_at: "Cập nhật lúc",
-  lot_code: "Lô thu hoạch", membership_status: "Trạng thái tham gia",
-  registered_area_m2: "Diện tích đăng ký (m²)", left_date: "Ngày rời vùng",
-  production_event_time: "Thời điểm sản xuất", business_name: "Tên cơ sở / doanh nghiệp", business_unit_name: "Tên cơ sở / doanh nghiệp", business_unit_address: "Địa chỉ cơ sở", brand_trademark_serial: "Thương hiệu / số seri", owner_actor_code: "Chủ thể sở hữu vùng",
-  business_address: "Địa chỉ cơ sở", brand_or_serial: "Thương hiệu / số seri",
-  data_carrier_type: "Loại mã mang dữ liệu", cultivar_code: "Mã giống",
-  owner_manager: "Chủ sở hữu / người quản lý", crop_group: "Nhóm cây",
-  water_source: "Nguồn nước", managing_entity: "Chủ thể quản lý",
-  category: "Nhóm vật tư", packaging_unit_code: "Đơn vị đóng gói (SKU)",
-  expiration_date: "Hạn dùng", product_image_url: "Ảnh sản phẩm",
-  substance_code: "Hoạt chất / thành phần", vn_registration_number: "Số đăng ký lưu hành VN",
-  batch_no: "Số lô nhà sản xuất", national_land_parcel_id: "Mã định danh thửa đất quốc gia",
-  map_sheet_number: "Số tờ bản đồ", parcel_number: "Số thửa",
-  land_tenure_doc_type: "Loại giấy tờ đất", land_cert_serial: "Số giấy chứng nhận",
-  land_legal_owner_name: "Chủ đất theo giấy tờ", owner_consent_doc_url: "Văn bản đồng ý của chủ đất", cultivar: "Giống",
-  outcome: "Kết luận", harvest_lot_code: "Lô thu hoạch đầu vào",
-  packing_lot_code: "Lô đóng gói", allocated_weight_kg: "Khối lượng phân bổ (kg)",
-  gtin_code: "Mã GTIN", sscc_code: "Mã SSCC", package_spec: "Quy cách đóng gói",
-  units_count: "Số đơn vị", level: "Cấp đóng gói", stage_no: "Công đoạn số",
-  stage_name: "Tên công đoạn", applied_scheme_id: "Tiêu chuẩn áp dụng",
-  scheme_code: "Mã tiêu chuẩn / chứng nhận", event_time: "Thời điểm sự kiện",
-  product_trace_code: "Mã truy xuất sản phẩm", location_trace_code: "Mã truy xuất địa điểm",
-  batch_lot_number: "Số lô", quantity_received: "Số lượng nhập", dosage_concentration: "Liều lượng / nồng độ",
-  total_quantity_applied: "Tổng lượng đã dùng", crop_animal_growth_stage: "Giai đoạn sinh trưởng",
-  target_pest_disease_reason: "Đối tượng / lý do xử lý", gs1_role_ai: "Mã vai trò GS1",
-  is_group_leader: "Là tổ trưởng", ics_training_completed: "Đã tập huấn ICS",
-  initial_declared_area_ha: "Diện tích khai báo ban đầu (ha)", validated_at: "Thời điểm kiểm tra",
-};
+const DETAIL_LABELS = window.IAICT_META.labels;
 
 const DETAIL_VALUE_MAPS = {
   actor_type: { HOUSEHOLD: "Nông hộ", COMPANY: "Doanh nghiệp", COOPERATIVE: "Hợp tác xã", FACILITY: "Cơ sở đóng gói/chế biến", OTHER: "Khác" },
@@ -369,22 +288,7 @@ function fmtDetailVal(k2, v) {
 // Complete field lists per record kind: the detail sheet shows EVERY
 // field in a fixed order, empty ones as "-", so nothing is hidden just
 // because it has no value yet (Owner review 2026-11-03).
-const DETAIL_SPECS = {
-  zones: ["code", "name", "status", "puc_code", "puc_status", "vsic_code", "sector_category", "market_scope", "primary_species", "scientific_name", "crop_group", "area_ha", "initial_declared_area_ha", "province", "district", "ward", "address", "season", "water_source", "managing_entity", "owner_actor_code", "farm_scale_tier", "submission_channel", "application_received_at", "issue_date", "issuing_authority", "post_inspect_due_date", "valid_from", "valid_to", "dist_to_residential_m", "dist_to_sensitive_zone_m", "bee_site_min_dist_km"],
-  mother_plants: ["code", "species", "variety", "scientific_name", "cultivar_code", "zone_code", "planting_year", "origin", "owner_manager", "recognition_no", "valid_to", "status"],
-  actors: ["code", "name", "actor_type", "gln_code", "gs1_role_ai", "parent_code", "legal_id", "legal_id_hash", "forestry_enterprise_class", "province_code", "district_code", "commune_code", "address", "phone", "email", "is_group_leader", "ics_training_completed", "valid_from", "valid_to", "status"],
-  spatial_units: ["code", "name", "unit_type", "operator_code", "province_code", "commune_code", "national_land_parcel_id", "map_sheet_number", "parcel_number", "area_m2", "land_tenure_doc_type", "land_cert_serial", "land_legal_owner_name", "owner_consent_doc_url", "earth_terrace_compliant", "forest_origin_type", "aquaculture_water_type", "vessel_reg_number", "vessel_length_max_m", "tech_safety_cert_no", "vms_device_serial", "valid_from", "valid_to", "status"],
-  zone_parcel_links: ["zone_code", "parcel_code", "registered_area_m2", "membership_status", "joined_date", "left_date", "status"],
-  input_lots: ["code", "name", "category", "brand_name", "substance_code", "vn_registration_number", "batch_no", "purchase_invoice_no", "qcvn_scheme_id", "supplier_code", "purchase_date", "quantity", "unit", "phi_days", "expiry_date", "status"],
-  crop_plans: ["code", "name", "crop_name", "zone_code", "plant_code", "parcel_code", "variety_name", "seed_origin", "seed_origin_doc", "planting_density", "forest_harvest_plan_no", "departure_port_code", "arrival_port_code", "start_date", "end_date", "target_yield_kg", "status"],
-  lots: ["code", "zone_code", "plan_code", "harvest_date", "farmer_code", "parcel_code", "weigh_slip_number", "quantity", "unit", "quality_grade", "harvested_by", "expiry_date", "traceability_code", "data_retention_until", "status"],
-  packing_lots: ["code", "facility_code", "phc_code", "product_name", "food_safety_cert_id", "carcass_serial_id", "ecdt_cc_cert_number", "cites_permit_number", "output_weight_kg", "yield_norm_ratio", "storage_type", "packed_at", "expiry_date", "status"],
-  traceability_records: ["traceability_code", "product_name", "product_image_url", "business_unit_name", "business_unit_address", "production_event_time", "brand_trademark_serial", "expiration_date", "packaging_unit_code", "data_carrier_type", "sync_status", "synced_at", "data_retention_until", "status"],
-  phi_validations: ["lot_code", "plan_code", "validation_outcome", "max_safe_harvest_date", "actual_harvest_date", "last_treatment_ref"],
-  field_events: ["event_type", "plan_code", "zone_code", "occurred_at", "input_lot_code", "phi_days", "safe_harvest_date", "dosage_concentration", "total_quantity_applied", "application_method", "crop_animal_growth_stage", "target_pest_disease_reason", "fruit_bagging_count", "device", "notes", "actor"],
-  packaging_units: ["code", "packing_lot_code", "level", "gtin_code", "sscc_code", "cites_specimen_mark_code", "package_spec", "units_count", "status"],
-  cte_stages: ["stage_no", "stage_name", "traceability_code", "product_trace_code", "location_trace_code", "batch_lot_number", "event_time", "scheme_code"],
-};
+const DETAIL_SPECS = window.IAICT_META.detailSpecs;
 
 function openDetail(title, rec, kind) {
   $("#sheetTitle").textContent = title;

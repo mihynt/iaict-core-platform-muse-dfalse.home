@@ -1,0 +1,296 @@
+// GENERATED from backend/app/fields.py by tools/gen_fields.py - do not edit by hand.
+syntax = "proto3";
+
+package iaict.core.v1;
+
+// Field numbers are append-only and never reused
+// (pinned in contracts/field_numbers.json).
+
+message Actor {
+  string name = 1;  // Tên
+  string actor_type = 2;  // Loại chủ thể
+  string gln_code = 3;  // Mã GLN
+  string province_code = 4;  // Mã tỉnh
+  string district_code = 5;  // Mã huyện
+  string commune_code = 6;  // Mã xã
+  string address = 7;  // Địa chỉ
+  string phone = 8;  // Số điện thoại
+  string email = 9;  // Email
+  string code = 10;  // Mã
+  string gs1_role_ai = 11;  // Mã vai trò GS1
+  string parent_code = 12;  // Chủ thể cấp trên
+  string legal_id = 13;  // Số CCCD / MST
+  string legal_id_hash = 14;  // Mã băm số định danh (HMAC)
+  string forestry_enterprise_class = 15;
+  bool is_group_leader = 16;  // Là tổ trưởng
+  bool ics_training_completed = 17;  // Đã tập huấn ICS
+  string valid_from = 18;  // Hiệu lực từ
+  string valid_to = 19;  // Công nhận đến
+  string status = 20;  // Trạng thái
+}
+
+message CropPlan {
+  string name = 1;  // Tên
+  string crop_name = 2;  // Cây trồng
+  string variety_name = 3;  // Tên giống
+  string seed_origin = 4;  // Nguồn giống
+  double planting_density = 5;  // Mật độ trồng
+  string seed_origin_doc = 6;  // Hồ sơ nguồn gốc giống
+  string start_date = 7;  // Ngày bắt đầu
+  string end_date = 8;  // Ngày kết thúc
+  double target_yield_kg = 9;  // Sản lượng mục tiêu (kg)
+  string status = 10;  // Trạng thái
+  string code = 11;  // Mã
+  string zone_code = 12;  // Vùng
+  string plant_code = 13;  // Cây đầu dòng
+  string parcel_code = 14;  // Thửa đất
+  string forest_harvest_plan_no = 15;
+  string departure_port_code = 16;
+  string arrival_port_code = 17;
+}
+
+message CteStage {
+  string traceability_code = 1;  // Mã truy xuất
+  int64 stage_no = 2;  // Công đoạn số
+  string stage_name = 3;  // Tên công đoạn
+  string product_trace_code = 4;  // Mã truy xuất sản phẩm
+  string location_trace_code = 5;  // Mã truy xuất địa điểm
+  string batch_lot_number = 6;  // Số lô
+  string event_time = 7;  // Thời điểm sự kiện
+  string scheme_code = 8;  // Mã tiêu chuẩn / chứng nhận
+}
+
+message FieldEvent {
+  string event_type = 1;  // Loại sự kiện
+  string occurred_at = 2;  // Thời điểm
+  double lat = 3;
+  double lon = 4;
+  string actor = 5;
+  string device = 6;
+  string notes = 7;
+  string materials = 8;
+  string growth_stage = 9;
+  string target_pest = 10;
+  string dosage = 11;
+  double quantity_applied = 12;
+  int64 phi_days = 13;  // Ngày cách ly (PHI)
+  string safe_harvest_date = 14;  // Thu hoạch an toàn từ
+  string application_method = 15;  // Phương pháp áp dụng
+  int64 fruit_bagging_count = 16;  // Số trái đã bao
+  string plan_code = 17;  // Kế hoạch
+  string zone_code = 18;  // Vùng
+  string input_lot_code = 19;  // Lô vật tư đã dùng
+  string dosage_concentration = 20;  // Liều lượng / nồng độ
+  string total_quantity_applied = 21;  // Tổng lượng đã dùng
+  string crop_animal_growth_stage = 22;  // Giai đoạn sinh trưởng
+  string target_pest_disease_reason = 23;  // Đối tượng / lý do xử lý
+}
+
+message InputLot {
+  string name = 1;  // Tên
+  string category = 2;  // Nhóm vật tư
+  string substance_code = 3;  // Hoạt chất / thành phần
+  string vn_registration_number = 4;  // Số đăng ký lưu hành VN
+  string batch_no = 5;  // Số lô nhà sản xuất
+  string purchase_date = 6;  // Ngày mua
+  double quantity = 7;  // Sản lượng
+  string unit = 8;  // Đơn vị
+  int64 phi_days = 9;  // Ngày cách ly (PHI)
+  string expiry_date = 10;  // Hạn dùng
+  string purchase_invoice_no = 11;  // Số hóa đơn mua
+  string qcvn_scheme_id = 12;  // Mã quy chuẩn (QCVN)
+  string code = 13;  // Mã
+  string brand_name = 14;  // Thương hiệu
+  string supplier_code = 15;  // Nhà cung cấp
+  string status = 16;  // Trạng thái
+}
+
+message Lot {
+  string harvest_date = 1;  // Ngày thu hoạch
+  double quantity = 2;  // Sản lượng
+  string unit = 3;  // Đơn vị
+  string harvested_by = 4;  // Người thu hoạch
+  string quality_grade = 5;  // Phân loại chất lượng
+  string status = 6;  // Trạng thái
+  string expiry_date = 7;  // Hạn dùng
+  string weigh_slip_number = 8;  // Số phiếu cân
+  string traceability_code = 9;  // Mã truy xuất
+  string data_retention_until = 10;  // Lưu dữ liệu đến
+  string code = 11;  // Mã
+  string zone_code = 12;  // Vùng
+  string plan_code = 13;  // Kế hoạch
+  string farmer_code = 14;  // Nông hộ
+  string parcel_code = 15;  // Thửa đất
+  string harvest_time = 16;  // Giờ thu hoạch
+}
+
+message MotherPlant {
+  string species = 1;  // Loài
+  string variety = 2;  // Giống
+  string scientific_name = 3;  // Tên khoa học
+  string origin = 4;  // Nguồn gốc
+  int64 planting_year = 5;
+  double lat = 6;
+  double lon = 7;
+  string owner_manager = 8;  // Chủ sở hữu / người quản lý
+  string recognition_no = 9;  // Số quyết định công nhận
+  string issuing_authority = 10;  // Cơ quan cấp
+  string valid_from = 11;  // Hiệu lực từ
+  string valid_to = 12;  // Công nhận đến
+  string status = 13;  // Trạng thái
+  string code = 14;  // Mã
+  string cultivar_code = 15;  // Mã giống
+  string zone_code = 16;  // Vùng
+}
+
+message PackagingUnit {
+  string level = 1;  // Cấp đóng gói
+  string gtin_code = 2;  // Mã GTIN
+  string sscc_code = 3;  // Mã SSCC
+  string package_spec = 4;  // Quy cách đóng gói
+  int64 units_count = 5;  // Số đơn vị
+  string code = 6;  // Mã
+  string packing_lot_code = 7;  // Lô đóng gói
+  string cites_specimen_mark_code = 8;
+  string status = 9;  // Trạng thái
+}
+
+message PackingInput {
+  double allocated_weight_kg = 1;  // Khối lượng phân bổ (kg)
+  string linked_at = 2;
+  string packing_lot_code = 3;  // Lô đóng gói
+  string harvest_lot_code = 4;  // Lô thu hoạch đầu vào
+}
+
+message PackingLot {
+  string phc_code = 1;  // Mã cơ sở đóng gói (PHC)
+  string product_name = 2;  // Tên sản phẩm
+  double output_weight_kg = 3;  // Sản lượng thành phẩm (kg)
+  double yield_norm_ratio = 4;  // Định mức thu hồi
+  string storage_type = 5;  // Loại bảo quản
+  string packed_at = 6;  // Thời điểm đóng gói
+  string expiry_date = 7;  // Hạn dùng
+  string status = 8;  // Trạng thái
+  string code = 9;  // Mã
+  string facility_code = 10;  // Cơ sở đóng gói
+  string food_safety_cert_id = 11;
+  string carcass_serial_id = 12;
+  string ecdt_cc_cert_number = 13;
+  string cites_permit_number = 14;
+}
+
+message PhiValidation {
+  string lot_code = 1;  // Lô thu hoạch
+  string plan_code = 2;  // Kế hoạch
+  string max_safe_harvest_date = 3;  // Ngày thu hoạch an toàn
+  string actual_harvest_date = 4;  // Ngày thu hoạch thực tế
+  string outcome = 5;  // Kết luận
+  string last_treatment_ref = 6;  // Lần xử lý quyết định
+  string validation_outcome = 7;  // Kết luận
+}
+
+message SpatialUnit {
+  string name = 1;  // Tên
+  string unit_type = 2;  // Loại thửa
+  string national_land_parcel_id = 3;  // Mã định danh thửa đất quốc gia
+  string map_sheet_number = 4;  // Số tờ bản đồ
+  string parcel_number = 5;  // Số thửa
+  string land_tenure_doc_type = 6;  // Loại giấy tờ đất
+  string land_cert_serial = 7;  // Số giấy chứng nhận
+  string land_legal_owner_name = 8;  // Chủ đất theo giấy tờ
+  string forest_subzone_code = 9;
+  string forest_compartment_code = 10;
+  string forest_plot_code = 11;
+  double area_m2 = 12;  // Diện tích (m²)
+  double slope_degree = 13;
+  string code = 14;  // Mã
+  string operator_code = 15;  // Chủ thể vận hành
+  string province_code = 16;  // Mã tỉnh
+  string commune_code = 17;  // Mã xã
+  string owner_consent_doc_url = 18;  // Văn bản đồng ý của chủ đất
+  bool earth_terrace_compliant = 19;
+  string forest_origin_type = 20;
+  string aquaculture_water_type = 21;
+  string vessel_reg_number = 22;
+  double vessel_length_max_m = 23;
+  string tech_safety_cert_no = 24;
+  string vms_device_serial = 25;
+  string valid_from = 26;  // Hiệu lực từ
+  string valid_to = 27;  // Công nhận đến
+  string status = 28;  // Trạng thái
+}
+
+message TraceabilityRecord {
+  string traceability_code = 1;  // Mã truy xuất
+  string product_name = 2;  // Tên sản phẩm
+  string product_image_url = 3;  // Ảnh sản phẩm
+  string business_unit_name = 4;  // Tên cơ sở / doanh nghiệp
+  string business_unit_address = 5;  // Địa chỉ cơ sở
+  string production_event_time = 6;  // Thời điểm sản xuất
+  string brand_trademark_serial = 7;  // Thương hiệu / số seri
+  string expiration_date = 8;  // Hạn dùng
+  string data_carrier_type = 9;  // Loại mã mang dữ liệu
+  string data_retention_until = 10;  // Lưu dữ liệu đến
+  string sync_status = 11;  // Trạng thái đồng bộ
+  string synced_at = 12;  // Đồng bộ lúc
+  string packaging_unit_code = 13;  // Đơn vị đóng gói (SKU)
+  string status = 14;  // Trạng thái
+}
+
+message ZoneParcelLink {
+  double registered_area_m2 = 1;  // Diện tích đăng ký (m²)
+  string membership_status = 2;  // Trạng thái tham gia
+  string joined_date = 3;  // Ngày tham gia vùng
+  string left_date = 4;  // Ngày rời vùng
+  string zone_code = 5;  // Vùng
+  string parcel_code = 6;  // Thửa đất
+  string status = 7;  // Trạng thái
+}
+
+message ZoneStatusHistory {
+  string zone_code = 1;  // Vùng
+  string previous_status = 2;
+  string new_status = 3;
+  string trigger_reason_code = 4;
+  string decision_doc_number = 5;
+  string remediation_measures = 6;
+  string changed_by = 7;
+}
+
+message Zone {
+  string name = 1;  // Tên
+  double area_ha = 2;  // Diện tích (ha)
+  string address = 3;  // Địa chỉ
+  double lat = 4;
+  double lon = 5;
+  string geom = 6;
+  string crop_group = 7;  // Nhóm cây
+  string season = 8;  // Mùa vụ
+  string water_source = 9;  // Nguồn nước
+  string managing_entity = 10;  // Chủ thể quản lý
+  string status = 11;  // Trạng thái
+  string owner_actor_code = 12;  // Chủ thể sở hữu vùng
+  string puc_code = 13;  // Mã số vùng trồng (PUC)
+  string puc_status = 14;  // Trạng thái mã vùng
+  string sector_category = 15;  // Ngành
+  string market_scope = 16;  // Thị trường
+  string primary_species = 17;  // Đối tượng SX chính
+  string scientific_name = 18;  // Tên khoa học
+  string issue_date = 19;  // Ngày cấp mã
+  string issuing_authority = 20;  // Cơ quan cấp
+  string post_inspect_due_date = 21;  // Hạn hậu kiểm
+  string vsic_code = 22;  // Mã ngành VSIC
+  double dist_to_residential_m = 23;  // Cách khu dân cư (m)
+  double dist_to_sensitive_zone_m = 24;  // Cách vùng nhạy cảm (m)
+  double bee_site_min_dist_km = 25;  // Cách điểm nuôi ong tối thiểu (km)
+  string code = 26;  // Mã
+  string initial_declared_area_ha = 27;  // Diện tích khai báo ban đầu (ha)
+  string province = 28;  // Tỉnh/TP
+  string district = 29;  // Quận/Huyện
+  string ward = 30;  // Xã/Phường
+  string farm_scale_tier = 31;
+  string submission_channel = 32;
+  string application_received_at = 33;
+  string valid_from = 34;  // Hiệu lực từ
+  string valid_to = 35;  // Công nhận đến
+}
