@@ -564,13 +564,11 @@ VIEWS.zones = async () => {
     el.insertAdjacentHTML("beforeend", items.length ? `<div class="list">${items.map((z) => `
       <div class="card" data-card="${esc(z.code)}"><div class="thumb">🗺️</div><div class="body">
         <div class="title">${esc(z.name || z.code)} ${chipFor(z.status)}</div>
-        <div class="sub">Mã vùng: <b>${esc(z.code)}</b>${z.crop_group ? ` · Nhóm cây: ${esc(z.crop_group)}` : ""}</div>
+        <div class="sub">Mã vùng: <b>${esc(z.code)}</b></div>
         <div class="meta">
           ${z.area_ha != null ? `<span>📐 ${fmtNum(z.area_ha)} ha</span>` : ""}
           ${z.puc_code ? `<span>🏷️ MSVT ${esc(z.puc_code)}</span>` : ""}
           ${z.primary_species ? `<span>🌱 ${esc(z.primary_species)}</span>` : ""}
-          ${z.season ? `<span>🗓️ ${esc(z.season)}</span>` : ""}
-          ${z.water_source ? `<span>💧 ${esc(z.water_source)}</span>` : ""}
           ${z.address ? `<span>📍 ${esc(z.address)}</span>` : ""}
         </div>
         <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-zone="${esc(z.code)}">✏️ Sửa</button> <button class="btn btn-ghost btn-sm" data-del-zone="${esc(z.code)}">🗑️ Xoá</button> <button class="btn btn-ghost btn-sm" data-zhist="${esc(z.code)}">🕘 Lịch sử trạng thái mã</button></div>
@@ -613,11 +611,7 @@ VIEWS.zones = async () => {
         { k: "post_inspect_due_date", label: "Hạn hậu kiểm mã vùng trồng", type: "date", def: z.post_inspect_due_date || "" },
         { k: "vsic_code", label: "Mã ngành VSIC", def: z.vsic_code || "" },
         { k: "primary_species", label: "Cây trồng chính", def: z.primary_species || "" },
-        { k: "crop_group", label: "Nhóm cây", def: z.crop_group || "" },
-        { k: "season", label: "Mùa vụ", def: z.season || "" },
-        { k: "water_source", label: "Nguồn nước", def: z.water_source || "" },
         { k: "address", label: "Địa chỉ", def: z.address || "" },
-        { k: "managing_entity", label: "Chủ thể quản lý", def: z.managing_entity || "" },
       ], async (p) => { await T(`/zones/${encodeURIComponent(z.code)}`, { method: "PATCH", body: p }); invalidate("zones", "zhistory"); });
     });
     wireCardDetails(el, items, (z) => `Vùng ${z.code}`, "zones");
@@ -671,11 +665,7 @@ VIEWS.zones = async () => {
     { k: "submission_channel", label: "Kênh nộp hồ sơ cấp mã", type: "select", options: SUBMIT_CHANNELS },
     { k: "application_received_at", label: "Thời điểm xã tiếp nhận hồ sơ", type: "datetime-local" },
     { k: "primary_species", label: "Cây trồng chính", placeholder: "vd: Bưởi da xanh" },
-    { k: "crop_group", label: "Nhóm cây", placeholder: "vd: Rau củ, Sầu riêng…" },
-    { k: "season", label: "Mùa vụ", placeholder: "vd: Đông Xuân 2026" },
-    { k: "water_source", label: "Nguồn nước", placeholder: "vd: Suối, Giếng khoan…" },
     { k: "address", label: "Địa chỉ", placeholder: "Thôn/xã/huyện" },
-    { k: "managing_entity", label: "Chủ thể quản lý", placeholder: "Đội/nhóm phụ trách" },
   ], async (p) => { await T("/zones", { method: "POST", body: p }); invalidate("zones", "zhistory"); });
   });
 };

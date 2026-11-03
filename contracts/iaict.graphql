@@ -277,10 +277,6 @@ type Zone {
   lat: Float
   lon: Float
   geom: String
-  crop_group: String
-  season: String
-  water_source: String
-  managing_entity: String
   status: String
   owner_actor_code: String
   puc_code: String

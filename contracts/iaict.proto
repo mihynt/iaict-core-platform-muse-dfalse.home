@@ -264,10 +264,6 @@ message Zone {
   double lat = 4;
   double lon = 5;
   string geom = 6;
-  string crop_group = 7;  // Nhóm cây
-  string season = 8;  // Mùa vụ
-  string water_source = 9;  // Nguồn nước
-  string managing_entity = 10;  // Chủ thể quản lý
   string status = 11;  // Trạng thái
   string owner_actor_code = 12;  // Chủ thể sở hữu vùng
   string puc_code = 13;  // Mã số vùng trồng (PUC)
@@ -293,4 +289,5 @@ message Zone {
   string application_received_at = 33;  // Thời điểm xã tiếp nhận hồ sơ
   string valid_from = 34;  // Hiệu lực từ
   string valid_to = 35;  // Công nhận đến
+  reserved 7, 8, 9, 10;
 }

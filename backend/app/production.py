@@ -55,10 +55,6 @@ class RecordIn(BaseModel):
     lat: float | None = None
     lon: float | None = None
     geom: dict | None = None
-    crop_group: str | None = None
-    season: str | None = None
-    water_source: str | None = None
-    managing_entity: str | None = None
     # ZON — industry code & VietGAP buffer distances (T-024, Bang 7)
     vsic_code: str | None = None
     dist_to_residential_m: float | None = None

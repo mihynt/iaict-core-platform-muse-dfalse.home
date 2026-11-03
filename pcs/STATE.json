@@ -1,5 +1,5 @@
 {
-  "revision": 47,
+  "revision": 48,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "T-031 + T-032 slices 1-2 DEPLOYED and browser-verified (rev 47, Worker 8039239a); three browser-caught UI defects fixed and guarded by new tests. Open: T-032 slices 3-4 on Owner request; Q-TX-01/02; phase 3 vs T-005; keep-warm; IAICT_PII_KEY activation.",
+      "last_completed_step": "T-033 DONE (rev 48): 4 excess zone fields cut at the registry, deployed and browser-verified; stored data preserved. Open: T-032 slices 3-4; the 2 mild duplicates (seed_origin, traceability status) if the Owner wants them; Q-TX-01/02; phase 3 vs T-005; keep-warm; IAICT_PII_KEY.",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -525,9 +525,19 @@
         "blockers": [
           "Slices 3-4 not yet requested."
         ]
+      },
+      {
+        "id": "T-033",
+        "title": "Field audit vs the 33 tables + trim 4 excess zone fields",
+        "status": "TECH_DONE",
+        "srs_refs": [
+          "DEC-013"
+        ],
+        "evidence": "Audit (minutes: ra-soat-truong-thua-04-11-2026.md): every registry field diffed against its dossier table and the SRS baseline - most diffs are verified synonyms (puc_code<->puc_national_code etc.) or SRS-baseline fields; genuine excess concentrated in zones. Owner approved cutting 4: managing_entity (duplicate of the FK-validated owner_actor_code), season (belongs to crop_plans/Bang 15; held probe junk on Z-TMP), crop_group (duplicated by primary_species/scientific_name + plan crop), water_source (no Bang 7 home; empty everywhere). No backend logic read any of them. Cut executed at the registry + both zone forms + zone card template + RecordIn declarations; regeneration propagated it (Protobuf contract now reserves numbers 7-10 for Zone, never reused). Suites 76 passed + 2 skipped in both modes; jsdom simulation: zone form down to 27 fields, zero errors. DEPLOYED Worker 050aa146: API no longer returns the 4 fields; verified directly on production D1 that stored values are untouched (Z-01 crop_group still 'rau cu' in the zones table - display/API cut only, expand-contract discipline). Browser test PASSED: 27-field form without the 4 fields, Z-01 detail and card clean, main fields intact. Two mild duplicates elsewhere (crop_plans seed_origin vs seed_origin_doc; traceability_records generic status vs sync_status) were reported but NOT cut - awaiting the Owner.",
+        "blockers": []
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T22:52:29Z"
+  "updated_at": "2026-11-03T23:22:53Z"
 }

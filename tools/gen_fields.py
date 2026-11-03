@@ -149,10 +149,15 @@ def render_proto(numbers: dict) -> str:
              "// (pinned in contracts/field_numbers.json).", ""]
     for kind, meta in KINDS.items():
         lines.append(f"message {_pascal(kind)} {{")
+        live = set()
         for f in meta["fields"]:
             n = numbers[kind][f["name"]]
+            live.add(n)
             comment = f"  // {f['label']}" if "label" in f else ""
             lines.append(f"  {_proto_type(f)} {f['name']} = {n};{comment}")
+        retired = sorted(set(numbers[kind].values()) - live)
+        if retired:
+            lines.append("  reserved " + ", ".join(str(n) for n in retired) + ";")
         lines += ["}", ""]
     return "\n".join(lines)
 
