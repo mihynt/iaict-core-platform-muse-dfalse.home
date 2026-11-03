@@ -21,6 +21,10 @@ CREATE TABLE IF NOT EXISTS users (
     display_name TEXT NOT NULL,
     role         TEXT NOT NULL,
     created_at   TEXT NOT NULL,
+    linked_actor_code TEXT,
+    account_status TEXT DEFAULT 'ACTIVE',
+    jurisdiction_admin_code TEXT,
+    auth_provider_type TEXT,
     PRIMARY KEY (tenant_id, username)
 );
 
@@ -39,7 +43,11 @@ CREATE TABLE IF NOT EXISTS audit_log (
     actor     TEXT NOT NULL,
     action    TEXT NOT NULL,
     target    TEXT NOT NULL,
-    outcome   TEXT NOT NULL
+    outcome   TEXT NOT NULL,
+    old_value TEXT,
+    new_value TEXT,
+    client_ip TEXT,
+    user_agent TEXT
 );
 
 CREATE TABLE IF NOT EXISTS zones (
@@ -73,10 +81,10 @@ CREATE TABLE IF NOT EXISTS zones (
     data            TEXT NOT NULL DEFAULT '{}',
     created_at      TEXT NOT NULL,
     updated_at      TEXT NOT NULL,
+    owner_actor_id   INTEGER,
+    owner_actor_code TEXT,
     UNIQUE (tenant_id, id),
-    UNIQUE (tenant_id, code),
-  owner_actor_id   INTEGER,
-  owner_actor_code TEXT
+    UNIQUE (tenant_id, code)
 );
 
 CREATE TABLE IF NOT EXISTS zone_boundary_versions (
@@ -461,3 +469,24 @@ CREATE TABLE IF NOT EXISTS cte_stages (
 CREATE UNIQUE INDEX IF NOT EXISTS ux_traceability_records_code
     ON traceability_records (tenant_id, traceability_code)
     WHERE traceability_code IS NOT NULL;
+
+
+-- Zone PUC status history (dossier Bang 13, T-031): one row per status
+-- change of a production zone's planting-area code.
+CREATE TABLE IF NOT EXISTS zone_status_history (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    zone_id       INTEGER,
+    zone_code     TEXT,
+    previous_status TEXT,
+    new_status    TEXT,
+    trigger_reason_code TEXT,
+    decision_doc_number TEXT,
+    remediation_measures TEXT,
+    changed_by    TEXT,
+    data          TEXT NOT NULL DEFAULT '{}',
+    created_at    TEXT NOT NULL,
+    updated_at    TEXT NOT NULL,
+    UNIQUE (tenant_id, id),
+    FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id)
+);

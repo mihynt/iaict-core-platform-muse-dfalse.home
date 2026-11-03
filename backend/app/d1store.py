@@ -154,6 +154,23 @@ class D1Store:
                 " WHERE traceability_code IS NOT NULL").run()
         except Exception:
             pass
+        # T-031: zone status history table (Bang 13) on pre-existing DBs.
+        try:
+            await self._db.prepare(
+                "CREATE TABLE IF NOT EXISTS zone_status_history ("
+                " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                " tenant_id TEXT NOT NULL REFERENCES tenants (slug)"
+                " ON DELETE CASCADE, zone_id INTEGER, zone_code TEXT,"
+                " previous_status TEXT, new_status TEXT,"
+                " trigger_reason_code TEXT, decision_doc_number TEXT,"
+                " remediation_measures TEXT, changed_by TEXT,"
+                " data TEXT NOT NULL DEFAULT '{}',"
+                " created_at TEXT NOT NULL, updated_at TEXT NOT NULL,"
+                " UNIQUE (tenant_id, id),"
+                " FOREIGN KEY (tenant_id, zone_id)"
+                " REFERENCES zones (tenant_id, id))").run()
+        except Exception:
+            pass
         # T-023 column upgrades (audit T-021 field gaps): portal sync
         # timestamp + PHI last-treatment reference. Raw binding only
         # (see the M3 note above); duplicate-column errors on already
@@ -174,6 +191,16 @@ class D1Store:
             "ALTER TABLE crop_plans ADD COLUMN seed_origin_doc TEXT",
             "ALTER TABLE zones ADD COLUMN owner_actor_id INTEGER",
             "ALTER TABLE zones ADD COLUMN owner_actor_code TEXT",
+            # T-031 SYS pack (Bang 32/33): audit snapshots + client info,
+            # user actor link + account status.
+            "ALTER TABLE audit_log ADD COLUMN old_value TEXT",
+            "ALTER TABLE audit_log ADD COLUMN new_value TEXT",
+            "ALTER TABLE audit_log ADD COLUMN client_ip TEXT",
+            "ALTER TABLE audit_log ADD COLUMN user_agent TEXT",
+            "ALTER TABLE users ADD COLUMN linked_actor_code TEXT",
+            "ALTER TABLE users ADD COLUMN account_status TEXT DEFAULT 'ACTIVE'",
+            "ALTER TABLE users ADD COLUMN jurisdiction_admin_code TEXT",
+            "ALTER TABLE users ADD COLUMN auth_provider_type TEXT",
         ):
             try:
                 await self._db.prepare(_stmt).run()
@@ -218,16 +245,23 @@ class D1Store:
 
     # ---- audit ---------------------------------------------------------
     async def record_audit(self, *, scope: str, tenant_id: str | None, actor: str,
-                           action: str, target: str, outcome: str) -> dict:
+                           action: str, target: str, outcome: str,
+                           old_value: str | None = None,
+                           new_value: str | None = None) -> dict:
+        from . import auditctx
         ts = utcnow()
         meta = await self._run(
-            "INSERT INTO audit_log (ts, scope, tenant_id, actor, action, target, outcome)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (ts, scope, tenant_id, actor, action, target, outcome),
+            "INSERT INTO audit_log (ts, scope, tenant_id, actor, action, target, outcome,"
+            " old_value, new_value, client_ip, user_agent)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (ts, scope, tenant_id, actor, action, target, outcome,
+             old_value, new_value, auditctx.client_ip(), auditctx.user_agent()),
         )
         return {"seq": meta.get("last_row_id"), "ts": ts, "scope": scope,
                 "tenant_id": tenant_id, "actor": actor, "action": action,
-                "target": target, "outcome": outcome}
+                "target": target, "outcome": outcome, "old_value": old_value,
+                "new_value": new_value, "client_ip": auditctx.client_ip(),
+                "user_agent": auditctx.user_agent()}
 
     async def list_audit(self) -> list[dict]:
         return await self._all("SELECT * FROM audit_log ORDER BY seq")
@@ -273,20 +307,40 @@ class D1Store:
 
     # ---- users ---------------------------------------------------------
     async def create_user(self, tenant: str, username: str, display_name: str,
-                          role: str) -> User | None:
+                          role: str, linked_actor_code: str | None = None,
+                          jurisdiction_admin_code: str | None = None,
+                          auth_provider_type: str | None = None) -> User | None:
         created = utcnow()
         try:
             await self._run(
-                "INSERT INTO users (tenant_id, username, display_name, role, created_at)"
-                " VALUES (?, ?, ?, ?, ?)",
-                (tenant, username, display_name, role, created),
+                "INSERT INTO users (tenant_id, username, display_name, role, created_at,"
+                " linked_actor_code, account_status, jurisdiction_admin_code,"
+                " auth_provider_type)"
+                " VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)",
+                (tenant, username, display_name, role, created,
+                 linked_actor_code, jurisdiction_admin_code, auth_provider_type),
             )
         except Exception as exc:
             if _is_unique_violation(exc):
                 return None
             raise
         return User(username=username, display_name=display_name, role=role,
-                    created_at=created)
+                    created_at=created, linked_actor_code=linked_actor_code,
+                    jurisdiction_admin_code=jurisdiction_admin_code,
+                    auth_provider_type=auth_provider_type)
+
+    async def update_user(self, tenant: str, username: str, fields: dict) -> User | None:
+        allowed = ("display_name", "role", "linked_actor_code", "account_status",
+                   "jurisdiction_admin_code", "auth_provider_type")
+        sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
+        if await self.get_user(tenant, username) is None:
+            return None
+        if sets:
+            assignments = ", ".join(f"{k} = ?" for k in sets)
+            await self._run(
+                f"UPDATE users SET {assignments} WHERE tenant_id = ? AND username = ?",
+                tuple(sets.values()) + (tenant, username))
+        return await self.get_user(tenant, username)
 
     async def get_user(self, tenant: str, username: str) -> User | None:
         row = await self._first(
@@ -295,14 +349,22 @@ class D1Store:
         if row is None:
             return None
         return User(username=row["username"], display_name=row["display_name"],
-                    role=row["role"], created_at=row["created_at"])
+                    role=row["role"], created_at=row["created_at"],
+                    linked_actor_code=row.get("linked_actor_code"),
+                    account_status=row.get("account_status") or "ACTIVE",
+                    jurisdiction_admin_code=row.get("jurisdiction_admin_code"),
+                    auth_provider_type=row.get("auth_provider_type"))
 
     async def list_users(self, tenant: str) -> list[User]:
         rows = await self._all(
             "SELECT * FROM users WHERE tenant_id = ? ORDER BY username", (tenant,)
         )
         return [User(username=r["username"], display_name=r["display_name"],
-                     role=r["role"], created_at=r["created_at"]) for r in rows]
+                     role=r["role"], created_at=r["created_at"],
+                     linked_actor_code=r.get("linked_actor_code"),
+                     account_status=r.get("account_status") or "ACTIVE",
+                     jurisdiction_admin_code=r.get("jurisdiction_admin_code"),
+                     auth_provider_type=r.get("auth_provider_type")) for r in rows]
 
     async def tenant_user_count(self, tenant: str) -> int:
         row = await self._first(
@@ -437,6 +499,49 @@ class D1Store:
             row = await self._first(
                 f"SELECT * FROM {table} WHERE tenant_id = ? AND code = ?",
                 (tenant, code))
+        return self._row_to_record(row, kind)
+
+    async def update_record_by_id(self, tenant: str, kind: str, record_id: int,
+                            fields: dict) -> dict | None:
+        table, columns = SPECS[kind]
+        refs = RECORD_REFS[kind]
+        row = await self._first(
+            f"SELECT * FROM {table} WHERE tenant_id = ? AND id = ?",
+            (tenant, record_id))
+        if row is None:
+            return None
+        values: dict[str, object] = {}
+        for ref_field, ref_kind in refs.items():
+            ref_code = fields.get(ref_field)
+            if ref_code is not None:
+                ref_id = await self._resolve_ref(tenant, ref_kind, ref_code)
+                if ref_id is None:
+                    raise RefUnknown(ref_field)
+                values[REF_ID_COLUMN[ref_field]] = ref_id
+                values[ref_field] = ref_code
+        known = set(columns) | set(refs)
+        extra = {k: v for k, v in fields.items()
+                 if k not in known and k != "code"}
+        if extra:
+            current = row.get("data")
+            data = json.loads(current) if isinstance(current, str) \
+                and current else {}
+            data.update(extra)
+            values["data"] = json.dumps(data)
+        for col, ckind in columns.items():
+            if col in fields:
+                values[col] = _conv_in(fields[col], ckind)
+        if kind != "field_events":
+            values["updated_at"] = utcnow()
+        if values:
+            assignments = ", ".join(f"{k} = ?" for k in values)
+            await self._run(
+                f"UPDATE {table} SET {assignments}"
+                " WHERE tenant_id = ? AND id = ?",
+                tuple(values.values()) + (tenant, record_id))
+            row = await self._first(
+                f"SELECT * FROM {table} WHERE tenant_id = ? AND id = ?",
+                (tenant, record_id))
         return self._row_to_record(row, kind)
 
     async def delete_record(self, tenant: str, kind: str, code: str) -> dict | None:

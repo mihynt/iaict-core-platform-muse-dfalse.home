@@ -24,6 +24,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from .config import settings
 from .deps import require_role
 from .store import CODED_KINDS, RECORD_REFS, RefUnknown, User, store
+from . import pii
 from .tenancy import require_tenant
 
 router = APIRouter(tags=["production"])
@@ -74,6 +75,7 @@ class RecordIn(BaseModel):
     # ACT — actors / households (D-STD-01)
     actor_type: str | None = None
     is_group_leader: bool | None = None
+    legal_id: str | None = None
     # Traceability dossier Bang 6/18 descriptive fields (T-028 audit)
     gs1_role_ai: str | None = None
     dosage_concentration: str | None = None
@@ -98,6 +100,30 @@ class RecordIn(BaseModel):
     land_cert_serial: str | None = None
     land_legal_owner_name: str | None = None
     owner_consent_doc_url: str | None = None
+    status_change_reason: str | None = None
+    status_decision_doc: str | None = None
+    status_remediation: str | None = None
+    # T-031 conformance sweep (DEC-013: fields follow the 33 tables)
+    farm_scale_tier: str | None = None
+    submission_channel: str | None = None
+    application_received_at: datetime | None = None
+    forest_origin_type: str | None = None
+    aquaculture_water_type: str | None = None
+    earth_terrace_compliant: bool | None = None
+    vessel_reg_number: str | None = None
+    vessel_length_max_m: float | None = None
+    tech_safety_cert_no: str | None = None
+    vms_device_serial: str | None = None
+    forest_harvest_plan_no: str | None = None
+    departure_port_code: str | None = None
+    arrival_port_code: str | None = None
+    food_safety_cert_id: str | None = None
+    carcass_serial_id: str | None = None
+    ecdt_cc_cert_number: str | None = None
+    cites_permit_number: str | None = None
+    cites_specimen_mark_code: str | None = None
+    forestry_enterprise_class: str | None = None
+    harvest_time: str | None = None
     forest_subzone_code: str | None = None
     forest_compartment_code: str | None = None
     forest_plot_code: str | None = None
@@ -506,6 +532,16 @@ def _validate_gtin(fields: dict) -> None:
                     "message": "gtin_code must contain digits only"})
 
 
+def _snap(record: dict | None) -> str | None:
+    """Bang 33 audit snapshot: JSON of the record, size-capped."""
+    if record is None:
+        return None
+    import copy as _copy
+    import json as _json
+    return _json.dumps(_copy.deepcopy(record), ensure_ascii=False,
+                       default=str)[:8000]
+
+
 async def _create(tenant: str, actor: User, kind: str, prefix: str, body: RecordIn) -> dict:
     fields = body.model_dump(mode="json", exclude_none=True)
     for key in RESERVED:
@@ -527,6 +563,8 @@ async def _create(tenant: str, actor: User, kind: str, prefix: str, body: Record
         await _prepare_traceability_record(tenant, fields)
     elif kind == "packaging_units":
         _validate_gtin(fields)
+    if kind == "actors":
+        fields = pii.protect(fields, tenant)
     try:
         record = await store.create_record(tenant, kind, fields)
     except RefUnknown as exc:
@@ -542,12 +580,16 @@ async def _create(tenant: str, actor: User, kind: str, prefix: str, body: Record
         )
     await store.record_audit(scope="tenant", tenant_id=tenant, actor=actor.username,
                        action=f"{prefix}_CREATE",
-                       target=record.get("code") or str(record["id"]), outcome="OK")
-    return record
+                       target=record.get("code") or str(record["id"]), outcome="OK",
+                       new_value=_snap(record))
+    return pii.restore(record) if kind == "actors" else record
 
 
 async def _list(tenant: str, kind: str) -> dict:
-    return {"tenant_id": tenant, "items": await store.list_records(tenant, kind)}
+    items = await store.list_records(tenant, kind)
+    if kind == "actors":
+        items = [pii.restore(r) for r in items]
+    return {"tenant_id": tenant, "items": items}
 
 
 async def _get(tenant: str, kind: str, code: str) -> dict:
@@ -555,14 +597,17 @@ async def _get(tenant: str, kind: str, code: str) -> dict:
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
                             detail={"code": "NOT_FOUND", "message": "Object not found"})
-    return record
+    return pii.restore(record) if kind == "actors" else record
 
 
 # ---- ZON -------------------------------------------------------------------
 @router.post("/zones", status_code=status.HTTP_201_CREATED)
 async def create_zone(body: RecordIn, tenant: str = Depends(require_tenant),
                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
-    return await _create(tenant, actor, "zones", "ZON", body)
+    record = await _create(tenant, actor, "zones", "ZON", body)
+    if record.get("puc_status"):
+        await _log_zone_status(tenant, actor, record, None, body)
+    return record
 
 
 DASHBOARD_KINDS = ("zones", "mother_plants", "crop_plans", "field_events",
@@ -722,6 +767,30 @@ async def get_input_lot(code: str, tenant: str = Depends(require_tenant)) -> dic
     return await _get(tenant, "input_lots", code)
 
 
+@router.post("/zone-parcel-links/{link_id}/withdraw")
+async def withdraw_zone_parcel_link(link_id: int,
+                                    tenant: str = Depends(require_tenant),
+                                    actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    links = await store.list_records(tenant, "zone_parcel_links")
+    link = next((x for x in links if x.get("id") == link_id), None)
+    if link is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail={"code": "NOT_FOUND", "message": "Object not found"})
+    if link.get("membership_status") == "WITHDRAWN_FROM_ZONE":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                            detail={"code": "ALREADY_WITHDRAWN",
+                                    "message": "Parcel already withdrawn from the zone"})
+    record = await store.update_record_by_id(
+        tenant, "zone_parcel_links", link_id,
+        {"membership_status": "WITHDRAWN_FROM_ZONE",
+         "left_date": date.today().isoformat()})
+    await store.record_audit(scope="tenant", tenant_id=tenant,
+                             actor=actor.username, action="ZPL_WITHDRAW",
+                             target=f"{link.get('zone_code')}/{link.get('parcel_code')}",
+                             outcome="OK")
+    return record
+
+
 @router.get("/phi-validations")
 async def list_phi_validations(tenant: str = Depends(require_tenant)) -> dict:
     return await _list(tenant, "phi_validations")
@@ -813,6 +882,11 @@ async def _update(tenant: str, actor: User, kind: str, prefix: str,
             detail={"code": "CODE_IMMUTABLE",
                     "message": "code cannot be changed after creation"})
     fields.pop("code", None)
+    if kind == "actors":
+        fields = pii.protect(fields, tenant)
+    import copy as _copy
+    _before = await store.get_record_by_code(tenant, kind, code)
+    _before = _copy.deepcopy(_before) if _before is not None else None
     try:
         record = await store.update_record(tenant, kind, code, fields)
     except RefUnknown as exc:
@@ -828,15 +902,46 @@ async def _update(tenant: str, actor: User, kind: str, prefix: str,
     await store.record_audit(scope="tenant", tenant_id=tenant,
                              actor=actor.username,
                              action=f"{prefix}_UPDATE",
-                             target=code, outcome="OK")
-    return record
+                             target=code, outcome="OK",
+                             old_value=_snap(_before), new_value=_snap(record))
+    return pii.restore(record) if kind == "actors" else record
+
+
+async def _log_zone_status(tenant: str, actor: User, zone: dict,
+                           previous: str | None, body: RecordIn) -> None:
+    """Bang 13 (LOG_ZONE_STATUS_HISTORY): one row per PUC status change."""
+    await store.create_record(tenant, "zone_status_history", {
+        "zone_code": zone["code"], "previous_status": previous,
+        "new_status": zone.get("puc_status"), "changed_by": actor.username,
+        "trigger_reason_code": body.status_change_reason,
+        "decision_doc_number": body.status_decision_doc,
+        "remediation_measures": body.status_remediation})
+    await store.record_audit(scope="tenant", tenant_id=tenant,
+                             actor=actor.username, action="ZON_STATUS_CHANGE",
+                             target=zone["code"], outcome="OK")
 
 
 @router.patch("/zones/{code}")
 async def update_zone(code: str, body: RecordIn,
                       tenant: str = Depends(require_tenant),
                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
-    return await _update(tenant, actor, "zones", "ZON", code, body)
+    old = await store.get_record_by_code(tenant, "zones", code)
+    old_status = old.get("puc_status") if old else None
+    reason, doc, remed = (body.status_change_reason, body.status_decision_doc,
+                          body.status_remediation)
+    body.status_change_reason = body.status_decision_doc = None
+    body.status_remediation = None
+    record = await _update(tenant, actor, "zones", "ZON", code, body)
+    if old is not None and record.get("puc_status") != old_status:
+        body.status_change_reason, body.status_decision_doc = reason, doc
+        body.status_remediation = remed
+        await _log_zone_status(tenant, actor, record, old_status, body)
+    return record
+
+
+@router.get("/zone-status-history")
+async def list_zone_status_history(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "zone_status_history")
 
 
 @router.patch("/mother-plants/{code}")
@@ -916,7 +1021,8 @@ async def _delete(tenant: str, actor: User, kind: str, prefix: str,
     await store.record_audit(scope="tenant", tenant_id=tenant,
                              actor=actor.username,
                              action=f"{prefix}_DELETE",
-                             target=code, outcome="OK")
+                             target=code, outcome="OK",
+                             old_value=_snap(existing))
     return {"code": code, "deleted": True}
 
 

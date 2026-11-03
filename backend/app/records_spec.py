@@ -74,6 +74,11 @@ SPECS: dict[str, tuple[str, dict[str, str]]] = {
         "expiry_date": "date", "weigh_slip_number": "text",
         "traceability_code": "text", "data_retention_until": "date",
     }),
+    "zone_status_history": ("zone_status_history", {
+        "zone_code": "text", "previous_status": "text", "new_status": "text",
+        "trigger_reason_code": "text", "decision_doc_number": "text",
+        "remediation_measures": "text", "changed_by": "text",
+    }),
     "phi_validations": ("phi_validations", {
         "lot_code": "text", "plan_code": "text",
         "max_safe_harvest_date": "date", "actual_harvest_date": "date",

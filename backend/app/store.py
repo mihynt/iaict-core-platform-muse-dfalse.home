@@ -39,6 +39,11 @@ class User:
     display_name: str
     role: str  # TENANT_ADMIN | OPERATOR | VIEWER
     created_at: str = field(default_factory=utcnow)
+    # Bang 32 (SYS_USER_ACCOUNT), T-031
+    linked_actor_code: str | None = None
+    account_status: str = "ACTIVE"  # ACTIVE | LOCKED | REVOKED
+    jurisdiction_admin_code: str | None = None
+    auth_provider_type: str | None = None
 
 
 # Production record kinds (SRS v2.0 groups ZON/MPL/FLD/LOT): reference fields
@@ -58,6 +63,7 @@ RECORD_REFS: dict[str, dict[str, str]] = {
     "lots": {"zone_code": "zones", "plan_code": "crop_plans",
              "farmer_code": "actors", "parcel_code": "spatial_units"},
     "phi_validations": {},
+    "zone_status_history": {"zone_code": "zones"},
     "packing_lots": {"facility_code": "actors"},
     "packing_inputs": {"packing_lot_code": "packing_lots",
                        "harvest_lot_code": "lots"},
@@ -113,7 +119,10 @@ class InMemoryStore:
 
     # ---- audit ---------------------------------------------------------
     async def record_audit(self, *, scope: str, tenant_id: str | None, actor: str,
-                     action: str, target: str, outcome: str) -> dict:
+                     action: str, target: str, outcome: str,
+                     old_value: str | None = None,
+                     new_value: str | None = None) -> dict:
+        from . import auditctx
         with self._lock:
             entry = {
                 "seq": next(self._seq),
@@ -124,6 +133,10 @@ class InMemoryStore:
                 "action": action,
                 "target": target,
                 "outcome": outcome,
+                "old_value": old_value,
+                "new_value": new_value,
+                "client_ip": auditctx.client_ip(),
+                "user_agent": auditctx.user_agent(),
             }
             self.audit.append(entry)
             return entry
@@ -160,13 +173,31 @@ class InMemoryStore:
             return tenant
 
     # ---- users ---------------------------------------------------------
-    async def create_user(self, tenant: str, username: str, display_name: str, role: str) -> User | None:
+    async def create_user(self, tenant: str, username: str, display_name: str, role: str,
+                          linked_actor_code: str | None = None,
+                          jurisdiction_admin_code: str | None = None,
+                          auth_provider_type: str | None = None) -> User | None:
         with self._lock:
             bucket = self.users.setdefault(tenant, {})
             if username in bucket:
                 return None
-            user = User(username=username, display_name=display_name, role=role)
+            user = User(username=username, display_name=display_name, role=role,
+                        linked_actor_code=linked_actor_code,
+                        jurisdiction_admin_code=jurisdiction_admin_code,
+                        auth_provider_type=auth_provider_type)
             bucket[username] = user
+            return user
+
+    async def update_user(self, tenant: str, username: str, fields: dict) -> User | None:
+        with self._lock:
+            user = self.users.get(tenant, {}).get(username)
+            if user is None:
+                return None
+            for key in ("display_name", "role", "linked_actor_code",
+                        "account_status", "jurisdiction_admin_code",
+                        "auth_provider_type"):
+                if key in fields and fields[key] is not None:
+                    setattr(user, key, fields[key])
             return user
 
     async def get_user(self, tenant: str, username: str) -> User | None:
@@ -231,6 +262,27 @@ class InMemoryStore:
     async def update_record(self, tenant: str, kind: str, code: str,
                             fields: dict) -> dict | None:
         record = self._bucket(kind, tenant)["by_code"].get(code)
+        if record is None:
+            return None
+        for ref_field, ref_kind in RECORD_REFS[kind].items():
+            ref_code = fields.get(ref_field)
+            if ref_code is not None and \
+                    self._bucket(ref_kind, tenant)["by_code"].get(ref_code) is None:
+                raise RefUnknown(ref_field)
+        for key, value in fields.items():
+            if key != "code":
+                record[key] = value
+        record["updated_at"] = utcnow()
+        return record
+
+    async def update_record_by_id(self, tenant: str, kind: str,
+                                  record_id: int, fields: dict) -> dict | None:
+        bucket = self._bucket(kind, tenant)
+        record = None
+        for candidate in list(bucket["by_code"].values()) + bucket["events"]:
+            if candidate.get("id") == record_id:
+                record = candidate
+                break
         if record is None:
             return None
         for ref_field, ref_kind in RECORD_REFS[kind].items():
@@ -317,8 +369,17 @@ class LazyWorkerStore:
     async def set_tenant_status(self, slug, status):
         return await self._d().set_tenant_status(slug, status)
 
-    async def create_user(self, tenant, username, display_name, role):
-        return await self._d().create_user(tenant, username, display_name, role)
+    async def create_user(self, tenant, username, display_name, role,
+                          linked_actor_code=None, jurisdiction_admin_code=None,
+                          auth_provider_type=None):
+        return await self._d().create_user(
+            tenant, username, display_name, role,
+            linked_actor_code=linked_actor_code,
+            jurisdiction_admin_code=jurisdiction_admin_code,
+            auth_provider_type=auth_provider_type)
+
+    async def update_user(self, tenant, username, fields):
+        return await self._d().update_user(tenant, username, fields)
 
     async def get_user(self, tenant, username):
         return await self._d().get_user(tenant, username)
@@ -352,6 +413,9 @@ class LazyWorkerStore:
 
     async def update_record(self, tenant, kind, code, fields):
         return await self._d().update_record(tenant, kind, code, fields)
+
+    async def update_record_by_id(self, tenant, kind, record_id, fields):
+        return await self._d().update_record_by_id(tenant, kind, record_id, fields)
 
 
 class LazyD1Store:
@@ -417,8 +481,17 @@ class LazyD1Store:
     async def set_tenant_status(self, slug, status):
         return await self._d().set_tenant_status(slug, status)
 
-    async def create_user(self, tenant, username, display_name, role):
-        return await self._d().create_user(tenant, username, display_name, role)
+    async def create_user(self, tenant, username, display_name, role,
+                          linked_actor_code=None, jurisdiction_admin_code=None,
+                          auth_provider_type=None):
+        return await self._d().create_user(
+            tenant, username, display_name, role,
+            linked_actor_code=linked_actor_code,
+            jurisdiction_admin_code=jurisdiction_admin_code,
+            auth_provider_type=auth_provider_type)
+
+    async def update_user(self, tenant, username, fields):
+        return await self._d().update_user(tenant, username, fields)
 
     async def get_user(self, tenant, username):
         return await self._d().get_user(tenant, username)
@@ -452,6 +525,9 @@ class LazyD1Store:
 
     async def update_record(self, tenant, kind, code, fields):
         return await self._d().update_record(tenant, kind, code, fields)
+
+    async def update_record_by_id(self, tenant, kind, record_id, fields):
+        return await self._d().update_record_by_id(tenant, kind, record_id, fields)
 
 
 def make_store():

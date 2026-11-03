@@ -40,17 +40,24 @@ class PgStore:
 
     # ---- audit ---------------------------------------------------------
     async def record_audit(self, *, scope: str, tenant_id: str | None, actor: str,
-                     action: str, target: str, outcome: str) -> dict:
+                     action: str, target: str, outcome: str,
+                     old_value: str | None = None,
+                     new_value: str | None = None) -> dict:
+        from . import auditctx
         with self._lock, self._conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO audit_log (scope, tenant_id, actor, action, target, outcome)"
-                " VALUES (%s, %s, %s, %s, %s, %s) RETURNING seq, ts",
-                (scope, tenant_id, actor, action, target, outcome),
+                "INSERT INTO audit_log (scope, tenant_id, actor, action, target, outcome,"
+                " old_value, new_value, client_ip, user_agent)"
+                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING seq, ts",
+                (scope, tenant_id, actor, action, target, outcome,
+                 old_value, new_value, auditctx.client_ip(), auditctx.user_agent()),
             )
             row = cur.fetchone()
         return {"seq": row["seq"], "ts": row["ts"].isoformat(), "scope": scope,
                 "tenant_id": tenant_id, "actor": actor, "action": action,
-                "target": target, "outcome": outcome}
+                "target": target, "outcome": outcome, "old_value": old_value,
+                "new_value": new_value, "client_ip": auditctx.client_ip(),
+                "user_agent": auditctx.user_agent()}
 
     def _audit_rows(self, where: str, params: tuple) -> list[dict]:
         with self._lock, self._conn.cursor() as cur:
@@ -105,19 +112,43 @@ class PgStore:
                       created_at=row["created_at"].isoformat())
 
     # ---- users ---------------------------------------------------------
-    async def create_user(self, tenant: str, username: str, display_name: str, role: str) -> User | None:
+    async def create_user(self, tenant: str, username: str, display_name: str, role: str,
+                          linked_actor_code: str | None = None,
+                          jurisdiction_admin_code: str | None = None,
+                          auth_provider_type: str | None = None) -> User | None:
         with self._lock, self._conn.cursor() as cur:
             try:
                 cur.execute(
-                    "INSERT INTO users (tenant_id, username, display_name, role)"
-                    " VALUES (%s, %s, %s, %s) RETURNING created_at",
-                    (tenant, username, display_name, role),
+                    "INSERT INTO users (tenant_id, username, display_name, role,"
+                    " linked_actor_code, account_status, jurisdiction_admin_code,"
+                    " auth_provider_type)"
+                    " VALUES (%s, %s, %s, %s, %s, 'ACTIVE', %s, %s) RETURNING created_at",
+                    (tenant, username, display_name, role, linked_actor_code,
+                     jurisdiction_admin_code, auth_provider_type),
                 )
                 created = cur.fetchone()["created_at"]
             except psycopg.errors.UniqueViolation:
                 return None
         return User(username=username, display_name=display_name, role=role,
-                    created_at=created.isoformat())
+                    created_at=created.isoformat(),
+                    linked_actor_code=linked_actor_code,
+                    jurisdiction_admin_code=jurisdiction_admin_code,
+                    auth_provider_type=auth_provider_type)
+
+    async def update_user(self, tenant: str, username: str, fields: dict) -> User | None:
+        allowed = ("display_name", "role", "linked_actor_code", "account_status",
+                   "jurisdiction_admin_code", "auth_provider_type")
+        sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
+        if await self.get_user(tenant, username) is None:
+            return None
+        if sets:
+            assignments = ", ".join(f"{k} = %s" for k in sets)
+            with self._lock, self._conn.cursor() as cur:
+                cur.execute(
+                    f"UPDATE users SET {assignments}"
+                    " WHERE tenant_id = %s AND username = %s",
+                    tuple(sets.values()) + (tenant, username))
+        return await self.get_user(tenant, username)
 
     async def get_user(self, tenant: str, username: str) -> User | None:
         with self._lock, self._conn.cursor() as cur:
@@ -127,14 +158,22 @@ class PgStore:
         if row is None:
             return None
         return User(username=row["username"], display_name=row["display_name"],
-                    role=row["role"], created_at=row["created_at"].isoformat())
+                    role=row["role"], created_at=row["created_at"].isoformat(),
+                    linked_actor_code=row.get("linked_actor_code"),
+                    account_status=row.get("account_status") or "ACTIVE",
+                    jurisdiction_admin_code=row.get("jurisdiction_admin_code"),
+                    auth_provider_type=row.get("auth_provider_type"))
 
     async def list_users(self, tenant: str) -> list[User]:
         with self._lock, self._conn.cursor() as cur:
             cur.execute("SELECT * FROM users WHERE tenant_id = %s ORDER BY username", (tenant,))
             rows = cur.fetchall()
         return [User(username=r["username"], display_name=r["display_name"], role=r["role"],
-                     created_at=r["created_at"].isoformat()) for r in rows]
+                     created_at=r["created_at"].isoformat(),
+                     linked_actor_code=r.get("linked_actor_code"),
+                     account_status=r.get("account_status") or "ACTIVE",
+                     jurisdiction_admin_code=r.get("jurisdiction_admin_code"),
+                     auth_provider_type=r.get("auth_provider_type")) for r in rows]
 
     async def tenant_user_count(self, tenant: str) -> int:
         with self._lock, self._conn.cursor() as cur:
@@ -242,6 +281,49 @@ class PgStore:
             cur.execute(
                 f"SELECT * FROM {table} WHERE tenant_id = %s AND code = %s",
                 (tenant, code))
+            return self._row_to_record(cur.fetchone(), kind)
+
+    async def update_record_by_id(self, tenant: str, kind: str, record_id: int,
+                            fields: dict) -> dict | None:
+        table, columns = SPECS[kind]
+        refs = RECORD_REFS[kind]
+        with self._lock, self._conn.cursor() as cur:
+            cur.execute(
+                f"SELECT id FROM {table} WHERE tenant_id = %s AND id = %s",
+                (tenant, record_id))
+            if cur.fetchone() is None:
+                return None
+            values: dict[str, object] = {}
+            for ref_field, ref_kind in refs.items():
+                ref_code = fields.get(ref_field)
+                if ref_code is not None:
+                    ref_id = self._resolve_ref(cur, tenant, ref_kind, ref_code)
+                    if ref_id is None:
+                        raise RefUnknown(ref_field)
+                    values[REF_ID_COLUMN[ref_field]] = ref_id
+                    values[ref_field] = ref_code
+            for col, ckind in columns.items():
+                if col in fields:
+                    values[col] = Jsonb(fields[col]) if ckind == "json" \
+                        else fields[col]
+            known = set(columns) | set(refs)
+            extra = {k: v for k, v in fields.items()
+                     if k not in known and k != "code"}
+            sets = [f"{k} = %s" for k in values]
+            params: list = list(values.values())
+            if extra:
+                sets.append("data = data || %s")
+                params.append(Jsonb(extra))
+            if kind != "field_events":
+                sets.append("updated_at = now()")
+            if sets:
+                cur.execute(
+                    f"UPDATE {table} SET {', '.join(sets)}"
+                    " WHERE tenant_id = %s AND id = %s",
+                    params + [tenant, record_id])
+            cur.execute(
+                f"SELECT * FROM {table} WHERE tenant_id = %s AND id = %s",
+                (tenant, record_id))
             return self._row_to_record(cur.fetchone(), kind)
 
     async def delete_record(self, tenant: str, kind: str, code: str) -> dict | None:

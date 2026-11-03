@@ -18,6 +18,10 @@ CREATE TABLE IF NOT EXISTS users (
     display_name TEXT NOT NULL,
     role         TEXT NOT NULL,  -- TENANT_ADMIN | OPERATOR | VIEWER
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    linked_actor_code TEXT,
+    account_status TEXT DEFAULT 'ACTIVE',
+    jurisdiction_admin_code TEXT,
+    auth_provider_type TEXT,
     PRIMARY KEY (tenant_id, username)
 );
 
@@ -36,7 +40,11 @@ CREATE TABLE IF NOT EXISTS audit_log (
     actor     TEXT NOT NULL,
     action    TEXT NOT NULL,
     target    TEXT NOT NULL,
-    outcome   TEXT NOT NULL
+    outcome   TEXT NOT NULL,
+    old_value TEXT,
+    new_value TEXT,
+    client_ip TEXT,
+    user_agent TEXT
 );
 
 -- ---- ZON: material zones / sites / plots (SRS ZON-01..04) ------------------
@@ -71,11 +79,11 @@ CREATE TABLE IF NOT EXISTS zones (
     data            JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    owner_actor_id   BIGINT,
+    owner_actor_code TEXT,
     PRIMARY KEY (id),
     UNIQUE (tenant_id, id),
-    UNIQUE (tenant_id, code),
-  owner_actor_id   INTEGER,
-  owner_actor_code TEXT
+    UNIQUE (tenant_id, code)
 );
 
 -- Boundary version history (ZON-04).
@@ -490,3 +498,24 @@ CREATE TABLE IF NOT EXISTS cte_stages (
 CREATE UNIQUE INDEX IF NOT EXISTS ux_traceability_records_code
     ON traceability_records (tenant_id, traceability_code)
     WHERE traceability_code IS NOT NULL;
+
+
+-- Zone PUC status history (dossier Bang 13, T-031).
+CREATE TABLE IF NOT EXISTS zone_status_history (
+    id            BIGSERIAL,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    zone_id       BIGINT,
+    zone_code     TEXT,
+    previous_status TEXT,
+    new_status    TEXT,
+    trigger_reason_code TEXT,
+    decision_doc_number TEXT,
+    remediation_measures TEXT,
+    changed_by    TEXT,
+    data          JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (id),
+    UNIQUE (tenant_id, id),
+    FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id)
+);

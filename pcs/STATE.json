@@ -1,5 +1,5 @@
 {
-  "revision": 43,
+  "revision": 44,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "DEC-013 recorded: fields follow the 33 dossier tables provisionally (Owner ruling 2026-11-04). Pending Owner decisions unchanged: cron keep-warm vs always-warm host; Q-TX-01..03; phase 3 vs T-005.",
+      "last_completed_step": "T-031 TECH_DONE (rev 44): full 33-table field conformance in code - Bang 13 history, Bang 12 withdraw, Bang 32/33 SYS pack, Q-TX-03 PII (hash + optional encryption), sector-field sweep; latent T-029 schema DDL defect found and fixed. Awaiting token to deploy. Open Owner decisions: Q-TX-01, Q-TX-02; phase 3 vs T-005; cron keep-warm vs always-warm host; set IAICT_PII_KEY to activate PII encryption.",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -224,6 +224,12 @@
         "priority": "P1",
         "status": "TECH_DONE",
         "notes": "Owner report 2026-11-04 (load still slow). Built in T-030; deploy pending token. Deployed live 2026-11-04 (Worker 1ae828e8); reload-instant behavior browser-verified."
+      },
+      {
+        "id": "F-014",
+        "name": "33-table field conformance completion (T-031)",
+        "status": "TECH_DONE",
+        "notes": "All classified field gaps of the implemented scope closed per DEC-013; Q-TX-03 resolved (hash always, encryption with IAICT_PII_KEY). Awaiting deploy."
       }
     ],
     "flows": [],
@@ -498,9 +504,22 @@
         "status": "TECH_DONE",
         "evidence": "Owner reported a function not showing on mobile. Diagnosis (code + CSS + live browser at desktop width): under 1024px the sidebar is display:none and the bottom tab bar holds only 6 views + a Khac button that jumped straight to Settings; Packing (live build) and Inputs/Parcels/PHI-check/Tenants (new builds) had no entry of their own — Packing was reachable only via a quick-access card inside Settings (verified live: exactly 3 quick-access cards). Fix: the Khac tab now opens VIEWS.more, an all-functions menu listing every NAV view with full titles + descriptions; the tab stays highlighted for all menu-reached views. app.js syntax OK; build stamped. Narrow-viewport visual verification could not run pre-deploy (the browser tool cannot resize to 390px and rejects loopback) — it runs on the beta right after deployment. Deploy pending with T-022..T-024 (Owner token). DEPLOYED 2026-11-03 ~20:30 +07 (Worker 40a5cbf5, superseded same session by 0bbaac5b with the dashboard path fix). Production verification: /health ok (d1); stamped assets served at the edge with immutable cache; GET /api/v1/dashboard returns real beta-pilot counts (2/1/1/1/1); PATCH /zones/Z-TMP succeeded on production D1 (in-place schema upgrade + update path healthy, ZON_UPDATE audit visible in the UI); duplicate POST returns clean 409; browser test: new views render, zone edit sheet opens with the VSIC field, field-event form shows the input-lot picker + application method.",
         "notes": "Stacks on STATE rev 31 (T-024), whose push was approved but failed twice on GitHub auth 503; both revisions push together."
+      },
+      {
+        "id": "T-031",
+        "title": "Field conformance completion per DEC-013 (close F2-F7, Bang 12/13, SYS pack, Q-TX-03)",
+        "status": "TECH_DONE",
+        "srs_refs": [
+          "D-STD-06",
+          "DEC-013"
+        ],
+        "evidence": "Owner directive 2026-11-04 05:05 +07 'Chot sua theo 33 bang, sua luon'. Batch A: every remaining dossier field of Bang 6/7/11/15/25/27 entry-able (RecordIn declarations + create/edit forms + detail specs + enum option lists taken verbatim from the dossier: farm tiers TT 23/2019, submission channels NQ 36/2026, forest origins, aqua water types, forestry classes TT 26/2025) + harvest_time for Bang 23. Batch D: Bang 13 zone_status_history table (both schemas + guarded D1 create) auto-logged on zone create and PUC status changes with reason/decision/remediation metadata popped out of the zone payload, ZON_STATUS_CHANGE audit, GET /zone-status-history, UI history toggle on zone cards + metadata fields in the zone edit form; Bang 12 withdraw flow: POST /zone-parcel-links/{id}/withdraw sets WITHDRAWN_FROM_ZONE + left_date (new store primitive update_record_by_id in all 4 stores + both lazy wrappers; double-withdraw 409 ALREADY_WITHDRAWN) + UI action. Batch B: Bang 32 users (linked_actor_code validated against actors, account_status ACTIVE/LOCKED/REVOKED enforced in require_actor with 403 ACCOUNT_INACTIVE and a LAST_ADMIN guard on PATCH /users/{username}, jurisdiction_admin_code, auth_provider_type; User dataclass + all stores + schemas + 8 guarded D1 ALTERs; users UI shows status/link and an admin sheet) and Bang 33 audit (old/new snapshots on create/update/delete record writes via _snap, client IP + user agent captured by middleware contextvars into every record_audit in all 4 stores). Batch C / Q-TX-03 CLOSED by implementation: app/pii.py (stdlib HMAC-SHA256 hash always; optional IAICT_PII_KEY activates at-rest encryption - HMAC keystream encrypt-then-MAC 'enc1.' tokens - with plaintext wiped at rest and transparent restore on actor reads; audit snapshots keep the stored/encrypted form). Also fixed in passing: actor legal_id had a detail-spec entry but NO form entry (found by the consistency sweep) - added to create/edit forms + declared in RecordIn; sweep now clean except phi_validations.lot_code (system-generated, classified T-029). SERIOUS latent defect found and fixed: since T-029 both SQL schemas placed zones.owner_actor_id/owner_actor_code AFTER the table constraints (invalid DDL - fresh installs / disaster recovery would have failed; production unaffected, its table predates T-029 and upgrades via ALTER). Columns moved into the column list in schema_d1.sql and schema.sql (PG owner_actor_id typed BIGINT); full D1 schema now executes cleanly on a fresh database (24 tables). Verification: suites 71 passed + 2 skipped in BOTH memory and D1 modes (6 new tests: test_t031_history_withdraw, test_t031_sys, test_t031_pii); D1 in-place upgrade verifier v4 PASSED (pre-T-031 DB gains audit/users columns + history table, existing admin reads account_status ACTIVE, snapshots round-trip); UI build OK; node --check OK. NOT deployed - needs the Owner's Cloudflare token in-session; PII encryption activates when the Owner sets the IAICT_PII_KEY secret in the dashboard.",
+        "blockers": [
+          "Deploy pending: Owner pastes the Cloudflare token in-session."
+        ]
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T21:55:50Z"
+  "updated_at": "2026-11-03T22:16:16Z"
 }

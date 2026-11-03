@@ -37,6 +37,12 @@ async def _bind_store_backend(request: Request, call_next):
     scope_env = request.scope.get("env")
     if bind is not None and scope_env is not None:
         bind(scope_env)
+    from . import auditctx
+    auditctx.set_client_info(
+        request.client.host if request.client else None,
+        request.headers.get("user-agent"))
+    if scope_env is not None:
+        auditctx.set_pii_key(getattr(scope_env, "IAICT_PII_KEY", None))
     return await call_next(request)
 
 

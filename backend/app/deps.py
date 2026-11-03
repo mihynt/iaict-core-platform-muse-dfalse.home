@@ -63,6 +63,13 @@ async def require_actor(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail={"code": "ACTOR_UNKNOWN", "message": "Actor is not a user of this tenant"},
         )
+    if getattr(user, "account_status", "ACTIVE") != "ACTIVE":
+        # Bang 32: locked/revoked accounts may be listed but cannot act.
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "ACCOUNT_INACTIVE",
+                    "message": "Account is not ACTIVE"},
+        )
     return user
 
 

@@ -36,6 +36,9 @@ const ERR_VI = {
   PLATFORM_KEY_INVALID: "Khóa platform không đúng.",
   USER_EXISTS: "Tên người dùng đã tồn tại trong tenant.",
   RECORD_IN_USE: "Đang được dữ liệu khác tham chiếu nên chưa xoá được — hãy xoá hoặc sửa các bản ghi liên quan trước.",
+  ACCOUNT_INACTIVE: "Tài khoản đã bị khóa hoặc thu hồi nên không thao tác được.",
+  LAST_ADMIN: "Không thể khóa quản trị viên tenant cuối cùng đang hoạt động.",
+  ALREADY_WITHDRAWN: "Thửa này đã rút khỏi vùng trước đó.",
 };
 
 class ApiError extends Error {
@@ -213,6 +216,28 @@ const PUC_STATUSES = [
 const MEMBERSHIP_STATUSES = [
   { v: "ACTIVE_MEMBER", t: "Đang tham gia" }, { v: "SUSPENDED_PLOT", t: "Tạm ngưng" },
   { v: "WITHDRAWN_FROM_ZONE", t: "Đã rút khỏi vùng" }];
+const FARM_TIERS = [
+  { v: "", t: "— Không áp dụng —" }, { v: "HOUSEHOLD_SCALE", t: "Quy mô hộ chăn nuôi" },
+  { v: "SMALL_FARM", t: "Trang trại nhỏ" }, { v: "MEDIUM_FARM", t: "Trang trại vừa" },
+  { v: "LARGE_FARM", t: "Trang trại lớn" }];
+const SUBMIT_CHANNELS = [
+  { v: "", t: "— Chưa rõ —" }, { v: "ONLINE_NATIONAL_PORTAL", t: "Trực tuyến qua Cổng DVC Quốc gia" },
+  { v: "DIRECT_AT_COMMUNE_COUNTER", t: "Nộp trực tiếp tại UBND xã" },
+  { v: "POSTAL_MAIL_TO_COMMUNE", t: "Qua bưu điện về UBND xã" }];
+const FOREST_ORIGINS = [
+  { v: "", t: "— Không áp dụng —" }, { v: "NATURAL_FOREST", t: "Rừng tự nhiên" },
+  { v: "STATE_PLANTATION_FOREST", t: "Rừng trồng nhà nước" },
+  { v: "SELF_INVESTED_PROTECTION_FOREST", t: "Rừng phòng hộ tự đầu tư" },
+  { v: "PRODUCTION_PLANTATION_FOREST", t: "Rừng trồng sản xuất" },
+  { v: "SCATTERED_HOME_GARDEN_TREES", t: "Cây phân tán vườn nhà" }];
+const AQUA_WATERS = [
+  { v: "", t: "— Không áp dụng —" }, { v: "EARTHEN_POND", t: "Ao đất" },
+  { v: "LINED_POND", t: "Ao lót bạt" }, { v: "SALTWATER_TANK", t: "Bể nước mặn" },
+  { v: "MARINE_CAGE_RAFT", t: "Lồng bè biển" }, { v: "RIVER_CAGE_RAFT", t: "Lồng bè sông" },
+  { v: "INTERTIDAL_MUDFLAT", t: "Bãi triều" }];
+const FORESTRY_CLASSES = [
+  { v: "", t: "— Không áp dụng —" }, { v: "CLASS_I_COMPLIANT", t: "Loại I — tuân thủ" },
+  { v: "CLASS_II_NON_COMPLIANT", t: "Loại II — chưa tuân thủ" }, { v: "UNCLASSIFIED", t: "Chưa phân loại" }];
 const BOOL_OPTS = [
   { v: "", t: "— Chưa rõ —" }, { v: "true", t: "Có" }, { v: "false", t: "Không" }];
 const ACTOR_TYPES = [
@@ -226,7 +251,7 @@ function quickZone(done, back) {
     { k: "name", label: "Tên vùng" },
     { k: "area_ha", label: "Diện tích (ha)", type: "number", step: "0.01" },
     { k: "puc_code", label: "Mã số vùng trồng (PUC)" },
-  ], async (p) => { const r = await T("/zones", { method: "POST", body: p }); invalidate("zones"); toast("Đã thêm vùng " + r.code); done(r.code); }, { onCancel: back });
+  ], async (p) => { const r = await T("/zones", { method: "POST", body: p }); invalidate("zones", "zhistory"); toast("Đã thêm vùng " + r.code); done(r.code); }, { onCancel: back });
 }
 function quickPlant(done, back) {
   openSheet("Thêm cây đầu dòng mới", [
@@ -276,14 +301,14 @@ const DETAIL_LABELS = {
   crop_name: "Cây trồng", start_date: "Ngày bắt đầu", end_date: "Ngày kết thúc",
   target_yield_kg: "Sản lượng mục tiêu (kg)", planting_density: "Mật độ trồng", seed_origin: "Nguồn giống",
   seed_origin_doc: "Hồ sơ nguồn gốc giống", variety_name: "Tên giống", actor_type: "Loại chủ thể",
-  gln_code: "Mã GLN", parent_code: "Chủ thể cấp trên", phone: "Số điện thoại", email: "Email",
+  gln_code: "Mã GLN", parent_code: "Chủ thể cấp trên", phone: "Số điện thoại", email: "Email", legal_id: "Số CCCD / MST", legal_id_hash: "Mã băm số định danh (HMAC)",
   address: "Địa chỉ", province_code: "Mã tỉnh", district_code: "Mã huyện", commune_code: "Mã xã",
   unit_type: "Loại thửa", operator_code: "Chủ thể vận hành", joined_date: "Ngày tham gia vùng",
   product_name: "Tên sản phẩm", brand_name: "Thương hiệu", registration_no: "Số đăng ký",
   active_ingredient: "Hoạt chất", supplier_code: "Nhà cung cấp", quantity_received: "Số lượng nhập",
   unit: "Đơn vị", purchase_invoice_no: "Số hóa đơn mua", qcvn_scheme_id: "Mã quy chuẩn (QCVN)",
   purchase_date: "Ngày mua", expiry_date: "Hạn dùng", phi_days: "Ngày cách ly (PHI)",
-  harvest_date: "Ngày thu hoạch", farmer_code: "Nông hộ", weigh_slip_number: "Số phiếu cân",
+  harvest_date: "Ngày thu hoạch", harvest_time: "Giờ thu hoạch", farmer_code: "Nông hộ", weigh_slip_number: "Số phiếu cân",
   quantity: "Sản lượng", quality_grade: "Phân loại chất lượng", harvested_by: "Người thu hoạch",
   traceability_code: "Mã truy xuất", data_retention_until: "Lưu dữ liệu đến",
   facility_code: "Cơ sở đóng gói", phc_code: "Mã cơ sở đóng gói (PHC)", output_weight_kg: "Sản lượng thành phẩm (kg)",
@@ -345,19 +370,19 @@ function fmtDetailVal(k2, v) {
 // field in a fixed order, empty ones as "-", so nothing is hidden just
 // because it has no value yet (Owner review 2026-11-03).
 const DETAIL_SPECS = {
-  zones: ["code", "name", "status", "puc_code", "puc_status", "vsic_code", "sector_category", "market_scope", "primary_species", "scientific_name", "crop_group", "area_ha", "initial_declared_area_ha", "province", "district", "ward", "address", "season", "water_source", "managing_entity", "owner_actor_code", "issue_date", "issuing_authority", "post_inspect_due_date", "valid_from", "valid_to", "dist_to_residential_m", "dist_to_sensitive_zone_m", "bee_site_min_dist_km"],
+  zones: ["code", "name", "status", "puc_code", "puc_status", "vsic_code", "sector_category", "market_scope", "primary_species", "scientific_name", "crop_group", "area_ha", "initial_declared_area_ha", "province", "district", "ward", "address", "season", "water_source", "managing_entity", "owner_actor_code", "farm_scale_tier", "submission_channel", "application_received_at", "issue_date", "issuing_authority", "post_inspect_due_date", "valid_from", "valid_to", "dist_to_residential_m", "dist_to_sensitive_zone_m", "bee_site_min_dist_km"],
   mother_plants: ["code", "species", "variety", "scientific_name", "cultivar_code", "zone_code", "planting_year", "origin", "owner_manager", "recognition_no", "valid_to", "status"],
-  actors: ["code", "name", "actor_type", "gln_code", "gs1_role_ai", "parent_code", "province_code", "district_code", "commune_code", "address", "phone", "email", "is_group_leader", "ics_training_completed", "valid_from", "valid_to", "status"],
-  spatial_units: ["code", "name", "unit_type", "operator_code", "province_code", "commune_code", "national_land_parcel_id", "map_sheet_number", "parcel_number", "area_m2", "land_tenure_doc_type", "land_cert_serial", "land_legal_owner_name", "owner_consent_doc_url", "valid_from", "valid_to", "status"],
+  actors: ["code", "name", "actor_type", "gln_code", "gs1_role_ai", "parent_code", "legal_id", "legal_id_hash", "forestry_enterprise_class", "province_code", "district_code", "commune_code", "address", "phone", "email", "is_group_leader", "ics_training_completed", "valid_from", "valid_to", "status"],
+  spatial_units: ["code", "name", "unit_type", "operator_code", "province_code", "commune_code", "national_land_parcel_id", "map_sheet_number", "parcel_number", "area_m2", "land_tenure_doc_type", "land_cert_serial", "land_legal_owner_name", "owner_consent_doc_url", "earth_terrace_compliant", "forest_origin_type", "aquaculture_water_type", "vessel_reg_number", "vessel_length_max_m", "tech_safety_cert_no", "vms_device_serial", "valid_from", "valid_to", "status"],
   zone_parcel_links: ["zone_code", "parcel_code", "registered_area_m2", "membership_status", "joined_date", "left_date", "status"],
   input_lots: ["code", "name", "category", "brand_name", "substance_code", "vn_registration_number", "batch_no", "purchase_invoice_no", "qcvn_scheme_id", "supplier_code", "purchase_date", "quantity", "unit", "phi_days", "expiry_date", "status"],
-  crop_plans: ["code", "name", "crop_name", "zone_code", "plant_code", "parcel_code", "variety_name", "seed_origin", "seed_origin_doc", "planting_density", "start_date", "end_date", "target_yield_kg", "status"],
+  crop_plans: ["code", "name", "crop_name", "zone_code", "plant_code", "parcel_code", "variety_name", "seed_origin", "seed_origin_doc", "planting_density", "forest_harvest_plan_no", "departure_port_code", "arrival_port_code", "start_date", "end_date", "target_yield_kg", "status"],
   lots: ["code", "zone_code", "plan_code", "harvest_date", "farmer_code", "parcel_code", "weigh_slip_number", "quantity", "unit", "quality_grade", "harvested_by", "expiry_date", "traceability_code", "data_retention_until", "status"],
-  packing_lots: ["code", "facility_code", "phc_code", "product_name", "output_weight_kg", "yield_norm_ratio", "storage_type", "packed_at", "expiry_date", "status"],
+  packing_lots: ["code", "facility_code", "phc_code", "product_name", "food_safety_cert_id", "carcass_serial_id", "ecdt_cc_cert_number", "cites_permit_number", "output_weight_kg", "yield_norm_ratio", "storage_type", "packed_at", "expiry_date", "status"],
   traceability_records: ["traceability_code", "product_name", "product_image_url", "business_unit_name", "business_unit_address", "production_event_time", "brand_trademark_serial", "expiration_date", "packaging_unit_code", "data_carrier_type", "sync_status", "synced_at", "data_retention_until", "status"],
   phi_validations: ["lot_code", "plan_code", "validation_outcome", "max_safe_harvest_date", "actual_harvest_date", "last_treatment_ref"],
   field_events: ["event_type", "plan_code", "zone_code", "occurred_at", "input_lot_code", "phi_days", "safe_harvest_date", "dosage_concentration", "total_quantity_applied", "application_method", "crop_animal_growth_stage", "target_pest_disease_reason", "fruit_bagging_count", "device", "notes", "actor"],
-  packaging_units: ["code", "packing_lot_code", "level", "gtin_code", "sscc_code", "package_spec", "units_count", "status"],
+  packaging_units: ["code", "packing_lot_code", "level", "gtin_code", "sscc_code", "cites_specimen_mark_code", "package_spec", "units_count", "status"],
   cte_stages: ["stage_no", "stage_name", "traceability_code", "product_trace_code", "location_trace_code", "batch_lot_number", "event_time", "scheme_code"],
 };
 
@@ -543,7 +568,8 @@ function prefetchAll() {
     ["events", "/field-events"], ["lots", "/lots"], ["actors", "/actors"],
     ["inputs", "/input-lots"], ["parcels", "/spatial-units"], ["zlinks", "/zone-parcel-links"],
     ["packing", "/packing-lots"], ["trecords", "/traceability-records"],
-    ["phi", "/phi-validations"], ["users", "/users"], ["audit", "/audit"]];
+    ["phi", "/phi-validations"], ["users", "/users"], ["audit", "/audit"],
+    ["zhistory", "/zone-status-history"]];
   jobs.forEach(([k, pth]) => { if (!state.cache[k]) ensure(k, pth).catch(() => {}); });
   if (!warmStarted) {
     warmStarted = true;
@@ -627,7 +653,7 @@ VIEWS.zones = async () => {
   const el = $("#view");
   el.innerHTML = `<div class="section-head"><h2>🗺️ Vùng nguyên liệu</h2>
     <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + (state.cache.zones ? "" : skeleton(3));
-  $("#reload").onclick = () => { invalidate("zones"); navigate("zones", true); };
+  $("#reload").onclick = () => { invalidate("zones", "zhistory"); navigate("zones", true); };
   try {
     const items = await ensure("zones", "/zones");
     el.querySelectorAll(".skel").forEach((s) => s.remove());
@@ -643,7 +669,8 @@ VIEWS.zones = async () => {
           ${z.water_source ? `<span>💧 ${esc(z.water_source)}</span>` : ""}
           ${z.address ? `<span>📍 ${esc(z.address)}</span>` : ""}
         </div>
-        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-zone="${esc(z.code)}">✏️ Sửa</button> <button class="btn btn-ghost btn-sm" data-del-zone="${esc(z.code)}">🗑️ Xoá</button></div>
+        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-zone="${esc(z.code)}">✏️ Sửa</button> <button class="btn btn-ghost btn-sm" data-del-zone="${esc(z.code)}">🗑️ Xoá</button> <button class="btn btn-ghost btn-sm" data-zhist="${esc(z.code)}">🕘 Lịch sử trạng thái mã</button></div>
+        <div class="cte-box" hidden style="margin-top:8px"></div>
         </div></div>`).join("")}</div>`
       : emptyState("🗺️", "Chưa có vùng nào", "Bấm nút + để tạo vùng nguyên liệu đầu tiên."));
     el.querySelectorAll("[data-edit-zone]").forEach((b) => b.onclick = async () => {
@@ -672,6 +699,12 @@ VIEWS.zones = async () => {
         { k: "dist_to_residential_m", label: "Khoảng cách tới khu dân cư (m)", type: "number", step: "0.1", def: z.dist_to_residential_m ?? "" },
         { k: "dist_to_sensitive_zone_m", label: "Khoảng cách tới vùng nhạy cảm (m)", type: "number", step: "0.1", def: z.dist_to_sensitive_zone_m ?? "" },
         { k: "bee_site_min_dist_km", label: "Khoảng cách tối thiểu tới điểm nuôi ong (km)", type: "number", step: "0.1", def: z.bee_site_min_dist_km ?? "" },
+        { k: "farm_scale_tier", label: "Quy mô cơ sở chăn nuôi", type: "select", def: z.farm_scale_tier || "", options: FARM_TIERS },
+        { k: "submission_channel", label: "Kênh nộp hồ sơ cấp mã", type: "select", def: z.submission_channel || "", options: SUBMIT_CHANNELS },
+        { k: "application_received_at", label: "Thời điểm xã tiếp nhận hồ sơ", type: "datetime-local", def: z.application_received_at ? String(z.application_received_at).slice(0, 16) : "" },
+        { k: "status_change_reason", label: "Lý do đổi trạng thái mã (khi sửa trạng thái)", placeholder: "vd: POST_INSPECTION_PASSED" },
+        { k: "status_decision_doc", label: "Số văn bản quyết định đổi trạng thái" },
+        { k: "status_remediation", label: "Biện pháp khắc phục (nếu bị đình chỉ)" },
         { k: "issue_date", label: "Ngày cấp mã vùng trồng", type: "date", def: z.issue_date || "" },
         { k: "post_inspect_due_date", label: "Hạn hậu kiểm mã vùng trồng", type: "date", def: z.post_inspect_due_date || "" },
         { k: "vsic_code", label: "Mã ngành VSIC", def: z.vsic_code || "" },
@@ -681,9 +714,24 @@ VIEWS.zones = async () => {
         { k: "water_source", label: "Nguồn nước", def: z.water_source || "" },
         { k: "address", label: "Địa chỉ", def: z.address || "" },
         { k: "managing_entity", label: "Chủ thể quản lý", def: z.managing_entity || "" },
-      ], async (p) => { await T(`/zones/${encodeURIComponent(z.code)}`, { method: "PATCH", body: p }); invalidate("zones"); });
+      ], async (p) => { await T(`/zones/${encodeURIComponent(z.code)}`, { method: "PATCH", body: p }); invalidate("zones", "zhistory"); });
     });
     wireCardDetails(el, items, (z) => `Vùng ${z.code}`, "zones");
+    el.querySelectorAll("[data-zhist]").forEach((b) => b.onclick = async (ev) => {
+      ev.stopPropagation();
+      const box = b.closest(".card").querySelector(".cte-box");
+      if (!box.hidden) { box.hidden = true; return; }
+      box.hidden = false;
+      box.innerHTML = `<div class="sub">Đang tải lịch sử…</div>`;
+      try {
+        const rows = (await ensure("zhistory", "/zone-status-history"))
+          .filter((h) => h.zone_code === b.dataset.zhist);
+        box.innerHTML = rows.length ? rows.map((h) => `
+          <div class="sub" style="margin:3px 0">🕘 ${fmtTs(h.created_at)} — ${esc(h.previous_status || "∅")} → <b>${esc(h.new_status || "")}</b>
+          ${h.trigger_reason_code ? `· Lý do: ${esc(h.trigger_reason_code)}` : ""}${h.decision_doc_number ? `· VB: ${esc(h.decision_doc_number)}` : ""} · bởi ${esc(h.changed_by || "")}</div>`).join("")
+          : `<div class="sub">Chưa ghi nhận thay đổi trạng thái nào.</div>`;
+      } catch (err) { box.innerHTML = banner(err); }
+    });
     el.querySelectorAll("[data-del-zone]").forEach((b) => b.onclick = () =>
       confirmDelete(`vùng ${b.dataset.delZone}`, `/zones/${encodeURIComponent(b.dataset.delZone)}`, ["zones"]));
   } catch (err) { el.innerHTML = banner(err); }
@@ -715,13 +763,16 @@ VIEWS.zones = async () => {
     { k: "dist_to_residential_m", label: "Khoảng cách tới khu dân cư (m)", type: "number", step: "0.1" },
     { k: "dist_to_sensitive_zone_m", label: "Khoảng cách tới vùng nhạy cảm (m)", type: "number", step: "0.1" },
     { k: "bee_site_min_dist_km", label: "Khoảng cách tối thiểu tới điểm nuôi ong (km)", type: "number", step: "0.1" },
+    { k: "farm_scale_tier", label: "Quy mô cơ sở chăn nuôi", type: "select", options: FARM_TIERS },
+    { k: "submission_channel", label: "Kênh nộp hồ sơ cấp mã", type: "select", options: SUBMIT_CHANNELS },
+    { k: "application_received_at", label: "Thời điểm xã tiếp nhận hồ sơ", type: "datetime-local" },
     { k: "primary_species", label: "Cây trồng chính", placeholder: "vd: Bưởi da xanh" },
     { k: "crop_group", label: "Nhóm cây", placeholder: "vd: Rau củ, Sầu riêng…" },
     { k: "season", label: "Mùa vụ", placeholder: "vd: Đông Xuân 2026" },
     { k: "water_source", label: "Nguồn nước", placeholder: "vd: Suối, Giếng khoan…" },
     { k: "address", label: "Địa chỉ", placeholder: "Thôn/xã/huyện" },
     { k: "managing_entity", label: "Chủ thể quản lý", placeholder: "Đội/nhóm phụ trách" },
-  ], async (p) => { await T("/zones", { method: "POST", body: p }); invalidate("zones"); });
+  ], async (p) => { await T("/zones", { method: "POST", body: p }); invalidate("zones", "zhistory"); });
   });
 };
 
@@ -903,6 +954,9 @@ VIEWS.plans = async () => {
       { k: "target_yield_kg", label: "Mục tiêu sản lượng (kg)", type: "number", step: "0.1" },
       { k: "planting_density", label: "Mật độ trồng (cây/ha)", type: "number", step: "0.1" },
       { k: "seed_origin_doc", label: "Hồ sơ nguồn gốc giống", placeholder: "Số giấy chứng nhận / hóa đơn giống" },
+      { k: "forest_harvest_plan_no", label: "Số VB phê duyệt PA khai thác rừng (nếu có)" },
+      { k: "departure_port_code", label: "Mã cảng xuất bến (thủy sản, nếu có)" },
+      { k: "arrival_port_code", label: "Mã cảng cập bến (thủy sản, nếu có)" },
       { k: "status", label: "Trạng thái", type: "select", options: [
         { v: "DRAFT", t: "Dự thảo" }, { v: "RUNNING", t: "Đang chạy" }, { v: "ENDED", t: "Đã kết thúc" }] },
     ], async (p) => { await T("/crop-plans", { method: "POST", body: p }); invalidate("plans"); });
@@ -946,6 +1000,7 @@ VIEWS.lots = async () => {
       { k: "plan_code", label: "Kế hoạch mùa vụ", type: "select",
         options: [{ v: "", t: "— Không gắn kế hoạch —" }, ...plans.map((p) => ({ v: p.code, t: `${p.code} · ${p.name || p.crop_name || ""}` }))] },
       { k: "harvest_date", label: "Ngày thu hoạch", type: "date" },
+      { k: "harvest_time", label: "Giờ thu hoạch (nếu cần chi tiết)", type: "time" },
       { k: "farmer_code", label: "Nông hộ thu hoạch", type: "select",
         options: [{ v: "", t: "— Chọn nông hộ —" }, ...actors.map(fmtActorOpt)],
         addNew: quickActor,
@@ -1016,6 +1071,10 @@ VIEWS.packing = async () => {
       openSheet(`Sửa lô đóng gói ${pk.code}`, [
         { k: "product_name", label: "Tên sản phẩm", def: pk.product_name || "" },
         { k: "phc_code", label: "Mã số cơ sở đóng gói (PHC)", def: pk.phc_code || "" },
+        { k: "food_safety_cert_id", label: "Số chứng nhận an toàn thực phẩm của cơ sở", def: pk.food_safety_cert_id || "" },
+        { k: "carcass_serial_id", label: "Mã thân thịt (nếu là thịt)", def: pk.carcass_serial_id || "" },
+        { k: "ecdt_cc_cert_number", label: "Số giấy chứng nhận nguồn gốc thủy sản (CC)", def: pk.ecdt_cc_cert_number || "" },
+        { k: "cites_permit_number", label: "Số giấy phép CITES (nếu có)", def: pk.cites_permit_number || "" },
         { k: "output_weight_kg", label: "Khối lượng thành phẩm (kg)", type: "number", step: "0.01", def: pk.output_weight_kg ?? "" },
         { k: "yield_norm_ratio", label: "Định mức thu hồi (0–1)", type: "number", step: "0.01", def: pk.yield_norm_ratio ?? "" },
         { k: "storage_type", label: "Hình thức bảo quản", type: "select", def: pk.storage_type || "FRESH_AMBIENT", options: [
@@ -1054,6 +1113,10 @@ VIEWS.packing = async () => {
       { k: "code", label: "Mã lô đóng gói", required: true, placeholder: "vd: PK-1" },
       facilityField,
       { k: "phc_code", label: "Mã số cơ sở đóng gói (PHC)", placeholder: "vd: VN-PHC-66-019" },
+      { k: "food_safety_cert_id", label: "Số chứng nhận an toàn thực phẩm của cơ sở" },
+      { k: "carcass_serial_id", label: "Mã thân thịt (nếu là thịt)" },
+      { k: "ecdt_cc_cert_number", label: "Số giấy chứng nhận nguồn gốc thủy sản (CC)" },
+      { k: "cites_permit_number", label: "Số giấy phép CITES (nếu có)" },
       { k: "product_name", label: "Tên sản phẩm", placeholder: "vd: Bưởi da xanh loại 1" },
       { k: "output_weight_kg", label: "Khối lượng thành phẩm (kg)", type: "number", step: "0.01", required: true },
       { k: "yield_norm_ratio", label: "Định mức thu hồi (0–1)", type: "number", step: "0.01", placeholder: "vd: 0.85", required: true },
@@ -1078,6 +1141,7 @@ async function issueTraceCode(packingCode) {
       { v: "PALLET", t: "Pallet" }, { v: "OTHER", t: "Khác" }] },
     { k: "sscc_code", label: "Mã SSCC (nếu có)", placeholder: "vd: 089350495000000018" },
     { k: "brand_trademark_serial", label: "Thương hiệu / số seri (nếu có)" },
+    { k: "cites_specimen_mark_code", label: "Mã nhãn đánh dấu mẫu vật CITES (nếu có)" },
     { k: "product_image_url", label: "URL hình ảnh sản phẩm (trường bắt buộc TT 02/2024)", placeholder: "https://…" },
     { k: "package_spec", label: "Quy cách bao gói", placeholder: "vd: Thùng carton 10 kg" },
     { k: "units_count", label: "Số đơn vị bao gói", type: "number", step: "1" },
@@ -1092,6 +1156,7 @@ async function issueTraceCode(packingCode) {
     await T("/packaging-units", { method: "POST", body: {
       code: sku, packing_lot_code: packingCode, level: p.level || "SHIPPING_CASE_CARTON",
       gtin_code: p.gtin_code, sscc_code: p.sscc_code,
+      cites_specimen_mark_code: p.cites_specimen_mark_code,
       package_spec: p.package_spec, units_count: p.units_count } });
     await T("/traceability-records", { method: "POST", body: {
       packaging_unit_code: sku, product_image_url: p.product_image_url,
@@ -1217,10 +1282,25 @@ VIEWS.parcels = async () => {
         <div class="meta">
           ${l.registered_area_m2 != null ? `<span>📐 Đăng ký ${fmtNum(l.registered_area_m2)} m²</span>` : ""}
           ${l.joined_date ? `<span>🗓️ Từ ${fmtDate(l.joined_date)}</span>` : ""}
-        </div></div></div>`).join("")}</div>`
+          ${l.left_date ? `<span>↩️ Rút ngày ${fmtDate(l.left_date)}</span>` : ""}
+        </div>
+        ${l.membership_status !== "WITHDRAWN_FROM_ZONE" ? `<div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-withdraw="${l.id}">↩️ Rút khỏi vùng</button></div>` : ""}
+        </div></div>`).join("")}</div>`
         : emptyState("🔗", "Chưa có liên kết nào", "Liên kết thửa vào vùng để vùng trồng gồm đúng các thửa thành viên.")));
     wireCardDetails(el, items, (u) => `Thửa ${u.code}`, "spatial_units");
     wireCardDetails(el, links, (l) => `Liên kết ${l.zone_code || ""} ↔ ${l.parcel_code || ""}`, "zone_parcel_links");
+    el.querySelectorAll("[data-withdraw]").forEach((b) => b.onclick = async (ev) => {
+      ev.stopPropagation();
+      const l = links.find((x) => String(x.id) === b.dataset.withdraw);
+      if (!l) return;
+      openSheet(`Rút thửa ${l.parcel_code} khỏi vùng ${l.zone_code}`, [
+        { k: "note", type: "note", label: `Thao tác này ghi ngày rút = hôm nay và đặt trạng thái "Đã rút khỏi vùng". Liên kết vẫn được lưu để truy vết, không bị xoá.` },
+      ], async () => {
+        await T(`/zone-parcel-links/${l.id}/withdraw`, { method: "POST", body: {} });
+        invalidate("zlinks");
+        toast("Đã rút thửa khỏi vùng");
+      });
+    });
     el.querySelectorAll("[data-del-parcel]").forEach((b) => b.onclick = () =>
       confirmDelete(`thửa ${b.dataset.delParcel}`, `/spatial-units/${encodeURIComponent(b.dataset.delParcel)}`, ["parcels"]));
     el.querySelectorAll("[data-edit-parcel]").forEach((b) => b.onclick = async () => {
@@ -1242,6 +1322,13 @@ VIEWS.parcels = async () => {
         { k: "land_cert_serial", label: "Số giấy chứng nhận", def: u.land_cert_serial || "" },
         { k: "land_legal_owner_name", label: "Chủ đất theo giấy tờ", def: u.land_legal_owner_name || "" },
         { k: "owner_consent_doc_url", label: "Văn bản đồng ý của chủ đất (URL)", def: u.owner_consent_doc_url || "" },
+        { k: "earth_terrace_compliant", label: "Đã làm băng đất đồng mức (vùng dốc)", type: "bool", def: u.earth_terrace_compliant == null ? "" : String(u.earth_terrace_compliant), options: BOOL_OPTS },
+        { k: "forest_origin_type", label: "Nguồn gốc rừng (nếu là lô rừng)", type: "select", def: u.forest_origin_type || "", options: FOREST_ORIGINS },
+        { k: "aquaculture_water_type", label: "Loại hình mặt nước (nếu nuôi thủy sản)", type: "select", def: u.aquaculture_water_type || "", options: AQUA_WATERS },
+        { k: "vessel_reg_number", label: "Số đăng ký tàu cá (nếu là tàu cá)", def: u.vessel_reg_number || "" },
+        { k: "vessel_length_max_m", label: "Chiều dài lớn nhất tàu (m)", type: "number", step: "0.01", def: u.vessel_length_max_m ?? "" },
+        { k: "tech_safety_cert_no", label: "Số GCN an toàn kỹ thuật tàu cá", def: u.tech_safety_cert_no || "" },
+        { k: "vms_device_serial", label: "Số seri thiết bị giám sát hành trình (VMS)", def: u.vms_device_serial || "" },
       ], async (p) => { await T(`/spatial-units/${encodeURIComponent(u.code)}`, { method: "PATCH", body: p }); invalidate("parcels"); });
     });
     $("#addLink").onclick = async () => {
@@ -1285,6 +1372,13 @@ VIEWS.parcels = async () => {
       { k: "land_cert_serial", label: "Số giấy chứng nhận" },
       { k: "land_legal_owner_name", label: "Chủ đất theo giấy tờ" },
       { k: "owner_consent_doc_url", label: "Văn bản đồng ý của chủ đất (URL)", placeholder: "https://…" },
+      { k: "earth_terrace_compliant", label: "Đã làm băng đất đồng mức (vùng dốc)", type: "bool", options: BOOL_OPTS },
+      { k: "forest_origin_type", label: "Nguồn gốc rừng (nếu là lô rừng)", type: "select", options: FOREST_ORIGINS },
+      { k: "aquaculture_water_type", label: "Loại hình mặt nước (nếu nuôi thủy sản)", type: "select", options: AQUA_WATERS },
+      { k: "vessel_reg_number", label: "Số đăng ký tàu cá (nếu là tàu cá)" },
+      { k: "vessel_length_max_m", label: "Chiều dài lớn nhất tàu (m)", type: "number", step: "0.01" },
+      { k: "tech_safety_cert_no", label: "Số GCN an toàn kỹ thuật tàu cá" },
+      { k: "vms_device_serial", label: "Số seri thiết bị giám sát hành trình (VMS)" },
     ], async (p) => { await T("/spatial-units", { method: "POST", body: p }); invalidate("parcels"); });
   });
 };
@@ -1349,6 +1443,7 @@ VIEWS.actors = async () => {
         { k: "actor_type", label: "Loại chủ thể", type: "select", def: a.actor_type || "HOUSEHOLD", options: ACTOR_TYPES },
         { k: "gln_code", label: "Mã GLN", def: a.gln_code || "" },
         { k: "gs1_role_ai", label: "Mã vai trò GS1", def: a.gs1_role_ai || "" },
+        { k: "forestry_enterprise_class", label: "Phân loại DN gỗ (TT 26/2025)", type: "select", def: a.forestry_enterprise_class || "", options: FORESTRY_CLASSES },
         { k: "is_group_leader", label: "Là tổ trưởng", type: "bool", def: a.is_group_leader == null ? "" : String(a.is_group_leader), options: BOOL_OPTS },
         { k: "ics_training_completed", label: "Đã tập huấn ICS", type: "bool", def: a.ics_training_completed == null ? "" : String(a.ics_training_completed), options: BOOL_OPTS },
         { k: "parent_code", label: "Chủ thể cấp trên", type: "select", def: a.parent_code || "",
@@ -1357,6 +1452,7 @@ VIEWS.actors = async () => {
         { k: "district_code", label: "Mã huyện", def: a.district_code || "" },
         { k: "commune_code", label: "Mã xã", def: a.commune_code || "" },
         { k: "address", label: "Địa chỉ", def: a.address || "" },
+        { k: "legal_id", label: "Số CCCD / mã số thuế", def: a.legal_id || "" },
         { k: "phone", label: "Số điện thoại", def: a.phone || "" },
         { k: "email", label: "Email", def: a.email || "" },
         { k: "valid_from", label: "Hiệu lực từ", type: "date", def: a.valid_from ? String(a.valid_from).slice(0, 10) : "" },
@@ -1372,6 +1468,7 @@ VIEWS.actors = async () => {
       { k: "actor_type", label: "Loại chủ thể", type: "select", options: ACTOR_TYPES },
       { k: "gln_code", label: "Mã GLN" },
       { k: "gs1_role_ai", label: "Mã vai trò GS1" },
+      { k: "forestry_enterprise_class", label: "Phân loại DN gỗ (TT 26/2025)", type: "select", options: FORESTRY_CLASSES },
       { k: "is_group_leader", label: "Là tổ trưởng", type: "bool", options: BOOL_OPTS },
       { k: "ics_training_completed", label: "Đã tập huấn ICS", type: "bool", options: BOOL_OPTS },
       { k: "parent_code", label: "Chủ thể cấp trên", type: "select",
@@ -1380,6 +1477,7 @@ VIEWS.actors = async () => {
       { k: "district_code", label: "Mã huyện" },
       { k: "commune_code", label: "Mã xã" },
       { k: "address", label: "Địa chỉ" },
+      { k: "legal_id", label: "Số CCCD / mã số thuế" },
       { k: "phone", label: "Số điện thoại" },
       { k: "email", label: "Email" },
       { k: "valid_from", label: "Hiệu lực từ", type: "date" },
@@ -1402,8 +1500,10 @@ VIEWS.users = async () => {
       <div class="section-head"><h2 style="font-size:15.5px">Người dùng trong tenant</h2></div>
       <div class="list">${users.items.map((u) => `
         <div class="card"><div class="thumb sky">👤</div><div class="body">
-          <div class="title">${esc(u.display_name)} <span class="chip ${u.role === "TENANT_ADMIN" ? "violet" : u.role === "OPERATOR" ? "" : "grey"}">${esc(ROLE_VI[u.role] || u.role)}</span></div>
-          <div class="sub">@${esc(u.username)} · tạo ${fmtDate(u.created_at)}</div>
+          <div class="title">${esc(u.display_name)} <span class="chip ${u.role === "TENANT_ADMIN" ? "violet" : u.role === "OPERATOR" ? "" : "grey"}">${esc(ROLE_VI[u.role] || u.role)}</span>
+          ${u.account_status && u.account_status !== "ACTIVE" ? `<span class="chip amber">${u.account_status === "LOCKED" ? "🔒 Đã khóa" : "⛔ Đã thu hồi"}</span>` : ""}</div>
+          <div class="sub">@${esc(u.username)} · tạo ${fmtDate(u.created_at)}${u.linked_actor_code ? ` · 🔗 Chủ thể ${esc(u.linked_actor_code)}` : ""}</div>
+          ${(users.items.find((x) => x.username === store.actor)?.role === "TENANT_ADMIN") ? `<div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-user-admin="${esc(u.username)}">⚙️ Quản trị tài khoản</button></div>` : ""}
         </div></div>`).join("")}</div>
       <div class="section-head"><h2 style="font-size:15.5px">Nhật ký hệ thống (audit)</h2><span class="hint">${audit.items.length} mục · chỉ ghi thêm</span></div>
       <div class="list">${audit.items.slice().reverse().slice(0, 30).map((a) => `
@@ -1412,12 +1512,41 @@ VIEWS.users = async () => {
           <div class="meta"><span>🎯 ${esc(a.target)}</span><span>👤 ${esc(a.actor)}</span><span>🕒 ${fmtTs(a.ts)}</span></div>
         </div></div>`).join("") || emptyState("🧾", "Chưa có nhật ký", "")}</div>`);
   } catch (err) { el.innerHTML = banner(err); }
-  fab("Thêm người dùng", () => openSheet("Thêm người dùng", [
+  el.querySelectorAll("[data-user-admin]").forEach((b) => b.onclick = async () => {
+    const u = users.items.find((x) => x.username === b.dataset.userAdmin);
+    if (!u) return;
+    const actors = await ensure("actors", "/actors").catch(() => []);
+    openSheet(`Quản trị tài khoản @${u.username}`, [
+      { k: "display_name", label: "Tên hiển thị", def: u.display_name || "" },
+      { k: "account_status", label: "Trạng thái tài khoản", type: "select", def: u.account_status || "ACTIVE", options: [
+        { v: "ACTIVE", t: "Hoạt động" }, { v: "LOCKED", t: "Khóa" }, { v: "REVOKED", t: "Thu hồi" }] },
+      { k: "linked_actor_code", label: "Chủ thể liên kết", type: "select", def: u.linked_actor_code || "",
+        options: [{ v: "", t: "— Không liên kết —" }, ...actors.map(fmtActorOpt)] },
+      { k: "jurisdiction_admin_code", label: "Mã đơn vị hành chính phụ trách", def: u.jurisdiction_admin_code || "" },
+      { k: "auth_provider_type", label: "Phương thức xác thực", type: "select", def: u.auth_provider_type || "", options: [
+        { v: "", t: "— Chưa xác định —" }, { v: "VNEID_NATIONAL_SSO", t: "VNeID / SSO quốc gia" },
+        { v: "ECDT_MOBILE_AUTH", t: "eCDT di động" }, { v: "INTERNAL_PKI_MFA", t: "PKI nội bộ + MFA" }] },
+    ], async (p) => {
+      await T(`/users/${encodeURIComponent(u.username)}`, { method: "PATCH", body: p });
+      invalidate("users", "audit");
+      toast("Đã cập nhật tài khoản");
+    });
+  });
+  fab("Thêm người dùng", async () => {
+    const actors = await ensure("actors", "/actors").catch(() => []);
+    openSheet("Thêm người dùng", [
     { k: "username", label: "Tên đăng nhập", required: true, placeholder: "vd: van.an" },
     { k: "display_name", label: "Tên hiển thị", required: true, placeholder: "vd: Văn An" },
     { k: "role", label: "Vai trò", type: "select", options: [
       { v: "VIEWER", t: "Chỉ xem" }, { v: "OPERATOR", t: "Vận hành (ghi dữ liệu)" }, { v: "TENANT_ADMIN", t: "Quản trị tenant" }] },
-  ], async (p) => { await T("/users", { method: "POST", body: p }); invalidate("users", "audit"); }));
+    { k: "linked_actor_code", label: "Chủ thể liên kết", type: "select",
+      options: [{ v: "", t: "— Không liên kết —" }, ...actors.map(fmtActorOpt)] },
+    { k: "jurisdiction_admin_code", label: "Mã đơn vị hành chính phụ trách" },
+    { k: "auth_provider_type", label: "Phương thức xác thực", type: "select", options: [
+      { v: "", t: "— Chưa xác định —" }, { v: "VNEID_NATIONAL_SSO", t: "VNeID / SSO quốc gia" },
+      { v: "ECDT_MOBILE_AUTH", t: "eCDT di động" }, { v: "INTERNAL_PKI_MFA", t: "PKI nội bộ + MFA" }] },
+  ], async (p) => { await T("/users", { method: "POST", body: p }); invalidate("users", "audit"); });
+  });
 };
 
 /* ---------------- platform tenants ---------------- */
