@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 23 · **Updated:** 2026-11-03T09:52:57Z · **Phase:** DISCOVERY
+- **Revision:** 24 · **Updated:** 2026-11-03T10:36:05Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -31,6 +31,15 @@
 
 ## Latest progress
 
+- **Standard consolidated into the SRS (2026-11-03, T-018
+  TECH_DONE, DEC-010):** SRS v2.1 is built — the traceability data
+  standard now lives inside the SRS as **Appendix F** (full entity
+  mapping with live phase statuses, rule requirements TX-01..TX-12,
+  the TT 02/2024 mandatory fields, the retention fallback, open
+  decisions Q-TX-01..03) with a §1.4 precedence clause. No existing
+  requirement changed (385/385 IDs machine-verified); the document
+  was rendered and its TOC page numbers re-measured (150 pages).
+  SRS v2.1 stays a draft pending IAICT approval (INT-01..06).
 - **Phase-2 hardening — live (2026-11-03, T-017 TECH_DONE):** the
   five fix groups from the two-pass review of T-016 are deployed
   (Worker `75f69cfb`): both-ends-required packing links, an

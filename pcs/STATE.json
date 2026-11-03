@@ -1,5 +1,5 @@
 {
-  "revision": 23,
+  "revision": 24,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,8 +29,8 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "T-017 TECH_DONE: the five T-016 review fix groups (S1, M1-M4, M5 fresh case) are live on the beta (Worker 75f69cfb) after an incident in the first T-017 build — a self-recursion in D1 schema setup that downed write paths — was caught by live write probes, root-caused, fixed and regression-guarded. Suite green in 4 store modes; production write paths verified; browser test passed.",
-      "next_action": "Owner reviews the hardened packing/traceability slice on the beta and decides the frozen-retention interpretation (M5 remainder). Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration, sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
+      "last_completed_step": "T-018 TECH_DONE (DEC-010, delta D-STD-02): the traceability data standard is consolidated into the SRS baseline as SRS v2.1 — Appendix F with the full entity mapping, TX-01..TX-12 rule requirements and Q-TX-01..03 open decisions; a Sec.1.4 precedence clause makes Appendix F govern traceability data definitions. No existing SRS requirement changed (385/385 IDs verified). The beta continues on Worker 75f69cfb (T-017 build); no code change in this step.",
+      "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
     "decisions": [
@@ -87,6 +87,13 @@
         "date": "2026-11-03",
         "classification": "PUBLIC",
         "decision": "Owner decision 2026-11-03: adopt the Vietnamese agri-forestry-fishery traceability data standard (research dossier, 33 tables + 3 views; ND 38/2026, NQ 36/2026, TCVN 11892-1:2026, TT 02/2024/TT-BKHCN, TCVN 12850:2019, GS1) as the platform's data-model reference, recorded as SRS delta D-STD-01. Adoption is phased: phase 1 (T-015) covers the crop-chain core that maps onto the SRS ZON/MPL/FLD/LOT groups; the packing chain, national-portal sync, transport/recall and the forestry/livestock/fishery specializations are phase 2, sequenced with the pilot milestones. The standard's PostgreSQL/PostGIS/bitemporal forms are adapted to the platform's tenant-scoped composite-FK model behind the existing store boundary; enforcement rules (PHI gate, mass balance) live at the API layer so they hold identically on every backend."
+      },
+      {
+        "id": "DEC-010",
+        "date": "2026-11-03",
+        "decision": "Consolidate the traceability data standard into the SRS baseline as SRS v2.1 (Appendix F + TX-01..TX-12 requirements + §1.4 precedence clause), superseding the delta-only handling of D-STD-01 for documentation purposes; implementation deltas continue to be recorded in pcs/SRS_CHANGES.md.",
+        "rationale": "Owner directive 2026-11-03: 'Ghi nho va hop nhat voi srs, dieu chinh theo tai lieu nay'. The re-uploaded dossier is byte-identical to the adopted D-STD-01 source (SHA-256 verified), so v2.1 is a consolidation of already-adopted content, not a scope change: no existing requirement ID, threshold or definition changes (385/385 IDs preserved, machine-checked). Open items are carried explicitly as Q-TX-01..03 instead of being silently decided.",
+        "status": "ACTIVE"
       }
     ],
     "features": [
@@ -330,9 +337,16 @@
         "status": "TECH_DONE",
         "classification": "PUBLIC",
         "evidence": "Owner approved fixing all five groups found by the T-016 two-pass review (minutes: bien-ban-ra-soat-2-luot-T016 in the Owner's review folder; the frozen-retention interpretation question in M5 was explicitly left open — only the fresh case was in scope). Fixes: S1 — packing-input links now require both ends (400 REF_REQUIRED) and CTE stage emission tolerates legacy dangling links instead of crashing after the record is written; the UI issue form requires choosing a harvest lot. M1 — issuance is blocked with 400 PACKING_DATA_INCOMPLETE when the packing lot lacks output_weight_kg or yield_norm_ratio (the mass-balance gate can no longer be skipped); the UI form marks both required. M2 — issuance requires packaging_unit_code (400 TRACEABILITY_UNIT_REQUIRED) resolving to a packing lot (400 PACKING_CHAIN_INCOMPLETE). M3 — duplicate traceability codes rejected with 409 TRACEABILITY_CODE_EXISTS plus a partial unique index ux_traceability_records_code (schema files + D1 upgrade-on-init; verified present on production D1). M4 — the issue form collects product_image_url (mandatory field 2 of TT 02/2024) and record cards warn when it is missing. M5 fresh case — retention for produce without an expiry date now anchors to the latest input harvest date + 12 months per the dossier fallback case (2) (was packing date + 12). INCIDENT during this deploy (recorded honestly): the first T-017 build created the M3 index inside D1Store._ensure_schema via self._run, which itself awaits _ensure_schema — unbounded recursion that burned the Workers CPU budget and took down ALL write paths on the beta (1102/500; reads unaffected) while the local suite stayed green (the recursion self-masked behind the guarded try/except and still produced the index on unwind). Detected by live POST probes during deploy verification (the checkpoint was NOT taken on the broken build), root-caused, and fixed by creating the index through the raw binding with the ready flag set first, plus a regression test (tests/test_d1_schema_guard.py) that counts binding prepare calls during cold-start schema setup and fails if they are not bounded. Fixed Worker version 75f69cfb. Verification: suite green in all four store modes (memory 47 + 2 skipped, D1 48 + 1 skipped incl. the new guard test, psycopg 48, pg8000 48; 5 new T-017 regression tests in test_m4_packing.py); the original 8-case probe now returns the intended results (A 400, B 400, C link 400 with no crash and no orphan records, D second issuance 409 with a single CTE chain, G retention 2027-10-14 harvest-anchored; E/F frozen behavior unchanged per scope). Production probes after the fixed deploy: health ok, REF_REQUIRED / TRACEABILITY_UNIT_REQUIRED / CODE_EXISTS / REF_UNKNOWN all returned as clean JSON in seconds, index confirmed on production D1. Mandatory browser test 2026-11-03 16:51-16:52 +07: sign-in via Pilot Admin card, dashboard 2/1/1/1 no warnings, packing view loads with both empty states, create form contains the now-required output/norm fields, reload clean. Still open by design: the frozen-retention interpretation (dossier states it two ways) awaits an Owner decision; L1-L4 minor items from the review (GTIN check digit, CTE audit entries, cross-store duplicate-link consistency, per-SKU issued-volume accounting) remain recorded in the review minutes."
+      },
+      {
+        "id": "T-018",
+        "title": "Consolidate the traceability data standard into the SRS (SRS v2.1, Appendix F)",
+        "status": "TECH_DONE",
+        "classification": "PUBLIC",
+        "evidence": "SRS v2.1 built from SRS v2.0 (hash-verified source): file IAICT_SRS_MUSE_v2.1_03-11-2026.docx, SHA-256 eb33a23d84e1283ee3f22ec0d502954ad45332bf6d499ec461d56c7891d6f6f1, delivered with its changelog next to the v2.0 files in the Owner's document folder (full texts stay out of the public repo per DEC-001; hashes recorded here). Contents: Appendix F (F.1 adoption principles + phase status; F.2 the full 33-entity + 3-view standard-to-platform mapping with corrected live statuses for phases 1-2; F.3 business-rule requirements TX-01..TX-12 reflecting the implemented and T-017-hardened behavior; F.4 the TT 02/2024 mandatory-field table with platform fill sources + the TT 17/2021 retention fallback with the case (1)/(3) overlap called out; F.5 open decisions Q-TX-01..03); a §1.4 reference + precedence clause; cover and version history updated to 2.1; TOC extended with Appendix F and page numbers re-verified against a LibreOffice render of v2.1 itself (150 pages; Sec.5-9 and Appendices A-E shifted +1 by table reflow and were corrected to measured values, F = p.144, approval block = p.150; Sec.1-4 verified unchanged). Machine verification: requirement-ID population identical v2.0 vs v2.1 (385 distinct IDs, none lost or renumbered); only additions are TX-01..12 and Q-TX-01..03. SRS v2.1 remains a DRAFT pending IAICT approval (INT-01..06 still open)."
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T09:52:57Z"
+  "updated_at": "2026-11-03T10:36:05Z"
 }

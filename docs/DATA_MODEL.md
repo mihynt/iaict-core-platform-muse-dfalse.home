@@ -83,7 +83,12 @@ materialized views; NĐ 38/2026/NĐ-CP, NQ 36/2026/NQ-CP, TCVN
 11892-1:2026, TT 02/2024/TT-BKHCN, TCVN 12850:2019, GS1). Recorded as
 delta **D-STD-01** in `pcs/SRS_CHANGES.md`. The standard is the platform's
 data-model north star; adoption is phased so each phase lands inside the
-SRS scope of a milestone.
+SRS scope of a milestone. **Consolidated into the SRS baseline on
+2026-11-03 (D-STD-02, DEC-010): SRS v2.1, Appendix F** (file
+`IAICT_SRS_MUSE_v2.1_03-11-2026.docx`, SHA-256
+`eb33a23d84e1283ee3f22ec0d502954ad45332bf6d499ec461d56c7891d6f6f1`) —
+Appendix F prevails over conflicting data descriptions elsewhere in
+the SRS; this file remains the implementation-level mapping.
 
 ### Mapping: standard → platform
 
@@ -103,9 +108,9 @@ SRS scope of a milestone.
 | REL_ZONE_MARKET_APPROVAL, LOG_FOREIGN_WARNING, LOG_ZONE_STATUS_HISTORY, REL_ENTITY_CERTIFICATION | Phase 2 — market approvals, warnings, code status history, certifications |
 | LOG_PRE_HARVEST_SUPERVISION, LOG_MONITORING_DECLARATION, LOG_WATER_QUALITY_TEST, LOG_RESIDUE_TEST_DETAIL, LOG_LIVESTOCK_DECL_ITEM | Phase 2 — supervision & monitoring logs |
 | ENT_LIVESTOCK_UNIT | Phase 2 — livestock sector (pilot is crop-first) |
-| ENT_PACKING_PROCESSING, ENT_PACKING_INPUT_LINK, ENT_PACKAGING_UNIT_SKU | **Phase 2 (prepared in T-016, pending deploy)** — `packing_lots` (facility → `actors`, PHC code, output weight, yield norm, storage type), `packing_inputs` (N-N link, `UNIQUE (tenant, packing lot, harvest lot)`), `packaging_units` (level, GTIN, SSCC, spec, count) |
+| ENT_PACKING_PROCESSING, ENT_PACKING_INPUT_LINK, ENT_PACKAGING_UNIT_SKU | **Phase 2 — live (T-016, hardened T-017)** — `packing_lots` (facility → `actors`, PHC code, output weight, yield norm, storage type), `packing_inputs` (N-N link, `UNIQUE (tenant, packing lot, harvest lot)`), `packaging_units` (level, GTIN, SSCC, spec, count) |
 | ENT_TRANSPORT_TRIP | Phase 3 |
-| SYS_TRACEABILITY_RECORD, LOG_CTE_SUPPLY_CHAIN_STAGE | **Phase 2 (prepared in T-016, pending deploy)** — `traceability_records` (the 10 mandatory TT 02/2024 fields, sync status) + `cte_stages` (auto-built harvest + packing stages; further stages appendable) |
+| SYS_TRACEABILITY_RECORD, LOG_CTE_SUPPLY_CHAIN_STAGE | **Phase 2 — live (T-016, hardened T-017)** — `traceability_records` (the 10 mandatory TT 02/2024 fields, sync status) + `cte_stages` (auto-built harvest + packing stages; further stages appendable) |
 | SYS_RECALL_COMPLIANCE | Phase 3 |
 | VW_PRODUCTION_ZONE_METRICS, VW_CYCLE_MASS_BALANCE, VW_PACKING_MASS_BALANCE | Phase 1 partial — the cycle mass-balance rule is enforced at lot creation (below); the packing mass-balance rule is enforced at traceability-record issuance (phase 2); reporting views land later |
 
