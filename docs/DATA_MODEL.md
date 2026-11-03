@@ -1,9 +1,10 @@
-# Data model (ERD) — M2 foundation
+# Data model (ERD) — M2 foundation + traceability standard (D-STD-01)
 
 Baseline: SRS v2.0 (groups ZON, MPL, FLD, LOT) + M1 foundation entities.
-Physical schema: `backend/app/schema.sql` (PostgreSQL, standard SQL per
-DEC-006). The same model is served by the in-memory backend for local runs;
-the store boundary (`backend/app/store.py`) keeps both behind one contract.
+Physical schemas: `backend/app/schema.sql` (PostgreSQL) and
+`backend/app/schema_d1.sql` (SQLite port for Cloudflare D1, the live beta
+backend since DEC-008); the store boundary (`backend/app/store.py`) keeps
+every backend behind one contract.
 
 ## Tenancy rule (applies to every table)
 
@@ -74,10 +75,74 @@ OPERATOR+; references are given as codes (`zone_code`, `plant_code`,
 (unknown reference → `400 REF_UNKNOWN`; duplicate code → `409 CODE_EXISTS`).
 Fields beyond the principal columns are accepted and stored in `data`.
 
+## Traceability data standard (D-STD-01, adopted 2026-11-03)
+
+Reference: the Owner-supplied research dossier on the Vietnamese
+agri-forestry-fishery traceability data standard (33 tables + 3
+materialized views; NĐ 38/2026/NĐ-CP, NQ 36/2026/NQ-CP, TCVN
+11892-1:2026, TT 02/2024/TT-BKHCN, TCVN 12850:2019, GS1). Recorded as
+delta **D-STD-01** in `pcs/SRS_CHANGES.md`. The standard is the platform's
+data-model north star; adoption is phased so each phase lands inside the
+SRS scope of a milestone.
+
+### Mapping: standard → platform
+
+| Standard table | Platform status |
+|---|---|
+| ENT_PRODUCTION_ZONE | **Phase 1** — `zones` extended with the PUC block (`puc_code`, `puc_status`, `sector_category`, `market_scope`, `primary_species`, `scientific_name`, `issue_date`, `issuing_authority`, `post_inspect_due_date`) |
+| ENT_ACTOR_HOUSEHOLD | **Phase 1** — `actors` (subset: type, GLN, parent org, admin codes, contacts; PII encryption is a later hardening slice) |
+| ENT_SPATIAL_UNIT | **Phase 1** — `spatial_units` (subset: parcel/forest identifiers, tenure, area, slope; geometry stays with the zone `geom` for now) |
+| REL_ZONE_SPATIAL_UNIT | **Phase 1** — `zone_parcel_links` (`UNIQUE (tenant, zone, parcel)`, membership status, joined/left dates) |
+| ENT_INPUT_INVENTORY | **Phase 1** — `input_lots` (category, substance code, VN registration, batch, PHI days, supplier → `actors`) |
+| ENT_PRODUCTION_CYCLE | **Phase 1** — `crop_plans` extended (`parcel_code`, `variety_name`, `seed_origin`); `target_yield_kg` is the mass-balance ceiling |
+| LOG_CULTIVATION_TREATMENT | **Phase 1** — `field_events` extended (`input_lot_code`, growth stage, target pest, dosage, quantity applied, `phi_days`, computed `safe_harvest_date`) |
+| ENT_HARVEST_CATCH_LOT | **Phase 1** — `lots` extended (`farmer_code`, `parcel_code`, `weigh_slip_number`, generated `traceability_code`, `data_retention_until`); timber/VMS/eCDT specializations deferred |
+| LOG_PHI_VALIDATION | **Phase 1** — `phi_validations` (system-written on every lot creation attempt) |
+| SYS_USER_ACCOUNT / SYS_AUDIT_LOG | Already present — `users` / `audit_log` (M1) |
+| REF_ADMIN_UNIT, REF_MARKET_REGULATION, REF_ACTIVE_SUBSTANCE_MRL, REF_CERTIFICATION_SCHEME, REF_TRANSPORT_MODE | Phase 2 — reference catalogues (substance/MRL lookups power the banned-substance cross-check) |
+| REL_ZONE_MARKET_APPROVAL, LOG_FOREIGN_WARNING, LOG_ZONE_STATUS_HISTORY, REL_ENTITY_CERTIFICATION | Phase 2 — market approvals, warnings, code status history, certifications |
+| LOG_PRE_HARVEST_SUPERVISION, LOG_MONITORING_DECLARATION, LOG_WATER_QUALITY_TEST, LOG_RESIDUE_TEST_DETAIL, LOG_LIVESTOCK_DECL_ITEM | Phase 2 — supervision & monitoring logs |
+| ENT_LIVESTOCK_UNIT | Phase 2 — livestock sector (pilot is crop-first) |
+| ENT_PACKING_PROCESSING, ENT_PACKING_INPUT_LINK, ENT_PACKAGING_UNIT_SKU | Phase 2 — packing chain (lands with the warehouse/pilot slice) |
+| ENT_TRANSPORT_TRIP | Phase 2 |
+| SYS_TRACEABILITY_RECORD, LOG_CTE_SUPPLY_CHAIN_STAGE | Phase 2 — national-portal records; phase 1 already stamps the code on each lot |
+| SYS_RECALL_COMPLIANCE | Phase 2 |
+| VW_PRODUCTION_ZONE_METRICS, VW_CYCLE_MASS_BALANCE, VW_PACKING_MASS_BALANCE | Phase 1 partial — the cycle mass-balance rule is enforced at lot creation (below); reporting views land with phase 2 |
+
+### Phase-1 enforcement rules (application layer, all backends)
+
+- **PHI gate.** A field event with a PHI (its own `phi_days`, or inherited
+  from its input lot) stores `safe_harvest_date = occurred date + phi_days`.
+  Creating a harvest lot for a plan whose events set a later safe date is
+  rejected `400 PHI_VIOLATION`; every attempt (passed or blocked) is
+  written to `phi_validations` (`LOG_PHI_VALIDATION`).
+- **Mass balance.** A lot that would push the plan's cumulative harvested
+  quantity above `target_yield_kg` is rejected
+  `400 MASS_BALANCE_EXCEEDED` (VW_CYCLE_MASS_BALANCE rule, TCVN
+  11892-1:2026).
+- **Traceability code.** On creation a lot is stamped
+  `traceability_code = plan_code ∥ zone PUC (or zone code) ∥ lot code ∥
+  harvest_date` — the TT 02/2024 concatenation of product trace code,
+  location trace code, batch/lot number and event time.
+- **Retention.** `data_retention_until = expiry_date + 12 months`, or
+  `harvest_date + 12 months` for fresh produce without an expiry date
+  (TT 17/2021 fallback; the 24-month frozen/processed branch lands with
+  the packing chain).
+
+API surface additions: `POST/GET /api/v1/actors`, `/spatial-units`,
+`/zone-parcel-links` (create/list), `/input-lots`, `GET /phi-validations`,
+under the same tenancy/role rules as the other production objects.
+
+Note on the D1 upgrade path: databases created before phase 1 gain the
+new tables from `schema_d1.sql` and the new columns via `ALTER TABLE`
+(plain columns — SQLite cannot add FKs by ALTER; reference resolution is
+enforced by the store layer, fresh databases carry the full composite
+FKs).
+
 ## Backends
 
-- `DATABASE_URL` unset → in-memory (local dev default; Workers beta until
-  Hyperdrive is wired).
+- `DATABASE_URL` unset → in-memory (local dev default).
 - `DATABASE_URL` set → PostgreSQL (`app/pgstore.py`); the schema is applied
-  idempotently at startup. Production target per DEC-006: Neon via
-  Hyperdrive, same SQL.
+  idempotently at startup.
+- Workers beta → Cloudflare D1 (`app/d1store.py`, DEC-008) with the
+  PostgreSQL backends kept green as the exit path.

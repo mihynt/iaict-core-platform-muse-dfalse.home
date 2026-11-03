@@ -327,6 +327,8 @@ VIEWS.zones = async () => {
         <div class="sub">Mã vùng: <b>${esc(z.code)}</b>${z.crop_group ? ` · Nhóm cây: ${esc(z.crop_group)}` : ""}</div>
         <div class="meta">
           ${z.area_ha != null ? `<span>📐 ${fmtNum(z.area_ha)} ha</span>` : ""}
+          ${z.puc_code ? `<span>🏷️ MSVT ${esc(z.puc_code)}</span>` : ""}
+          ${z.primary_species ? `<span>🌱 ${esc(z.primary_species)}</span>` : ""}
           ${z.season ? `<span>🗓️ ${esc(z.season)}</span>` : ""}
           ${z.water_source ? `<span>💧 ${esc(z.water_source)}</span>` : ""}
           ${z.address ? `<span>📍 ${esc(z.address)}</span>` : ""}
@@ -337,6 +339,8 @@ VIEWS.zones = async () => {
     { k: "code", label: "Mã vùng", required: true, placeholder: "vd: Z-01" },
     { k: "name", label: "Tên vùng", required: true, placeholder: "vd: Khu A – Đà Lạt" },
     { k: "area_ha", label: "Diện tích (ha)", type: "number", step: "0.01", placeholder: "vd: 10.5" },
+    { k: "puc_code", label: "Mã số vùng trồng (PUC)", placeholder: "vd: VN-66-650-24370-94-21" },
+    { k: "primary_species", label: "Cây trồng chính", placeholder: "vd: Bưởi da xanh" },
     { k: "crop_group", label: "Nhóm cây", placeholder: "vd: Rau củ, Sầu riêng…" },
     { k: "season", label: "Mùa vụ", placeholder: "vd: Đông Xuân 2026" },
     { k: "water_source", label: "Nguồn nước", placeholder: "vd: Suối, Giếng khoan…" },
@@ -487,6 +491,9 @@ VIEWS.lots = async () => {
         <div class="meta">
           ${l.zone_code ? `<span>🗺️ ${esc(l.zone_code)}</span>` : ""}
           ${l.plan_code ? `<span>📅 ${esc(l.plan_code)}</span>` : ""}
+          ${l.farmer_code ? `<span>🧑‍🌾 ${esc(l.farmer_code)}</span>` : ""}
+          ${l.weigh_slip_number ? `<span>⚖️ ${esc(l.weigh_slip_number)}</span>` : ""}
+          ${l.traceability_code ? `<span>🔎 ${esc(l.traceability_code)}</span>` : ""}
           ${l.harvested_by ? `<span>👤 ${esc(l.harvested_by)}</span>` : ""}
           ${l.expiry_date ? `<span>⏳ HSD ${fmtDate(l.expiry_date)}</span>` : ""}
         </div></div></div>`).join("")}</div>`
@@ -503,6 +510,9 @@ VIEWS.lots = async () => {
       { k: "plan_code", label: "Kế hoạch mùa vụ", type: "select",
         options: [{ v: "", t: "— Không gắn kế hoạch —" }, ...plans.map((p) => ({ v: p.code, t: `${p.code} · ${p.name || p.crop_name || ""}` }))] },
       { k: "harvest_date", label: "Ngày thu hoạch", type: "date" },
+      { k: "farmer_code", label: "Mã nông hộ thu hoạch", placeholder: "vd: H05 (đã tạo ở mục Chủ thể)" },
+      { k: "parcel_code", label: "Mã thửa đất", placeholder: "vd: T42" },
+      { k: "weigh_slip_number", label: "Số phiếu cân", placeholder: "vd: WS-2026-0051" },
       { k: "quantity", label: "Sản lượng", type: "number", step: "0.01" },
       { k: "unit", label: "Đơn vị", type: "select", options: [
         { v: "kg", t: "kg" }, { v: "tấn", t: "tấn" }, { v: "thùng", t: "thùng" }, { v: "bao", t: "bao" }] },

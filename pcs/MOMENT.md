@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 20 · **Updated:** 2026-11-02T19:30:46Z · **Phase:** DISCOVERY
+- **Revision:** 21 · **Updated:** 2026-11-03T05:55:59Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -31,6 +31,22 @@
 
 ## Latest progress
 
+- **Traceability data standard, phase 1 — live (2026-11-03,
+  DEC-009 / D-STD-01 / T-015 TECH_DONE):** the Owner supplied the
+  national traceability data-standard research (33 tables + 3 views)
+  and directed its adoption. Phase 1 lands the crop-chain core: PUC
+  identity block on zones; new entities `actors`, `spatial_units`,
+  `zone_parcel_links`, `input_lots`, `phi_validations`; field events
+  compute a safe-harvest date from the input lot's PHI; harvest lots
+  link farmer + parcel + weigh slip and are gated by the PHI check
+  (blocked attempts logged) and the cycle mass-balance ceiling, and
+  carry a generated traceability code + data-retention date. Suite
+  green in all four store modes (37+1 / 37+1 / 38 / 38). The live D1
+  database was upgraded in place (all 5 new tables present,
+  beta-pilot data intact), Worker `871beb1e`, browser test passed
+  (dashboard 2/1/1/1, new form fields present, reload clean). The
+  full 33-table mapping incl. phase 2 lives in `docs/DATA_MODEL.md`;
+  the SRS delta is D-STD-01 in `pcs/SRS_CHANGES.md`.
 - **D1 adopted — the intermittency is resolved (2026-11-03,
   DEC-008 / T-014 TECH_DONE):** the Owner chose D1 after the spike.
   The store interface went async; a new D1Store runs the SQLite port
@@ -215,5 +231,6 @@
 
 ## Next action
 
-Owner UI feedback on the now-stable beta; then T-005 (M3a day-90
-IoT gate).
+Owner reviews the phase-1 traceability slice on the beta, then
+chooses: phase 2 of D-STD-01 (packing chain + national-portal
+traceability records, with T-006) or T-005 (M3a day-90 IoT gate).

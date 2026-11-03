@@ -47,11 +47,20 @@ class User:
 RECORD_REFS: dict[str, dict[str, str]] = {
     "zones": {},
     "mother_plants": {"zone_code": "zones"},
-    "crop_plans": {"zone_code": "zones", "plant_code": "mother_plants"},
-    "field_events": {"plan_code": "crop_plans", "zone_code": "zones"},
-    "lots": {"zone_code": "zones", "plan_code": "crop_plans"},
+    "actors": {"parent_code": "actors"},
+    "spatial_units": {"operator_code": "actors"},
+    "zone_parcel_links": {"zone_code": "zones", "parcel_code": "spatial_units"},
+    "input_lots": {"supplier_code": "actors"},
+    "crop_plans": {"zone_code": "zones", "plant_code": "mother_plants",
+                    "parcel_code": "spatial_units"},
+    "field_events": {"plan_code": "crop_plans", "zone_code": "zones",
+                     "input_lot_code": "input_lots"},
+    "lots": {"zone_code": "zones", "plan_code": "crop_plans",
+             "farmer_code": "actors", "parcel_code": "spatial_units"},
+    "phi_validations": {},
 }
-CODED_KINDS = {"zones", "mother_plants", "crop_plans", "lots"}
+CODED_KINDS = {"zones", "mother_plants", "crop_plans", "lots",
+               "actors", "spatial_units", "input_lots"}
 
 
 class RefUnknown(ValueError):

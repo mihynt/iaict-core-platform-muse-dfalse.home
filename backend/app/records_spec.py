@@ -16,6 +16,10 @@ SPECS: dict[str, tuple[str, dict[str, str]]] = {
         "name": "text", "area_ha": "num", "address": "text", "lat": "float",
         "lon": "float", "geom": "json", "crop_group": "text", "season": "text",
         "water_source": "text", "managing_entity": "text", "status": "text",
+        "puc_code": "text", "puc_status": "text", "sector_category": "text",
+        "market_scope": "text", "primary_species": "text",
+        "scientific_name": "text", "issue_date": "date",
+        "issuing_authority": "text", "post_inspect_due_date": "date",
     }),
     "mother_plants": ("mother_plants", {
         "species": "text", "variety": "text", "scientific_name": "text",
@@ -24,21 +28,58 @@ SPECS: dict[str, tuple[str, dict[str, str]]] = {
         "issuing_authority": "text", "valid_from": "date", "valid_to": "date",
         "status": "text",
     }),
+    "actors": ("actors", {
+        "name": "text", "actor_type": "text", "gln_code": "text",
+        "province_code": "text", "district_code": "text", "commune_code": "text",
+        "address": "text", "phone": "text", "email": "text",
+    }),
+    "spatial_units": ("spatial_units", {
+        "name": "text", "unit_type": "text", "national_land_parcel_id": "text",
+        "map_sheet_number": "text", "parcel_number": "text",
+        "land_tenure_doc_type": "text", "land_cert_serial": "text",
+        "land_legal_owner_name": "text", "forest_subzone_code": "text",
+        "forest_compartment_code": "text", "forest_plot_code": "text",
+        "area_m2": "num", "slope_degree": "num",
+    }),
+    "zone_parcel_links": ("zone_parcel_links", {
+        "registered_area_m2": "num", "membership_status": "text",
+        "joined_date": "date", "left_date": "date",
+    }),
+    "input_lots": ("input_lots", {
+        "name": "text", "category": "text", "substance_code": "text",
+        "vn_registration_number": "text", "batch_no": "text",
+        "purchase_date": "date", "quantity": "num", "unit": "text",
+        "phi_days": "int", "expiry_date": "date",
+    }),
     "crop_plans": ("crop_plans", {
-        "name": "text", "crop_name": "text", "start_date": "date",
+        "name": "text", "crop_name": "text", "variety_name": "text",
+        "seed_origin": "text", "start_date": "date",
         "end_date": "date", "target_yield_kg": "num", "status": "text",
     }),
     "field_events": ("field_events", {
         "event_type": "text", "occurred_at": "ts", "lat": "float", "lon": "float",
         "actor": "text", "device": "text", "notes": "text", "materials": "json",
+        "growth_stage": "text", "target_pest": "text", "dosage": "text",
+        "quantity_applied": "num", "phi_days": "int", "safe_harvest_date": "date",
     }),
     "lots": ("lots", {
         "harvest_date": "date", "quantity": "num", "unit": "text",
         "harvested_by": "text", "quality_grade": "text", "status": "text",
-        "expiry_date": "date",
+        "expiry_date": "date", "weigh_slip_number": "text",
+        "traceability_code": "text", "data_retention_until": "date",
+    }),
+    "phi_validations": ("phi_validations", {
+        "lot_code": "text", "plan_code": "text",
+        "max_safe_harvest_date": "date", "actual_harvest_date": "date",
+        "outcome": "text",
     }),
 }
-REF_ID_COLUMN = {"zone_code": "zone_id", "plant_code": "plant_id", "plan_code": "plan_id"}
+REF_ID_COLUMN = {
+    "zone_code": "zone_id", "plant_code": "plant_id", "plan_code": "plan_id",
+    "parcel_code": "parcel_id", "farmer_code": "farmer_id",
+    "input_lot_code": "input_lot_id", "supplier_code": "supplier_id",
+    "operator_code": "operator_id", "parent_code": "parent_id",
+}
 
 
 def conv(value, kind: str):

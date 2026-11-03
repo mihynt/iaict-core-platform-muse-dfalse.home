@@ -27,9 +27,37 @@ _DDL = [stmt.strip() for stmt in _SCHEMA.split(";\n") if stmt.strip()]
 
 _TABLES_CHILD_FIRST = [
     "audit_log", "lot_relations", "field_events", "lots", "crop_plans",
+    "phi_validations", "zone_parcel_links", "input_lots", "spatial_units",
+    "actors",
     "mother_plant_status_history", "mother_plants", "zone_boundary_versions",
     "zones", "workspaces", "users", "tenants",
 ]
+
+_NEW_TABLES = ["actors", "spatial_units", "zone_parcel_links", "input_lots",
+               "phi_validations"]
+
+# D-STD-01 in-place upgrade for databases created before the traceability
+# standard landed: new tables come from schema_d1.sql; new columns on the
+# pre-existing tables are added as plain columns (SQLite cannot add a
+# foreign key via ALTER TABLE — reference resolution is also enforced at
+# the store layer, and fresh databases get the full composite FKs).
+_UPGRADE_COLUMNS = {
+    "zones": [("puc_code", "TEXT"), ("puc_status", "TEXT"),
+              ("sector_category", "TEXT"), ("market_scope", "TEXT"),
+              ("primary_species", "TEXT"), ("scientific_name", "TEXT"),
+              ("issue_date", "TEXT"), ("issuing_authority", "TEXT"),
+              ("post_inspect_due_date", "TEXT")],
+    "crop_plans": [("parcel_id", "INTEGER"), ("parcel_code", "TEXT"),
+                   ("variety_name", "TEXT"), ("seed_origin", "TEXT")],
+    "field_events": [("input_lot_id", "INTEGER"), ("input_lot_code", "TEXT"),
+                     ("growth_stage", "TEXT"), ("target_pest", "TEXT"),
+                     ("dosage", "TEXT"), ("quantity_applied", "REAL"),
+                     ("phi_days", "INTEGER"), ("safe_harvest_date", "TEXT")],
+    "lots": [("farmer_id", "INTEGER"), ("farmer_code", "TEXT"),
+             ("parcel_id", "INTEGER"), ("parcel_code", "TEXT"),
+             ("weigh_slip_number", "TEXT"), ("traceability_code", "TEXT"),
+             ("data_retention_until", "TEXT")],
+}
 
 
 def _plain(obj):
@@ -81,6 +109,24 @@ class D1Store:
         ).first())
         if row is None:
             await self._db.batch([self._db.prepare(stmt) for stmt in _DDL])
+        else:
+            probe = _plain(await self._db.prepare(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'actors'"
+            ).first())
+            if probe is None:
+                stmts = []
+                for stmt in _DDL:
+                    upper = stmt.upper()
+                    if any(f"CREATE TABLE IF NOT EXISTS {name} " in stmt or
+                           f"CREATE TABLE IF NOT EXISTS {name}(" in stmt
+                           for name in _NEW_TABLES):
+                        stmts.append(stmt)
+                    elif upper.startswith("CREATE TABLE"):
+                        continue
+                for table, cols in _UPGRADE_COLUMNS.items():
+                    for col, ctype in cols:
+                        stmts.append(f"ALTER TABLE {table} ADD COLUMN {col} {ctype}")
+                await self._db.batch([self._db.prepare(stmt) for stmt in stmts])
         self._schema_ready = True
 
     async def _first(self, sql: str, params: tuple = ()):

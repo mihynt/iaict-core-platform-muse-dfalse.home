@@ -1,5 +1,5 @@
 {
-  "revision": 20,
+  "revision": 21,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,8 +29,8 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "T-014 TECH_DONE: beta runs on D1 (storage 'd1'), dashboard loads completely on first try (browser-verified 2/1/1/0, reload clean), probes 20/20 + 48/48, cpuTime median 42ms. T-013 cancelled as superseded; its packaging remains the exit path.",
-      "next_action": "Owner UI feedback on the now-stable beta; then T-005 (M3a day-90 IoT go/no-go gate). Owner may set a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard whenever platform administration is needed (currently disabled by design after the temporary-secret reseeds). Housekeeping available on request: delete the Z-TMP test zone once a delete endpoint exists, and remove the spike Worker/D1 (iaict-d1-spike) when no longer needed.",
+      "last_completed_step": "T-015 TECH_DONE (DEC-009 / D-STD-01): traceability data standard phase 1 live on the D1 beta - PUC identity on zones; actors, spatial units, zone-parcel links, input lots and PHI validation log as new tenant-scoped entities; harvest lots gated by PHI and cycle mass balance, stamped with national traceability codes and retention dates. Suite green in 4 store modes; D1 upgraded in place with beta-pilot data intact; browser-verified.",
+      "next_action": "Owner reviews the phase-1 traceability slice on the beta, then chooses: phase 2 of D-STD-01 (packing chain PHC/SKU + national-portal traceability records, sequenced with T-006 pilot go-live) or T-005 (M3a day-90 IoT go/no-go gate). Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard. Housekeeping available on request: delete the Z-TMP test zone once a delete endpoint exists, and remove the spike Worker/D1 (iaict-d1-spike).",
       "blockers": []
     },
     "decisions": [
@@ -81,6 +81,12 @@
         "date": "2026-11-03",
         "classification": "PUBLIC",
         "decision": "Owner decision 2026-11-03: adopt Cloudflare D1 as the beta's store on Workers (T-014), superseding the T-013 plain-host relocation. This AMENDS DEC-006 in one respect: a Cloudflare-proprietary API (D1) now sits behind the store boundary. The rest of DEC-006's portability discipline is kept and is what bounds the lock-in: the store interface is storage-agnostic, the PostgreSQL backends (psycopg + pg8000/Hyperdrive) remain in the tree and green in tests, the datasets on Supabase and Neon are untouched, and wrangler.jsonc documents the rollback (restore the Hyperdrive binding + IAICT_BACKEND=hyperdrive + redeploy). Rationale is measured, not preferential: on the same free Python Workers runtime, D1 scored sequential 20/20 + parallel 48/48 with cpuTime median ~26-42ms per request, versus 8/20 + 19/48 at ~1,241ms CPU on PostgreSQL via Hyperdrive; the hang-cancellations and exceededCpu failures disappeared entirely. D1 was also verified to enforce the composite (tenant_id, ref_id) foreign keys the tenant isolation model relies on (cross-tenant INSERT rejected, SQLITE_CONSTRAINT_FOREIGNKEY)."
+      },
+      {
+        "id": "DEC-009",
+        "date": "2026-11-03",
+        "classification": "PUBLIC",
+        "decision": "Owner decision 2026-11-03: adopt the Vietnamese agri-forestry-fishery traceability data standard (research dossier, 33 tables + 3 views; ND 38/2026, NQ 36/2026, TCVN 11892-1:2026, TT 02/2024/TT-BKHCN, TCVN 12850:2019, GS1) as the platform's data-model reference, recorded as SRS delta D-STD-01. Adoption is phased: phase 1 (T-015) covers the crop-chain core that maps onto the SRS ZON/MPL/FLD/LOT groups; the packing chain, national-portal sync, transport/recall and the forestry/livestock/fishery specializations are phase 2, sequenced with the pilot milestones. The standard's PostgreSQL/PostGIS/bitemporal forms are adapted to the platform's tenant-scoped composite-FK model behind the existing store boundary; enforcement rules (PHI gate, mass balance) live at the API layer so they hold identically on every backend."
       }
     ],
     "features": [
@@ -139,6 +145,12 @@
         "name": "Mobile-first web UI served by the Worker",
         "status": "TECH_DONE",
         "evidence": "Live at https://iaict-core-platform.mihy.workers.dev (verified 2026-11-02: HTML/CSS/JS served with correct content types; API and Neon data unaffected). All screens operate on live API data."
+      },
+      {
+        "id": "F-006",
+        "name": "Traceability data standard - phase 1 (PUC identity, actors & parcels, PHI + mass-balance gates, traceability codes)",
+        "status": "TECH_DONE",
+        "evidence": "Live on the beta 2026-11-03 (Worker 871beb1e, D1 upgraded in place, browser-verified). See T-015 evidence."
       }
     ],
     "flows": [],
@@ -291,9 +303,16 @@
         "status": "TECH_DONE",
         "classification": "PUBLIC",
         "evidence": "SPIKE MEASURED 2026-11-02 (separate throwaway Worker 'iaict-d1-spike', same Cloudflare account/runtime, D1 database id 956d373b-5f72-4413-bff0-af5513ded7ee): the /list pattern mirrors the real read path (tenant-guard lookup + list query, two sequential awaited D1 queries, beta-pilot-equivalent data). Results: sequential 20/20 and dashboard-parallel 48/48 succeeded (Postgres-via-Hyperdrive baseline: 8/20 and 19/48); wrangler tail 68/68 outcomes 'ok', zero hang-cancellations, zero exceededCpu; cpuTime median 26ms / max 68ms (baseline: ~1,241ms average, 1,902ms max); server wallTime median 127ms (baseline ~5,097ms); client-observed median ~0.9s including network and cold isolates. Conclusion: the D1 leg removes the failure classes entirely on the same free Python Workers runtime. NOT yet proven: write load, the FastAPI framework overhead on top, D1 foreign-key enforcement (a load-bearing property verified on PostgreSQL), and the real dashboard pattern. Integration cost if adopted: the store boundary must become async (D1 has no synchronous API - the current sync pg8000 store cannot call it), the 12-table schema must be ported to the SQLite dialect, and DEC-006 must be amended (D1 is a Cloudflare-proprietary API; the PostgreSQL stores and the Supabase dataset stay in place as the documented exit path). Spike code lives outside the repo at ~/workspace/projects/iaict-d1-spike (not committed). Awaiting the Owner's choice between T-014 (D1 adoption), T-013 (plain-host relocation) or deferring. COMPLETED 2026-11-03: the whole store interface was made async; new D1Store (backend/app/d1store.py) runs the SQLite port of the 12-table schema (backend/app/schema_d1.sql, same composite FKs); InMemory/PgStore/WorkerPgStore converted with unchanged semantics. Test suite green in all four modes (memory 30+1 skip, D1-over-sqlite3-shim 30+1 skip, psycopg 31, pg8000 31). Deployed to the production D1 database 'iaict-core' (id f4d07d24-3375-4588-affc-f6122c440ca6), Worker version dfdbdfc3; /health reports storage 'd1'. beta-pilot was reseeded through the API with a temporary platform secret (deleted immediately after; platform admin verified back to 503 PLATFORM_DISABLED): tenant, Pilot Admin, Z-01, Z-TMP, MPL-001, PLAN-2026, audit consistent. Live measurement on the real API: sequential 20/20 and dashboard-parallel 48/48 (Postgres baseline: 8/20, 19/48), client median 1.6-1.8s; wrangler tail 8/8 ok, cpuTime median 42ms (baseline avg 1,241ms), wallTime median 157ms (baseline ~5,097ms). Mandatory browser test (2026-11-03 02:29-02:30 +07): sign-in via account card, dashboard FIRST load complete at 2/1/1/0 with no warnings (lots rendered its 0 for the first time), zones and plans pages correct, reload again 2/1/1/0 clean. The multi-evening intermittency is resolved on the beta."
+      },
+      {
+        "id": "T-015",
+        "title": "Apply the national traceability data standard, phase 1 (D-STD-01): PUC identity on zones, actors/spatial-units/zone-parcel links/input lots, PHI gate + mass balance on harvest lots, traceability codes",
+        "status": "TECH_DONE",
+        "classification": "PUBLIC",
+        "evidence": "Owner directive 2026-11-03 with the research dossier (SHA-256 3afb2be6...cfeb1) recorded as delta D-STD-01 in pcs/SRS_CHANGES.md; full 33-table mapping in docs/DATA_MODEL.md (10 tables adopted in phase 1, remainder mapped to phase 2). Implemented: zones gain the PUC block (puc_code, puc_status, sector_category, market_scope, primary_species, scientific_name, issue_date, issuing_authority, post_inspect_due_date); new tenant-scoped kinds actors (ENT_ACTOR_HOUSEHOLD subset), spatial_units (ENT_SPATIAL_UNIT subset), zone_parcel_links (REL_ZONE_SPATIAL_UNIT, unique per tenant+zone+parcel), input_lots (ENT_INPUT_INVENTORY subset), phi_validations (LOG_PHI_VALIDATION); crop plans gain parcel link + variety + seed origin; field events gain input-lot link and computed safe_harvest_date = occurred date + PHI days; harvest lots gain farmer/parcel links + weigh slip, are rejected 400 PHI_VIOLATION when harvested before the plan's latest safe date (every attempt logged to phi_validations) and 400 MASS_BALANCE_EXCEEDED above the plan's target_yield_kg ceiling, and are stamped with traceability_code (plan | zone PUC-or-code | lot | harvest date, TT 02/2024) and data_retention_until (+12 months, TT 17/2021). Suite green in all four store modes: memory 37 passed + 1 skipped, D1-over-sqlite3-shim 37 + 1 skipped, psycopg 38, pg8000 38 (7 new tests in backend/tests/test_m3_traceability.py). D1 in-place upgrade path verified separately against a pre-T-015 schema copy (old data intact, new tables/columns appear, writes work) and then on production: deployed Worker version 871beb1e (2026-11-03), /health storage 'd1', remote D1 inspection shows all 5 new tables in database iaict-core, beta-pilot data intact (2 zones, 1 user, 1 plan, plus 1 lot the Owner created via the UI the same morning), new endpoints /api/v1/actors and /api/v1/phi-validations return 200 with empty lists. Mandatory browser test 2026-11-03 12:54-12:55 +07: sign-in via Pilot Admin card, dashboard 2/1/1/1 with no warnings, zones page 2 cards, lot create form contains the new farmer/parcel/weigh-slip fields, zone create form contains the PUC field, reload clean. UI: zone form/cards show PUC + primary species; lot form gained farmer code, parcel code, weigh slip; lot cards show farmer, weigh slip and traceability code. Phase 2 (packing chain PHC/SKU, national-portal traceability records + CTE stages, transport, recall, market approvals/GACC warnings, certifications, monitoring logs, livestock/fishery specializations) is mapped in docs/DATA_MODEL.md and not yet built."
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-02T19:30:46Z"
+  "updated_at": "2026-11-03T05:55:59Z"
 }

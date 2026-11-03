@@ -54,6 +54,15 @@ CREATE TABLE IF NOT EXISTS zones (
     season          TEXT,
     water_source    TEXT,
     managing_entity TEXT,
+    puc_code            TEXT,  -- national production-unit code (D-STD-01)
+    puc_status          TEXT,  -- PENDING_POST_INSPECTION | ACTIVE_COMPLIANT | SUSPENDED_TEMPORARILY | RESTORED | REVOKED_PERMANENTLY
+    sector_category     TEXT,  -- CROP_FARMING | FORESTRY_PLANTATION | LIVESTOCK_FARMING | AQUACULTURE
+    market_scope        TEXT,  -- DOMESTIC_ONLY | EXPORT_ELIGIBLE | BOTH_MARKETS
+    primary_species     TEXT,
+    scientific_name     TEXT,
+    issue_date          DATE,
+    issuing_authority   TEXT,
+    post_inspect_due_date DATE,
     status          TEXT NOT NULL DEFAULT 'ACTIVE',
     data            JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -120,6 +129,126 @@ CREATE TABLE IF NOT EXISTS mother_plant_status_history (
     FOREIGN KEY (tenant_id, plant_id) REFERENCES mother_plants (tenant_id, id) ON DELETE CASCADE
 );
 
+-- ---- Traceability data standard, phase 1 (D-STD-01) -----------------------
+-- Actors / households (ENT_ACTOR_HOUSEHOLD subset).
+CREATE TABLE IF NOT EXISTS actors (
+    id            BIGSERIAL,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    code          TEXT NOT NULL,
+    name          TEXT NOT NULL,
+    actor_type    TEXT,
+    gln_code      TEXT,
+    parent_id     BIGINT,
+    parent_code   TEXT,
+    province_code TEXT,
+    district_code TEXT,
+    commune_code  TEXT,
+    address       TEXT,
+    phone         TEXT,
+    email         TEXT,
+    data          JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (id),
+    UNIQUE (tenant_id, id),
+    UNIQUE (tenant_id, code),
+    FOREIGN KEY (tenant_id, parent_id) REFERENCES actors (tenant_id, id)
+);
+
+-- Spatial units: land parcels, forest plots, ponds/cages, barns, vessels
+-- (ENT_SPATIAL_UNIT subset).
+CREATE TABLE IF NOT EXISTS spatial_units (
+    id            BIGSERIAL,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    code          TEXT NOT NULL,
+    name          TEXT,
+    unit_type     TEXT,
+    operator_id   BIGINT,
+    operator_code TEXT,
+    national_land_parcel_id TEXT,
+    map_sheet_number TEXT,
+    parcel_number    TEXT,
+    land_tenure_doc_type TEXT,
+    land_cert_serial     TEXT,
+    land_legal_owner_name TEXT,
+    forest_subzone_code    TEXT,
+    forest_compartment_code TEXT,
+    forest_plot_code       TEXT,
+    area_m2       NUMERIC,
+    slope_degree  NUMERIC,
+    data          JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (id),
+    UNIQUE (tenant_id, id),
+    UNIQUE (tenant_id, code),
+    FOREIGN KEY (tenant_id, operator_id) REFERENCES actors (tenant_id, id)
+);
+
+-- N-N membership of spatial units in production zones (REL_ZONE_SPATIAL_UNIT).
+CREATE TABLE IF NOT EXISTS zone_parcel_links (
+    id            BIGSERIAL,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    zone_id       BIGINT,
+    zone_code     TEXT,
+    parcel_id     BIGINT,
+    parcel_code   TEXT,
+    registered_area_m2 NUMERIC,
+    membership_status  TEXT,
+    joined_date   DATE,
+    left_date     DATE,
+    data          JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (id),
+    UNIQUE (tenant_id, id),
+    UNIQUE (tenant_id, zone_id, parcel_id),
+    FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id),
+    FOREIGN KEY (tenant_id, parcel_id) REFERENCES spatial_units (tenant_id, id)
+);
+
+-- Input material lots (ENT_INPUT_INVENTORY subset).
+CREATE TABLE IF NOT EXISTS input_lots (
+    id            BIGSERIAL,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    code          TEXT NOT NULL,
+    name          TEXT,
+    category      TEXT,
+    substance_code TEXT,
+    supplier_id   BIGINT,
+    supplier_code TEXT,
+    vn_registration_number TEXT,
+    batch_no      TEXT,
+    purchase_date DATE,
+    quantity      NUMERIC,
+    unit          TEXT,
+    phi_days      INTEGER,
+    expiry_date   DATE,
+    data          JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (id),
+    UNIQUE (tenant_id, id),
+    UNIQUE (tenant_id, code),
+    FOREIGN KEY (tenant_id, supplier_id) REFERENCES actors (tenant_id, id)
+);
+
+-- Pre-harvest interval validation log (LOG_PHI_VALIDATION).
+CREATE TABLE IF NOT EXISTS phi_validations (
+    id            BIGSERIAL,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    lot_code      TEXT,
+    plan_code     TEXT,
+    max_safe_harvest_date DATE,
+    actual_harvest_date   DATE,
+    outcome       TEXT,  -- PASSED_SAFE | BLOCKED_VIOLATION_PHI
+    data          JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (id),
+    UNIQUE (tenant_id, id)
+);
+
 -- ---- FLD: crop plans and field events (SRS FLD-01..04) ---------------------
 CREATE TABLE IF NOT EXISTS crop_plans (
     id              BIGSERIAL,
@@ -130,7 +259,11 @@ CREATE TABLE IF NOT EXISTS crop_plans (
     zone_code       TEXT,
     plant_id        BIGINT,
     plant_code      TEXT,
+    parcel_id       BIGINT,
+    parcel_code     TEXT,
     crop_name       TEXT,
+    variety_name    TEXT,
+    seed_origin     TEXT,
     start_date      DATE,
     end_date        DATE,
     target_yield_kg NUMERIC,
@@ -142,7 +275,8 @@ CREATE TABLE IF NOT EXISTS crop_plans (
     UNIQUE (tenant_id, id),
     UNIQUE (tenant_id, code),
     FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id),
-    FOREIGN KEY (tenant_id, plant_id) REFERENCES mother_plants (tenant_id, id)
+    FOREIGN KEY (tenant_id, plant_id) REFERENCES mother_plants (tenant_id, id),
+    FOREIGN KEY (tenant_id, parcel_id) REFERENCES spatial_units (tenant_id, id)
 );
 
 CREATE TABLE IF NOT EXISTS field_events (
@@ -160,12 +294,21 @@ CREATE TABLE IF NOT EXISTS field_events (
     device      TEXT,
     notes       TEXT,
     materials   JSONB,  -- [{name, supplier, material_lot, quantity, unit, used_by}] (FLD-03)
+    input_lot_id   BIGINT,
+    input_lot_code TEXT,
+    growth_stage   TEXT,
+    target_pest    TEXT,
+    dosage         TEXT,
+    quantity_applied NUMERIC,
+    phi_days         INTEGER,
+    safe_harvest_date DATE,  -- occurred_at date + phi_days (LOG_CULTIVATION_TREATMENT, D-STD-01)
     data        JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (id),
     UNIQUE (tenant_id, id),
     FOREIGN KEY (tenant_id, plan_id) REFERENCES crop_plans (tenant_id, id),
-    FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id)
+    FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id),
+    FOREIGN KEY (tenant_id, input_lot_id) REFERENCES input_lots (tenant_id, id)
 );
 
 -- ---- LOT: harvest lots and traceability (SRS LOT-01..04) -------------------
@@ -182,6 +325,13 @@ CREATE TABLE IF NOT EXISTS lots (
     unit          TEXT NOT NULL DEFAULT 'kg',
     harvested_by  TEXT,
     quality_grade TEXT,
+    farmer_id     BIGINT,
+    farmer_code   TEXT,
+    parcel_id     BIGINT,
+    parcel_code   TEXT,
+    weigh_slip_number TEXT,
+    traceability_code TEXT,  -- product || location || lot || event time (TT 02/2024, D-STD-01)
+    data_retention_until DATE,  -- expiry/harvest + 12 months (TT 17/2021)
     status        TEXT NOT NULL DEFAULT 'IN_STOCK',
     expiry_date   DATE,
     data          JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -191,7 +341,9 @@ CREATE TABLE IF NOT EXISTS lots (
     UNIQUE (tenant_id, id),
     UNIQUE (tenant_id, code),
     FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id),
-    FOREIGN KEY (tenant_id, plan_id) REFERENCES crop_plans (tenant_id, id)
+    FOREIGN KEY (tenant_id, plan_id) REFERENCES crop_plans (tenant_id, id),
+    FOREIGN KEY (tenant_id, farmer_id) REFERENCES actors (tenant_id, id),
+    FOREIGN KEY (tenant_id, parcel_id) REFERENCES spatial_units (tenant_id, id)
 );
 
 -- Split / merge / transform lineage (LOT-02). Acyclicity is enforced at the
