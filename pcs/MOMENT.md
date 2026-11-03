@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 24 · **Updated:** 2026-11-03T10:36:05Z · **Phase:** DISCOVERY
+- **Revision:** 25 · **Updated:** 2026-11-03T10:44:00Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -31,6 +31,14 @@
 
 ## Latest progress
 
+- **Dossier designated the foundation (2026-11-03, DEC-011):**
+  the traceability-standard dossier is now the foundational
+  baseline for the platform's data standard, with an explicit
+  precedence stack — the dossier itself (hash-pinned, reference
+  copy kept outside the public repo) → SRS v2.1 Appendix F as its
+  consolidated normative form → implementation. Any deviation must
+  be recorded as a delta with rationale (D-STD-03); Q-TX-01..03
+  are the only sanctioned open points.
 - **Standard consolidated into the SRS (2026-11-03, T-018
   TECH_DONE, DEC-010):** SRS v2.1 is built — the traceability data
   standard now lives inside the SRS as **Appendix F** (full entity

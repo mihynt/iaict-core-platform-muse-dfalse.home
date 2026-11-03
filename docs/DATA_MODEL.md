@@ -89,6 +89,10 @@ SRS scope of a milestone. **Consolidated into the SRS baseline on
 `eb33a23d84e1283ee3f22ec0d502954ad45332bf6d499ec461d56c7891d6f6f1`) —
 Appendix F prevails over conflicting data descriptions elsewhere in
 the SRS; this file remains the implementation-level mapping.
+**Foundation (DEC-011, 2026-11-03):** the dossier itself is the
+ultimate source for traceability data definitions — Appendix F is
+its consolidated form, and any deviation from the dossier must be
+recorded as a delta in `pcs/SRS_CHANGES.md` with rationale.
 
 ### Mapping: standard → platform
 

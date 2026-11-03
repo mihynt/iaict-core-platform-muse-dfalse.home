@@ -1,5 +1,5 @@
 {
-  "revision": 24,
+  "revision": 25,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "T-018 TECH_DONE (DEC-010, delta D-STD-02): the traceability data standard is consolidated into the SRS baseline as SRS v2.1 — Appendix F with the full entity mapping, TX-01..TX-12 rule requirements and Q-TX-01..03 open decisions; a Sec.1.4 precedence clause makes Appendix F govern traceability data definitions. No existing SRS requirement changed (385/385 IDs verified). The beta continues on Worker 75f69cfb (T-017 build); no code change in this step.",
+      "last_completed_step": "DEC-011 recorded (delta D-STD-03): the traceability-standard dossier is designated the foundational baseline for the platform's data standard, with an explicit precedence stack (dossier -> SRS v2.1 Appendix F -> implementation) and a rule that deviations must be recorded as deltas. No code or document content changed in this step; the beta continues on Worker 75f69cfb.",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -93,6 +93,13 @@
         "date": "2026-11-03",
         "decision": "Consolidate the traceability data standard into the SRS baseline as SRS v2.1 (Appendix F + TX-01..TX-12 requirements + §1.4 precedence clause), superseding the delta-only handling of D-STD-01 for documentation purposes; implementation deltas continue to be recorded in pcs/SRS_CHANGES.md.",
         "rationale": "Owner directive 2026-11-03: 'Ghi nho va hop nhat voi srs, dieu chinh theo tai lieu nay'. The re-uploaded dossier is byte-identical to the adopted D-STD-01 source (SHA-256 verified), so v2.1 is a consolidation of already-adopted content, not a scope change: no existing requirement ID, threshold or definition changes (385/385 IDs preserved, machine-checked). Open items are carried explicitly as Q-TX-01..03 instead of being silently decided.",
+        "status": "ACTIVE"
+      },
+      {
+        "id": "DEC-011",
+        "date": "2026-11-03",
+        "decision": "The Owner-supplied traceability-standard dossier (SHA-256 3afb2be6baf68765e80be68513f84736d94bca1b51a445a59bc59829668cfeb1) is the foundational baseline for the platform's data standard. Precedence: the dossier is the ultimate source for traceability data definitions; SRS v2.1 Appendix F is its consolidated normative form; implementation follows Appendix F. Deviations require a recorded delta with rationale (D-STD-03).",
+        "rationale": "Owner directive 2026-11-03: 'Lay tai lieu toi vua gui lam nen tang' (take the document I just sent as the foundation), following the adoption (DEC-009) and the SRS consolidation (DEC-010). A pinned reference copy is kept outside the public repo (workspace/projects/iaict-references/) per DEC-001; only the hash is recorded in the repo.",
         "status": "ACTIVE"
       }
     ],
@@ -348,5 +355,5 @@
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T10:36:05Z"
+  "updated_at": "2026-11-03T10:44:00Z"
 }
