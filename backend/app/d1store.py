@@ -172,6 +172,8 @@ class D1Store:
             "ALTER TABLE field_events ADD COLUMN fruit_bagging_count INTEGER",
             "ALTER TABLE crop_plans ADD COLUMN planting_density REAL",
             "ALTER TABLE crop_plans ADD COLUMN seed_origin_doc TEXT",
+            "ALTER TABLE zones ADD COLUMN owner_actor_id INTEGER",
+            "ALTER TABLE zones ADD COLUMN owner_actor_code TEXT",
         ):
             try:
                 await self._db.prepare(_stmt).run()

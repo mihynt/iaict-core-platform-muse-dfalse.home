@@ -45,7 +45,7 @@ class User:
 # map to the kind they must resolve to *within the same tenant*. Coded kinds
 # carry a tenant-unique `code`; field_events are append-style (no code).
 RECORD_REFS: dict[str, dict[str, str]] = {
-    "zones": {},
+    "zones": {"owner_actor_code": "actors"},
     "mother_plants": {"zone_code": "zones"},
     "actors": {"parent_code": "actors"},
     "spatial_units": {"operator_code": "actors"},

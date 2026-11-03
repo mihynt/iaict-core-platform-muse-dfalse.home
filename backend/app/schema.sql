@@ -73,7 +73,9 @@ CREATE TABLE IF NOT EXISTS zones (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (id),
     UNIQUE (tenant_id, id),
-    UNIQUE (tenant_id, code)
+    UNIQUE (tenant_id, code),
+  owner_actor_id   INTEGER,
+  owner_actor_code TEXT
 );
 
 -- Boundary version history (ZON-04).

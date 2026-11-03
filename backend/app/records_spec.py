@@ -16,6 +16,7 @@ SPECS: dict[str, tuple[str, dict[str, str]]] = {
         "name": "text", "area_ha": "num", "address": "text", "lat": "float",
         "lon": "float", "geom": "json", "crop_group": "text", "season": "text",
         "water_source": "text", "managing_entity": "text", "status": "text",
+        "owner_actor_code": "text",
         "puc_code": "text", "puc_status": "text", "sector_category": "text",
         "market_scope": "text", "primary_species": "text",
         "scientific_name": "text", "issue_date": "date",
@@ -105,7 +106,7 @@ SPECS: dict[str, tuple[str, dict[str, str]]] = {
     }),
 }
 REF_ID_COLUMN = {
-    "zone_code": "zone_id", "plant_code": "plant_id", "plan_code": "plan_id",
+    "zone_code": "zone_id", "owner_actor_code": "owner_actor_id", "plant_code": "plant_id", "plan_code": "plan_id",
     "parcel_code": "parcel_id", "farmer_code": "farmer_id",
     "input_lot_code": "input_lot_id", "supplier_code": "supplier_id",
     "operator_code": "operator_id", "parent_code": "parent_id",

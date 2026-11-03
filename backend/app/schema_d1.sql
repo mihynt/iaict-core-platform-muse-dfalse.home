@@ -74,7 +74,9 @@ CREATE TABLE IF NOT EXISTS zones (
     created_at      TEXT NOT NULL,
     updated_at      TEXT NOT NULL,
     UNIQUE (tenant_id, id),
-    UNIQUE (tenant_id, code)
+    UNIQUE (tenant_id, code),
+  owner_actor_id   INTEGER,
+  owner_actor_code TEXT
 );
 
 CREATE TABLE IF NOT EXISTS zone_boundary_versions (
