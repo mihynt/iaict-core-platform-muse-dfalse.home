@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 26 · **Updated:** 2026-11-03T10:54:12Z · **Phase:** DISCOVERY
+- **Revision:** 27 · **Updated:** 2026-11-03T11:31:49Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -31,6 +31,11 @@
 
 ## Latest progress
 
+- **Five-round review loop over SRS v2.1.1 (2026-11-03, T-020
+  TECH_DONE):** dossier-as-root, baseline SRS, implementation,
+  internal consistency, fresh-eyes — 4 findings (1 medium:
+  DATA_MODEL phase labels; 3 minor in the SRS), all fixed and
+  re-verified. Final v2.1.1 hash `16fdbdf8…`, 156 pages.
 - **SRS v2.1.1 errata — tables follow the dossier as root
   (2026-11-03, T-019 TECH_DONE, DEC-012):** the Owner caught that
   TX-01/TX-03 duplicated pre-existing requirements (ZON-09/CMP-10

@@ -108,15 +108,15 @@ recorded as a delta in `pcs/SRS_CHANGES.md` with rationale.
 | ENT_HARVEST_CATCH_LOT | **Phase 1** — `lots` extended (`farmer_code`, `parcel_code`, `weigh_slip_number`, generated `traceability_code`, `data_retention_until`); timber/VMS/eCDT specializations deferred |
 | LOG_PHI_VALIDATION | **Phase 1** — `phi_validations` (system-written on every lot creation attempt) |
 | SYS_USER_ACCOUNT / SYS_AUDIT_LOG | Already present — `users` / `audit_log` (M1) |
-| REF_ADMIN_UNIT, REF_MARKET_REGULATION, REF_ACTIVE_SUBSTANCE_MRL, REF_CERTIFICATION_SCHEME, REF_TRANSPORT_MODE | Phase 2 — reference catalogues (substance/MRL lookups power the banned-substance cross-check) |
-| REL_ZONE_MARKET_APPROVAL, LOG_FOREIGN_WARNING, LOG_ZONE_STATUS_HISTORY, REL_ENTITY_CERTIFICATION | Phase 2 — market approvals, warnings, code status history, certifications |
-| LOG_PRE_HARVEST_SUPERVISION, LOG_MONITORING_DECLARATION, LOG_WATER_QUALITY_TEST, LOG_RESIDUE_TEST_DETAIL, LOG_LIVESTOCK_DECL_ITEM | Phase 2 — supervision & monitoring logs |
-| ENT_LIVESTOCK_UNIT | Phase 2 — livestock sector (pilot is crop-first) |
+| REF_ADMIN_UNIT, REF_MARKET_REGULATION, REF_ACTIVE_SUBSTANCE_MRL, REF_CERTIFICATION_SCHEME, REF_TRANSPORT_MODE | Phase 3 — reference catalogues (substance/MRL lookups power the banned-substance cross-check) |
+| REL_ZONE_MARKET_APPROVAL, LOG_FOREIGN_WARNING, LOG_ZONE_STATUS_HISTORY, REL_ENTITY_CERTIFICATION | Phase 3 — market approvals, warnings, code status history, certifications |
+| LOG_PRE_HARVEST_SUPERVISION, LOG_MONITORING_DECLARATION, LOG_WATER_QUALITY_TEST, LOG_RESIDUE_TEST_DETAIL, LOG_LIVESTOCK_DECL_ITEM | Phase 3 — supervision & monitoring logs |
+| ENT_LIVESTOCK_UNIT | Phase 3 — livestock sector (pilot is crop-first) |
 | ENT_PACKING_PROCESSING, ENT_PACKING_INPUT_LINK, ENT_PACKAGING_UNIT_SKU | **Phase 2 — live (T-016, hardened T-017)** — `packing_lots` (facility → `actors`, PHC code, output weight, yield norm, storage type), `packing_inputs` (N-N link, `UNIQUE (tenant, packing lot, harvest lot)`), `packaging_units` (level, GTIN, SSCC, spec, count) |
 | ENT_TRANSPORT_TRIP | Phase 3 |
 | SYS_TRACEABILITY_RECORD, LOG_CTE_SUPPLY_CHAIN_STAGE | **Phase 2 — live (T-016, hardened T-017)** — `traceability_records` (the 10 mandatory TT 02/2024 fields, sync status) + `cte_stages` (auto-built harvest + packing stages; further stages appendable) |
 | SYS_RECALL_COMPLIANCE | Phase 3 |
-| VW_PRODUCTION_ZONE_METRICS, VW_CYCLE_MASS_BALANCE, VW_PACKING_MASS_BALANCE | Phase 1 partial — the cycle mass-balance rule is enforced at lot creation (below); the packing mass-balance rule is enforced at traceability-record issuance (phase 2); reporting views land later |
+| VW_PRODUCTION_ZONE_METRICS, VW_CYCLE_MASS_BALANCE, VW_PACKING_MASS_BALANCE | Rules enforced in phases 1–2 — the cycle mass-balance rule is enforced at lot creation (below); the packing mass-balance rule is enforced at traceability-record issuance (phase 2); the reporting views themselves land in phase 3 |
 
 ### Phase-1 enforcement rules (application layer, all backends)
 

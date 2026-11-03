@@ -1,5 +1,5 @@
 {
-  "revision": 26,
+  "revision": 27,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "SRS v2.1.1 errata issued (T-019 TECH_DONE, DEC-012, delta D-STD-04): Appendix F re-grounded on the dossier as root - F.2 is now the dossier's own 33-table + 3-view inventory with pre-existing-requirement cross-references; TX-01/TX-03 narrowed to the dossier's true additions over ZON-09/CMP-10 and FLD-16/FLD-17; the FLD-17 per-parcel implementation gap is recorded in TX-03 and queued for phase 3. Beta unchanged (Worker 75f69cfb).",
+      "last_completed_step": "Five-round review loop over SRS v2.1.1 completed (T-020 TECH_DONE, delta D-STD-05): 4 findings (1 medium in DATA_MODEL phase labels, 3 minor in the SRS document) all fixed and re-verified; final SRS v2.1.1 hash 16fdbdf8..., 156 pages, TOC verified. Beta unchanged (Worker 75f69cfb).",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -363,11 +363,18 @@
         "id": "T-019",
         "title": "SRS v2.1.1 errata: Appendix F re-grounded on the dossier as root",
         "status": "TECH_DONE",
-        "evidence": "SRS v2.1.1 DOCX SHA-256 5313daa709e02e6fff96844600966362bed5633c53b54c7d5bfa398101f542f1, 156 pages (LibreOffice render, TOC re-measured). F.2 = the dossier's own 33 tables + 3 views with platform mapping, status and pre-existing-requirement cross-references; F.3 entries carry dossier-table provenance; TX-01 narrowed to the dossier's additions over ZON-09/ZON-10/CMP-10; TX-03 narrowed to the Bang 24 record model over FLD-16/FLD-17, with the FLD-17 per-parcel implementation gap recorded in the requirement text. ID population verified: nothing lost vs v2.0/v2.1, additions confined to the TX/Q-TX family. Full text stays out of the public repo (DEC-001).",
+        "evidence": "SRS v2.1.1 DOCX SHA-256 16fdbdf8f79c9e51cd9a511b9237548a8f23618bf2a947feaba83daaa8eb02c9 (final hash after the T-020 five-round review loop; pre-loop hash was 5313daa7...), 156 pages (LibreOffice render, TOC re-measured). F.2 = the dossier's own 33 tables + 3 views with platform mapping, status and pre-existing-requirement cross-references; F.3 entries carry dossier-table provenance; TX-01 narrowed to the dossier's additions over ZON-09/ZON-10/CMP-10; TX-03 narrowed to the Bang 24 record model over FLD-16/FLD-17, with the FLD-17 per-parcel implementation gap recorded in the requirement text. ID population verified: nothing lost vs v2.0/v2.1, additions confined to the TX/Q-TX family. Full text stays out of the public repo (DEC-001).",
         "notes": "Owner-caught defect in T-018's consolidation: F.3 presented TX rules without mapping overlaps with the baseline SRS. Errata issued same day per Owner directive 'cac bang lay theo file toi gui (lam goc)'."
+      },
+      {
+        "id": "T-020",
+        "title": "Five-round review loop over SRS v2.1.1 (fix-and-re-review per round)",
+        "status": "TECH_DONE",
+        "evidence": "Loop minutes: bien-ban-vong-lap-ra-soat-5-lan-v2.1.1.md (kept with the SRS files, outside the public repo). Rounds: (1) dossier-as-root - inventory complete, 1 minor fix (F.4 field-numbering note); (2) baseline SRS/SOW - 16/16 cross-references verified, 0 errors; (3) implementation - statuses match schema, DATA_MODEL.md phase labels fixed (5 rows); (4) internal consistency - 2 minor fixes (SOW Appendix F name collision clarified, DEC-012 basis); (5) fresh-eyes + final render - stale V1.0 footer fixed to V2.1.1. Final file: 156 pages, TOC re-verified at all checkpoints, SHA-256 16fdbdf8f79c9e51cd9a511b9237548a8f23618bf2a947feaba83daaa8eb02c9.",
+        "notes": "Owner directive 2026-11-03: 'Tao vong lap ra soat 5 lan, sau moi lan co loi thi sua va ra soat lai'. All 4 findings (1 medium, 3 minor) fixed and re-verified; no serious findings; no requirement/threshold/scope changes."
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T10:54:12Z"
+  "updated_at": "2026-11-03T11:31:49Z"
 }
