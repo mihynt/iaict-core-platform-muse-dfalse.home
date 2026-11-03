@@ -1402,22 +1402,22 @@ VIEWS.users = async () => {
     el.querySelectorAll(".skel").forEach((s) => s.remove());
     el.insertAdjacentHTML("beforeend", `
       <div class="section-head"><h2 style="font-size:15.5px">Người dùng trong tenant</h2></div>
-      <div class="list">${users.items.map((u) => `
+      <div class="list">${users.map((u) => `
         <div class="card"><div class="thumb sky">👤</div><div class="body">
           <div class="title">${esc(u.display_name)} <span class="chip ${u.role === "TENANT_ADMIN" ? "violet" : u.role === "OPERATOR" ? "" : "grey"}">${esc(ROLE_VI[u.role] || u.role)}</span>
           ${u.account_status && u.account_status !== "ACTIVE" ? `<span class="chip amber">${u.account_status === "LOCKED" ? "🔒 Đã khóa" : "⛔ Đã thu hồi"}</span>` : ""}</div>
           <div class="sub">@${esc(u.username)} · tạo ${fmtDate(u.created_at)}${u.linked_actor_code ? ` · 🔗 Chủ thể ${esc(u.linked_actor_code)}` : ""}</div>
-          ${(users.items.find((x) => x.username === store.actor)?.role === "TENANT_ADMIN") ? `<div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-user-admin="${esc(u.username)}">⚙️ Quản trị tài khoản</button></div>` : ""}
+          ${(users.find((x) => x.username === store.actor)?.role === "TENANT_ADMIN") ? `<div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-user-admin="${esc(u.username)}">⚙️ Quản trị tài khoản</button></div>` : ""}
         </div></div>`).join("")}</div>
-      <div class="section-head"><h2 style="font-size:15.5px">Nhật ký hệ thống (audit)</h2><span class="hint">${audit.items.length} mục · chỉ ghi thêm</span></div>
-      <div class="list">${audit.items.slice().reverse().slice(0, 30).map((a) => `
+      <div class="section-head"><h2 style="font-size:15.5px">Nhật ký hệ thống (audit)</h2><span class="hint">${audit.length} mục · chỉ ghi thêm</span></div>
+      <div class="list">${audit.slice().reverse().slice(0, 30).map((a) => `
         <div class="card"><div class="thumb">🧾</div><div class="body">
           <div class="title" style="font-size:14.5px">${esc(a.action)} <span class="chip ${a.outcome === "OK" ? "" : "amber"}">${esc(a.outcome)}</span></div>
           <div class="meta"><span>🎯 ${esc(a.target)}</span><span>👤 ${esc(a.actor)}</span><span>🕒 ${fmtTs(a.ts)}</span></div>
         </div></div>`).join("") || emptyState("🧾", "Chưa có nhật ký", "")}</div>`);
   } catch (err) { el.innerHTML = banner(err); }
   el.querySelectorAll("[data-user-admin]").forEach((b) => b.onclick = async () => {
-    const u = users.items.find((x) => x.username === b.dataset.userAdmin);
+    const u = users.find((x) => x.username === b.dataset.userAdmin);
     if (!u) return;
     const actors = await ensure("actors", "/actors").catch(() => []);
     openSheet(`Quản trị tài khoản @${u.username}`, [

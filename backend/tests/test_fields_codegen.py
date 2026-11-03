@@ -56,3 +56,21 @@ def test_registry_api_fields_declared_on_recordin():
             if "api" in f:
                 assert f["name"] in declared, \
                     f"{kind}.{f['name']} declared in registry but not on RecordIn"
+
+
+def test_enums_are_option_lists():
+    from app.fields import ENUMS
+    for name, opts in ENUMS.items():
+        assert isinstance(opts, list) and opts, f"{name} must be a non-empty list"
+        for o in opts:
+            assert isinstance(o, dict) and "v" in o and "t" in o, \
+                f"{name} entries must be {{v, t}} option dicts"
+
+
+def test_detail_fields_have_labels():
+    from app.fields import EXTRA_LABELS, KINDS
+    labels = {f["name"]: f.get("label") for m in KINDS.values() for f in m["fields"]}
+    labels.update(EXTRA_LABELS)
+    for kind, meta in KINDS.items():
+        for name in meta.get("detail") or []:
+            assert labels.get(name), f"{kind}.{name} shows in details without a label"

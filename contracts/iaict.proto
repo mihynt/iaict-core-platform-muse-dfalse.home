@@ -21,7 +21,7 @@ message Actor {
   string parent_code = 12;  // Chủ thể cấp trên
   string legal_id = 13;  // Số CCCD / MST
   string legal_id_hash = 14;  // Mã băm số định danh (HMAC)
-  string forestry_enterprise_class = 15;
+  string forestry_enterprise_class = 15;  // Phân loại DN gỗ (TT 26/2025)
   bool is_group_leader = 16;  // Là tổ trưởng
   bool ics_training_completed = 17;  // Đã tập huấn ICS
   string valid_from = 18;  // Hiệu lực từ
@@ -44,9 +44,9 @@ message CropPlan {
   string zone_code = 12;  // Vùng
   string plant_code = 13;  // Cây đầu dòng
   string parcel_code = 14;  // Thửa đất
-  string forest_harvest_plan_no = 15;
-  string departure_port_code = 16;
-  string arrival_port_code = 17;
+  string forest_harvest_plan_no = 15;  // Số VB phê duyệt PA khai thác rừng (nếu có)
+  string departure_port_code = 16;  // Mã cảng xuất bến (thủy sản, nếu có)
+  string arrival_port_code = 17;  // Mã cảng cập bến (thủy sản, nếu có)
 }
 
 message CteStage {
@@ -66,8 +66,8 @@ message FieldEvent {
   double lat = 3;
   double lon = 4;
   string actor = 5;
-  string device = 6;
-  string notes = 7;
+  string device = 6;  // Thiết bị
+  string notes = 7;  // Ghi chú
   string materials = 8;
   string growth_stage = 9;
   string target_pest = 10;
@@ -129,7 +129,7 @@ message MotherPlant {
   string variety = 2;  // Giống
   string scientific_name = 3;  // Tên khoa học
   string origin = 4;  // Nguồn gốc
-  int64 planting_year = 5;
+  int64 planting_year = 5;  // Năm trồng
   double lat = 6;
   double lon = 7;
   string owner_manager = 8;  // Chủ sở hữu / người quản lý
@@ -151,7 +151,7 @@ message PackagingUnit {
   int64 units_count = 5;  // Số đơn vị
   string code = 6;  // Mã
   string packing_lot_code = 7;  // Lô đóng gói
-  string cites_specimen_mark_code = 8;
+  string cites_specimen_mark_code = 8;  // Mã nhãn đánh dấu mẫu vật CITES (nếu có)
   string status = 9;  // Trạng thái
 }
 
@@ -173,10 +173,10 @@ message PackingLot {
   string status = 8;  // Trạng thái
   string code = 9;  // Mã
   string facility_code = 10;  // Cơ sở đóng gói
-  string food_safety_cert_id = 11;
-  string carcass_serial_id = 12;
-  string ecdt_cc_cert_number = 13;
-  string cites_permit_number = 14;
+  string food_safety_cert_id = 11;  // Số chứng nhận an toàn thực phẩm của cơ sở
+  string carcass_serial_id = 12;  // Mã thân thịt (nếu là thịt)
+  string ecdt_cc_cert_number = 13;  // Số giấy chứng nhận nguồn gốc thủy sản (CC)
+  string cites_permit_number = 14;  // Số giấy phép CITES (nếu có)
 }
 
 message PhiValidation {
@@ -208,13 +208,13 @@ message SpatialUnit {
   string province_code = 16;  // Mã tỉnh
   string commune_code = 17;  // Mã xã
   string owner_consent_doc_url = 18;  // Văn bản đồng ý của chủ đất
-  bool earth_terrace_compliant = 19;
-  string forest_origin_type = 20;
-  string aquaculture_water_type = 21;
-  string vessel_reg_number = 22;
-  double vessel_length_max_m = 23;
-  string tech_safety_cert_no = 24;
-  string vms_device_serial = 25;
+  bool earth_terrace_compliant = 19;  // Đã làm băng đất đồng mức (vùng dốc)
+  string forest_origin_type = 20;  // Nguồn gốc rừng (nếu là lô rừng)
+  string aquaculture_water_type = 21;  // Loại hình mặt nước (nếu nuôi thủy sản)
+  string vessel_reg_number = 22;  // Số đăng ký tàu cá (nếu là tàu cá)
+  double vessel_length_max_m = 23;  // Chiều dài lớn nhất tàu (m)
+  string tech_safety_cert_no = 24;  // Số GCN an toàn kỹ thuật tàu cá
+  string vms_device_serial = 25;  // Số seri thiết bị giám sát hành trình (VMS)
   string valid_from = 26;  // Hiệu lực từ
   string valid_to = 27;  // Công nhận đến
   string status = 28;  // Trạng thái
@@ -288,9 +288,9 @@ message Zone {
   string province = 28;  // Tỉnh/TP
   string district = 29;  // Quận/Huyện
   string ward = 30;  // Xã/Phường
-  string farm_scale_tier = 31;
-  string submission_channel = 32;
-  string application_received_at = 33;
+  string farm_scale_tier = 31;  // Quy mô cơ sở chăn nuôi
+  string submission_channel = 32;  // Kênh nộp hồ sơ cấp mã
+  string application_received_at = 33;  // Thời điểm xã tiếp nhận hồ sơ
   string valid_from = 34;  // Hiệu lực từ
   string valid_to = 35;  // Công nhận đến
 }

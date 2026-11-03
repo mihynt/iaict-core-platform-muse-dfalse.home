@@ -15,6 +15,7 @@ window.IAICT_META = {
   "parent_code": "Chủ thể cấp trên",
   "legal_id": "Số CCCD / MST",
   "legal_id_hash": "Mã băm số định danh (HMAC)",
+  "forestry_enterprise_class": "Phân loại DN gỗ (TT 26/2025)",
   "is_group_leader": "Là tổ trưởng",
   "ics_training_completed": "Đã tập huấn ICS",
   "valid_from": "Hiệu lực từ",
@@ -31,6 +32,9 @@ window.IAICT_META = {
   "zone_code": "Vùng",
   "plant_code": "Cây đầu dòng",
   "parcel_code": "Thửa đất",
+  "forest_harvest_plan_no": "Số VB phê duyệt PA khai thác rừng (nếu có)",
+  "departure_port_code": "Mã cảng xuất bến (thủy sản, nếu có)",
+  "arrival_port_code": "Mã cảng cập bến (thủy sản, nếu có)",
   "traceability_code": "Mã truy xuất",
   "stage_no": "Công đoạn số",
   "stage_name": "Tên công đoạn",
@@ -41,6 +45,8 @@ window.IAICT_META = {
   "scheme_code": "Mã tiêu chuẩn / chứng nhận",
   "event_type": "Loại sự kiện",
   "occurred_at": "Thời điểm",
+  "device": "Thiết bị",
+  "notes": "Ghi chú",
   "phi_days": "Ngày cách ly (PHI)",
   "safe_harvest_date": "Thu hoạch an toàn từ",
   "application_method": "Phương pháp áp dụng",
@@ -74,6 +80,7 @@ window.IAICT_META = {
   "variety": "Giống",
   "scientific_name": "Tên khoa học",
   "origin": "Nguồn gốc",
+  "planting_year": "Năm trồng",
   "owner_manager": "Chủ sở hữu / người quản lý",
   "recognition_no": "Số quyết định công nhận",
   "issuing_authority": "Cơ quan cấp",
@@ -84,6 +91,7 @@ window.IAICT_META = {
   "package_spec": "Quy cách đóng gói",
   "units_count": "Số đơn vị",
   "packing_lot_code": "Lô đóng gói",
+  "cites_specimen_mark_code": "Mã nhãn đánh dấu mẫu vật CITES (nếu có)",
   "allocated_weight_kg": "Khối lượng phân bổ (kg)",
   "harvest_lot_code": "Lô thu hoạch đầu vào",
   "phc_code": "Mã cơ sở đóng gói (PHC)",
@@ -93,6 +101,10 @@ window.IAICT_META = {
   "storage_type": "Loại bảo quản",
   "packed_at": "Thời điểm đóng gói",
   "facility_code": "Cơ sở đóng gói",
+  "food_safety_cert_id": "Số chứng nhận an toàn thực phẩm của cơ sở",
+  "carcass_serial_id": "Mã thân thịt (nếu là thịt)",
+  "ecdt_cc_cert_number": "Số giấy chứng nhận nguồn gốc thủy sản (CC)",
+  "cites_permit_number": "Số giấy phép CITES (nếu có)",
   "lot_code": "Lô thu hoạch",
   "max_safe_harvest_date": "Ngày thu hoạch an toàn",
   "actual_harvest_date": "Ngày thu hoạch thực tế",
@@ -109,6 +121,13 @@ window.IAICT_META = {
   "area_m2": "Diện tích (m²)",
   "operator_code": "Chủ thể vận hành",
   "owner_consent_doc_url": "Văn bản đồng ý của chủ đất",
+  "earth_terrace_compliant": "Đã làm băng đất đồng mức (vùng dốc)",
+  "forest_origin_type": "Nguồn gốc rừng (nếu là lô rừng)",
+  "aquaculture_water_type": "Loại hình mặt nước (nếu nuôi thủy sản)",
+  "vessel_reg_number": "Số đăng ký tàu cá (nếu là tàu cá)",
+  "vessel_length_max_m": "Chiều dài lớn nhất tàu (m)",
+  "tech_safety_cert_no": "Số GCN an toàn kỹ thuật tàu cá",
+  "vms_device_serial": "Số seri thiết bị giám sát hành trình (VMS)",
   "product_image_url": "Ảnh sản phẩm",
   "business_unit_name": "Tên cơ sở / doanh nghiệp",
   "business_unit_address": "Địa chỉ cơ sở",
@@ -144,6 +163,9 @@ window.IAICT_META = {
   "province": "Tỉnh/TP",
   "district": "Quận/Huyện",
   "ward": "Xã/Phường",
+  "farm_scale_tier": "Quy mô cơ sở chăn nuôi",
+  "submission_channel": "Kênh nộp hồ sơ cấp mã",
+  "application_received_at": "Thời điểm xã tiếp nhận hồ sơ",
   "registration_no": "Số đăng ký",
   "active_ingredient": "Hoạt chất",
   "quantity_received": "Số lượng nhập",
@@ -151,7 +173,8 @@ window.IAICT_META = {
   "updated_at": "Cập nhật lúc",
   "cultivar": "Giống",
   "applied_scheme_id": "Tiêu chuẩn áp dụng",
-  "validated_at": "Thời điểm kiểm tra"
+  "validated_at": "Thời điểm kiểm tra",
+  "actor": "Người thực hiện"
  },
  "detailSpecs": {
   "actors": [
@@ -394,37 +417,173 @@ window.IAICT_META = {
   ]
  },
  "enums": {
-  "PUC_STATUSES": {
-   "v": "",
-   "t": "— Chưa rõ —"
-  },
-  "MEMBERSHIP_STATUSES": {
-   "v": "ACTIVE_MEMBER",
-   "t": "Đang tham gia"
-  },
-  "BOOL_OPTS": {
-   "v": "",
-   "t": "— Chưa rõ —"
-  },
-  "FARM_TIERS": {
-   "v": "",
-   "t": "— Không áp dụng —"
-  },
-  "SUBMIT_CHANNELS": {
-   "v": "",
-   "t": "— Chưa rõ —"
-  },
-  "FOREST_ORIGINS": {
-   "v": "",
-   "t": "— Không áp dụng —"
-  },
-  "AQUA_WATERS": {
-   "v": "",
-   "t": "— Không áp dụng —"
-  },
-  "FORESTRY_CLASSES": {
-   "v": "",
-   "t": "— Không áp dụng —"
-  }
+  "PUC_STATUSES": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "PENDING_POST_INSPECTION",
+    "t": "Chờ hậu kiểm"
+   },
+   {
+    "v": "ACTIVE_COMPLIANT",
+    "t": "Đang hiệu lực — đạt"
+   },
+   {
+    "v": "SUSPENDED_TEMPORARILY",
+    "t": "Tạm đình chỉ"
+   },
+   {
+    "v": "RESTORED",
+    "t": "Đã khôi phục"
+   },
+   {
+    "v": "REVOKED_PERMANENTLY",
+    "t": "Thu hồi vĩnh viễn"
+   }
+  ],
+  "MEMBERSHIP_STATUSES": [
+   {
+    "v": "ACTIVE_MEMBER",
+    "t": "Đang tham gia"
+   },
+   {
+    "v": "SUSPENDED_PLOT",
+    "t": "Tạm ngưng"
+   },
+   {
+    "v": "WITHDRAWN_FROM_ZONE",
+    "t": "Đã rút khỏi vùng"
+   }
+  ],
+  "BOOL_OPTS": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "true",
+    "t": "Có"
+   },
+   {
+    "v": "false",
+    "t": "Không"
+   }
+  ],
+  "FARM_TIERS": [
+   {
+    "v": "",
+    "t": "— Không áp dụng —"
+   },
+   {
+    "v": "HOUSEHOLD_SCALE",
+    "t": "Quy mô hộ chăn nuôi"
+   },
+   {
+    "v": "SMALL_FARM",
+    "t": "Trang trại nhỏ"
+   },
+   {
+    "v": "MEDIUM_FARM",
+    "t": "Trang trại vừa"
+   },
+   {
+    "v": "LARGE_FARM",
+    "t": "Trang trại lớn"
+   }
+  ],
+  "SUBMIT_CHANNELS": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "ONLINE_NATIONAL_PORTAL",
+    "t": "Trực tuyến qua Cổng DVC Quốc gia"
+   },
+   {
+    "v": "DIRECT_AT_COMMUNE_COUNTER",
+    "t": "Nộp trực tiếp tại UBND xã"
+   },
+   {
+    "v": "POSTAL_MAIL_TO_COMMUNE",
+    "t": "Qua bưu điện về UBND xã"
+   }
+  ],
+  "FOREST_ORIGINS": [
+   {
+    "v": "",
+    "t": "— Không áp dụng —"
+   },
+   {
+    "v": "NATURAL_FOREST",
+    "t": "Rừng tự nhiên"
+   },
+   {
+    "v": "STATE_PLANTATION_FOREST",
+    "t": "Rừng trồng nhà nước"
+   },
+   {
+    "v": "SELF_INVESTED_PROTECTION_FOREST",
+    "t": "Rừng phòng hộ tự đầu tư"
+   },
+   {
+    "v": "PRODUCTION_PLANTATION_FOREST",
+    "t": "Rừng trồng sản xuất"
+   },
+   {
+    "v": "SCATTERED_HOME_GARDEN_TREES",
+    "t": "Cây phân tán vườn nhà"
+   }
+  ],
+  "AQUA_WATERS": [
+   {
+    "v": "",
+    "t": "— Không áp dụng —"
+   },
+   {
+    "v": "EARTHEN_POND",
+    "t": "Ao đất"
+   },
+   {
+    "v": "LINED_POND",
+    "t": "Ao lót bạt"
+   },
+   {
+    "v": "SALTWATER_TANK",
+    "t": "Bể nước mặn"
+   },
+   {
+    "v": "MARINE_CAGE_RAFT",
+    "t": "Lồng bè biển"
+   },
+   {
+    "v": "RIVER_CAGE_RAFT",
+    "t": "Lồng bè sông"
+   },
+   {
+    "v": "INTERTIDAL_MUDFLAT",
+    "t": "Bãi triều"
+   }
+  ],
+  "FORESTRY_CLASSES": [
+   {
+    "v": "",
+    "t": "— Không áp dụng —"
+   },
+   {
+    "v": "CLASS_I_COMPLIANT",
+    "t": "Loại I — tuân thủ"
+   },
+   {
+    "v": "CLASS_II_NON_COMPLIANT",
+    "t": "Loại II — chưa tuân thủ"
+   },
+   {
+    "v": "UNCLASSIFIED",
+    "t": "Chưa phân loại"
+   }
+  ]
  }
 };
