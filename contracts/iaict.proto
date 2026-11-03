@@ -184,11 +184,11 @@ message SpatialUnit {
   string land_tenure_doc_type = 6;  // Loại giấy tờ đất
   string land_cert_serial = 7;  // Số giấy chứng nhận
   string land_legal_owner_name = 8;  // Chủ đất theo giấy tờ
-  string forest_subzone_code = 9;
-  string forest_compartment_code = 10;
-  string forest_plot_code = 11;
+  string forest_subzone_code = 9;  // Mã tiểu khu
+  string forest_compartment_code = 10;  // Mã khoảnh
+  string forest_plot_code = 11;  // Mã lô rừng
   double area_m2 = 12;  // Diện tích (m²)
-  double slope_degree = 13;
+  double slope_degree = 13;  // Độ dốc (°)
   string code = 14;  // Mã
   string operator_code = 15;  // Chủ thể vận hành
   string province_code = 16;  // Mã tỉnh

@@ -110,7 +110,11 @@ window.IAICT_META = {
   "land_tenure_doc_type": "Loại giấy tờ đất",
   "land_cert_serial": "Số giấy chứng nhận",
   "land_legal_owner_name": "Chủ đất theo giấy tờ",
+  "forest_subzone_code": "Mã tiểu khu",
+  "forest_compartment_code": "Mã khoảnh",
+  "forest_plot_code": "Mã lô rừng",
   "area_m2": "Diện tích (m²)",
+  "slope_degree": "Độ dốc (°)",
   "operator_code": "Chủ thể vận hành",
   "owner_consent_doc_url": "Văn bản đồng ý của chủ đất",
   "earth_terrace_compliant": "Đã làm băng đất đồng mức (vùng dốc)",
@@ -312,11 +316,15 @@ window.IAICT_META = {
    "map_sheet_number",
    "parcel_number",
    "area_m2",
+   "slope_degree",
    "land_tenure_doc_type",
    "land_cert_serial",
    "land_legal_owner_name",
    "owner_consent_doc_url",
    "earth_terrace_compliant",
+   "forest_subzone_code",
+   "forest_compartment_code",
+   "forest_plot_code",
    "forest_origin_type",
    "aquaculture_water_type",
    "vessel_reg_number",
@@ -540,6 +548,24 @@ window.IAICT_META = {
    {
     "v": "UNCLASSIFIED",
     "t": "Chưa phân loại"
+   }
+  ],
+  "SECTORS": [
+   {
+    "v": "CROP_FARMING",
+    "t": "Trồng trọt"
+   },
+   {
+    "v": "FORESTRY_PLANTATION",
+    "t": "Lâm nghiệp"
+   },
+   {
+    "v": "LIVESTOCK_FARMING",
+    "t": "Chăn nuôi"
+   },
+   {
+    "v": "AQUACULTURE",
+    "t": "Thủy sản"
    }
   ]
  }

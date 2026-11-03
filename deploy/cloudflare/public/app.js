@@ -157,7 +157,7 @@ function openSheet(title, fields, onSubmit, opts = {}) {
         ${f.type === "text" ? 'autocapitalize="off"' : ""}>`;
     }
     const addBtn = f.addNew ? `<button type="button" class="btn btn-ghost btn-sm add-new" data-addnew="${f.k}">＋ Thêm mới</button>` : "";
-    return `<div class="field"><label>${esc(f.label)}${req}</label>${control}${addBtn}</div>`;
+    return `<div class="field" data-k="${f.k}"><label>${esc(f.label)}${req}</label>${control}${addBtn}</div>`;
   }).join("") + `<div class="form-actions">
       <button type="button" class="btn btn-ghost" id="sheetCancel">Hủy</button>
       <button type="submit" class="btn btn-primary">Lưu lại</button></div>`;
@@ -186,6 +186,19 @@ function openSheet(title, fields, onSubmit, opts = {}) {
       f.addNew((code) => restore(code), () => restore(null));
     };
   });
+  // Core + Vertical (T-035): a field may declare visIf {k, in:[...]} and is
+  // shown only while the driver field holds one of those values.
+  const applyVis = () => {
+    for (const f of fields) {
+      if (!f.visIf) continue;
+      const wrap = form.querySelector(`.field[data-k="${f.k}"]`);
+      const driver = form.querySelector(`[name="${f.visIf.k}"]`);
+      if (!wrap || !driver) continue;
+      wrap.style.display = f.visIf.in.includes(driver.value) ? "" : "none";
+    }
+  };
+  form.querySelectorAll("select").forEach((sel) => sel.addEventListener("change", applyVis));
+  applyVis();
   $("#sheetBackdrop").hidden = false;
   $("#sheet").hidden = false;
   $("#sheetCancel").onclick = closeSheet;
@@ -213,6 +226,7 @@ const PUC_STATUSES = window.IAICT_META.enums.PUC_STATUSES;
 const MEMBERSHIP_STATUSES = window.IAICT_META.enums.MEMBERSHIP_STATUSES;
 const FARM_TIERS = window.IAICT_META.enums.FARM_TIERS;
 const SUBMIT_CHANNELS = window.IAICT_META.enums.SUBMIT_CHANNELS;
+const SECTORS = window.IAICT_META.enums.SECTORS;
 const FOREST_ORIGINS = window.IAICT_META.enums.FOREST_ORIGINS;
 const AQUA_WATERS = window.IAICT_META.enums.AQUA_WATERS;
 const FORESTRY_CLASSES = window.IAICT_META.enums.FORESTRY_CLASSES;
@@ -254,9 +268,7 @@ function quickInputLot(done, back) {
 function quickParcel(done, back) {
   openSheet("Thêm thửa đất mới", [
     { k: "code", label: "Mã thửa", required: true, placeholder: "vd: T42" },
-    { k: "unit_type", label: "Loại thửa", type: "select", options: [
-      { v: "PARCEL", t: "Thửa ruộng" }, { v: "GREENHOUSE", t: "Nhà kính" },
-      { v: "POND", t: "Ao nuôi" }, { v: "PEN", t: "Chuồng trại" }, { v: "OTHER", t: "Khác" }] },
+    { k: "unit_type", label: "Loại đơn vị", type: "select", options: [{ v: "", t: "— Chọn loại đơn vị —" }, ...UNIT_TYPES] },
     { k: "area_m2", label: "Diện tích (m²)", type: "number", step: "0.01" },
   ], async (p) => { const r = await T("/spatial-units", { method: "POST", body: p }); invalidate("parcels"); toast("Đã thêm thửa " + r.code); done(r.code); }, { onCancel: back });
 }
@@ -265,7 +277,7 @@ const DETAIL_LABELS = window.IAICT_META.labels;
 
 const DETAIL_VALUE_MAPS = {
   actor_type: { HOUSEHOLD: "Nông hộ", COMPANY: "Doanh nghiệp", COOPERATIVE: "Hợp tác xã", FACILITY: "Cơ sở đóng gói/chế biến", OTHER: "Khác" },
-  unit_type: { LAND_PARCEL: "Thửa ruộng", PARCEL: "Thửa ruộng", GREENHOUSE: "Nhà kính", POND: "Ao nuôi", AQUATIC_POND: "Ao nuôi", PEN: "Chuồng trại", LIVESTOCK_PEN: "Chuồng trại", FOREST_PLOT: "Lô rừng", OTHER: "Khác" },
+  unit_type: { AGRICULTURAL_LAND_PARCEL: "Thửa đất nông nghiệp", FOREST_PLOT_STAND: "Lô rừng", LIVESTOCK_BARN_HOUSE: "Chuồng trại chăn nuôi", BEEKEEPING_SITE: "Điểm nuôi ong", AQUACULTURE_POND_CAGE: "Ao/bè thủy sản", FISHING_VESSEL: "Tàu cá", LAND_PARCEL: "Thửa ruộng", PARCEL: "Thửa ruộng", GREENHOUSE: "Nhà kính", POND: "Ao nuôi", AQUATIC_POND: "Ao nuôi", PEN: "Chuồng trại", LIVESTOCK_PEN: "Chuồng trại", FOREST_PLOT: "Lô rừng", OTHER: "Khác" },
   storage_type: { FRESH_AMBIENT: "Tươi, nhiệt độ thường", CHILLED_COOL: "Mát lạnh", FROZEN_PROCESSED: "Đông lạnh / chế biến" },
   validation_outcome: { PASSED_SAFE: "Đạt — an toàn", BLOCKED_VIOLATION_PHI: "Chặn — vi phạm thời gian cách ly", CONDITIONAL_LAB_TEST_REQUIRED: "Điều kiện — cần xét nghiệm dư lượng" },
   sync_status: { PENDING_SYNC: "Chờ đồng bộ cổng quốc gia", SYNCED: "Đã đồng bộ", SYNCED_SUCCESS: "Đã đồng bộ cổng quốc gia" },
@@ -333,6 +345,8 @@ $("#sheetForm").addEventListener("submit", async (e) => {
   const fd = new FormData(e.target);
   const payload = {};
   for (const f of sheetSubmit.fields) {
+    const wrap = e.target.querySelector(`.field[data-k="${f.k}"]`);
+    if (wrap && wrap.style.display === "none") continue;
     let v = fd.get(f.k);
     if (v === null) continue;
     v = String(v).trim();
@@ -579,7 +593,7 @@ VIEWS.zones = async () => {
       openSheet(`Sửa vùng ${z.code}`, [
         { k: "puc_code", label: "Mã số vùng trồng (PUC)", def: z.puc_code || "" },
         { k: "puc_status", label: "Trạng thái mã số vùng trồng", type: "select", def: z.puc_status || "", options: PUC_STATUSES },
-        { k: "sector_category", label: "Ngành / lĩnh vực", def: z.sector_category || "" },
+        { k: "sector_category", label: "Ngành / lĩnh vực", type: "select", def: z.sector_category || "", options: [{ v: "", t: "— Chọn ngành —" }, ...SECTORS] },
         { k: "market_scope", label: "Phạm vi thị trường", def: z.market_scope || "" },
         { k: "scientific_name", label: "Tên khoa học cây trồng chính", def: z.scientific_name || "" },
         { k: "issuing_authority", label: "Cơ quan cấp mã", def: z.issuing_authority || "" },
@@ -590,10 +604,10 @@ VIEWS.zones = async () => {
         { k: "initial_declared_area_ha", label: "Diện tích khai báo ban đầu (ha)", type: "number", step: "0.01", def: z.initial_declared_area_ha ?? "" },
         { k: "valid_from", label: "Mã vùng trồng hiệu lực từ", type: "date", def: z.valid_from ? String(z.valid_from).slice(0, 10) : "" },
         { k: "valid_to", label: "Mã vùng trồng hiệu lực đến", type: "date", def: z.valid_to ? String(z.valid_to).slice(0, 10) : "" },
-        { k: "dist_to_residential_m", label: "Khoảng cách tới khu dân cư (m)", type: "number", step: "0.1", def: z.dist_to_residential_m ?? "" },
-        { k: "dist_to_sensitive_zone_m", label: "Khoảng cách tới vùng nhạy cảm (m)", type: "number", step: "0.1", def: z.dist_to_sensitive_zone_m ?? "" },
-        { k: "bee_site_min_dist_km", label: "Khoảng cách tối thiểu tới điểm nuôi ong (km)", type: "number", step: "0.1", def: z.bee_site_min_dist_km ?? "" },
-        { k: "farm_scale_tier", label: "Quy mô cơ sở chăn nuôi", type: "select", def: z.farm_scale_tier || "", options: FARM_TIERS },
+        { k: "dist_to_residential_m", label: "Khoảng cách tới khu dân cư (m)", type: "number", step: "0.1", def: z.dist_to_residential_m ?? "" , visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
+        { k: "dist_to_sensitive_zone_m", label: "Khoảng cách tới vùng nhạy cảm (m)", type: "number", step: "0.1", def: z.dist_to_sensitive_zone_m ?? "" , visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
+        { k: "bee_site_min_dist_km", label: "Khoảng cách tối thiểu tới điểm nuôi ong (km)", type: "number", step: "0.1", def: z.bee_site_min_dist_km ?? "" , visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
+        { k: "farm_scale_tier", label: "Quy mô cơ sở chăn nuôi", type: "select", def: z.farm_scale_tier || "", options: FARM_TIERS , visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
         { k: "submission_channel", label: "Kênh nộp hồ sơ cấp mã", type: "select", def: z.submission_channel || "", options: SUBMIT_CHANNELS },
         { k: "application_received_at", label: "Thời điểm xã tiếp nhận hồ sơ", type: "datetime-local", def: z.application_received_at ? String(z.application_received_at).slice(0, 16) : "" },
         { k: "status_change_reason", label: "Lý do đổi trạng thái mã (khi sửa trạng thái)", placeholder: "vd: POST_INSPECTION_PASSED" },
@@ -636,7 +650,7 @@ VIEWS.zones = async () => {
     { k: "valid_from", label: "Mã vùng trồng hiệu lực từ", type: "date" },
     { k: "valid_to", label: "Mã vùng trồng hiệu lực đến", type: "date" },
     { k: "vsic_code", label: "Mã ngành VSIC", placeholder: "vd: 0119" },
-    { k: "sector_category", label: "Ngành / lĩnh vực", placeholder: "vd: Trồng trọt" },
+    { k: "sector_category", label: "Ngành / lĩnh vực", type: "select", options: [{ v: "", t: "— Chọn ngành —" }, ...SECTORS] },
     { k: "market_scope", label: "Phạm vi thị trường", placeholder: "vd: Nội địa, EU, Trung Quốc…" },
     { k: "scientific_name", label: "Tên khoa học cây trồng chính" },
     { k: "owner_actor_code", label: "Chủ thể sở hữu vùng", type: "select",
@@ -644,10 +658,10 @@ VIEWS.zones = async () => {
       addNew: quickActor,
       refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Chưa gắn —", fmtActorOpt) },
     { k: "initial_declared_area_ha", label: "Diện tích khai báo ban đầu (ha)", type: "number", step: "0.01" },
-    { k: "dist_to_residential_m", label: "Khoảng cách tới khu dân cư (m)", type: "number", step: "0.1" },
-    { k: "dist_to_sensitive_zone_m", label: "Khoảng cách tới vùng nhạy cảm (m)", type: "number", step: "0.1" },
-    { k: "bee_site_min_dist_km", label: "Khoảng cách tối thiểu tới điểm nuôi ong (km)", type: "number", step: "0.1" },
-    { k: "farm_scale_tier", label: "Quy mô cơ sở chăn nuôi", type: "select", options: FARM_TIERS },
+    { k: "dist_to_residential_m", label: "Khoảng cách tới khu dân cư (m)", type: "number", step: "0.1" , visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
+    { k: "dist_to_sensitive_zone_m", label: "Khoảng cách tới vùng nhạy cảm (m)", type: "number", step: "0.1" , visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
+    { k: "bee_site_min_dist_km", label: "Khoảng cách tối thiểu tới điểm nuôi ong (km)", type: "number", step: "0.1" , visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
+    { k: "farm_scale_tier", label: "Quy mô cơ sở chăn nuôi", type: "select", options: FARM_TIERS , visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
     { k: "submission_channel", label: "Kênh nộp hồ sơ cấp mã", type: "select", options: SUBMIT_CHANNELS },
     { k: "application_received_at", label: "Thời điểm xã tiếp nhận hồ sơ", type: "datetime-local" },
     { k: "primary_species", label: "Cây trồng chính", placeholder: "vd: Bưởi da xanh" },
@@ -1117,9 +1131,9 @@ VIEWS.inputs = async () => {
 
 /* ---------------- spatial units & zone links ---------------- */
 const UNIT_TYPES = [
-  { v: "LAND_PARCEL", t: "Thửa đất" }, { v: "POND", t: "Ao nuôi" },
-  { v: "FOREST_PLOT", t: "Lô rừng" }, { v: "GREENHOUSE", t: "Nhà kính / nhà lưới" },
-  { v: "OTHER", t: "Khác" },
+  { v: "AGRICULTURAL_LAND_PARCEL", t: "Thửa đất nông nghiệp" }, { v: "FOREST_PLOT_STAND", t: "Lô rừng" },
+  { v: "LIVESTOCK_BARN_HOUSE", t: "Chuồng trại chăn nuôi" }, { v: "BEEKEEPING_SITE", t: "Điểm nuôi ong" },
+  { v: "AQUACULTURE_POND_CAGE", t: "Ao/bè thủy sản" }, { v: "FISHING_VESSEL", t: "Tàu cá" },
 ];
 VIEWS.parcels = async () => {
   const el = $("#view");
@@ -1178,7 +1192,7 @@ VIEWS.parcels = async () => {
       if (!u) return;
       const actors = await ensure("actors", "/actors").catch(() => []);
       openSheet(`Sửa thửa ${u.code}`, [
-        { k: "unit_type", label: "Loại đơn vị", type: "select", def: u.unit_type || "LAND_PARCEL", options: UNIT_TYPES },
+        { k: "unit_type", label: "Loại đơn vị", type: "select", def: u.unit_type || "", options: [{ v: "", t: "— Chọn loại đơn vị —" }, ...UNIT_TYPES] },
         { k: "operator_code", label: "Người/hộ vận hành", type: "select", def: u.operator_code || "",
           addNew: quickActor,
           refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Không ghi —", fmtActorOpt),
@@ -1191,13 +1205,17 @@ VIEWS.parcels = async () => {
         { k: "land_cert_serial", label: "Số giấy chứng nhận", def: u.land_cert_serial || "" },
         { k: "land_legal_owner_name", label: "Chủ đất theo giấy tờ", def: u.land_legal_owner_name || "" },
         { k: "owner_consent_doc_url", label: "Văn bản đồng ý của chủ đất (URL)", def: u.owner_consent_doc_url || "" },
-        { k: "earth_terrace_compliant", label: "Đã làm băng đất đồng mức (vùng dốc)", type: "bool", def: u.earth_terrace_compliant == null ? "" : String(u.earth_terrace_compliant), options: BOOL_OPTS },
-        { k: "forest_origin_type", label: "Nguồn gốc rừng (nếu là lô rừng)", type: "select", def: u.forest_origin_type || "", options: FOREST_ORIGINS },
-        { k: "aquaculture_water_type", label: "Loại hình mặt nước (nếu nuôi thủy sản)", type: "select", def: u.aquaculture_water_type || "", options: AQUA_WATERS },
-        { k: "vessel_reg_number", label: "Số đăng ký tàu cá (nếu là tàu cá)", def: u.vessel_reg_number || "" },
-        { k: "vessel_length_max_m", label: "Chiều dài lớn nhất tàu (m)", type: "number", step: "0.01", def: u.vessel_length_max_m ?? "" },
-        { k: "tech_safety_cert_no", label: "Số GCN an toàn kỹ thuật tàu cá", def: u.tech_safety_cert_no || "" },
-        { k: "vms_device_serial", label: "Số seri thiết bị giám sát hành trình (VMS)", def: u.vms_device_serial || "" },
+        { k: "slope_degree", label: "Độ dốc (°)", type: "number", step: "0.1", def: u.slope_degree ?? "", visIf: { k: "unit_type", in: ["AGRICULTURAL_LAND_PARCEL", "FOREST_PLOT_STAND"] } },
+        { k: "earth_terrace_compliant", label: "Đã làm băng đất đồng mức (vùng dốc)", type: "bool", def: u.earth_terrace_compliant == null ? "" : String(u.earth_terrace_compliant), options: BOOL_OPTS, visIf: { k: "unit_type", in: ["AGRICULTURAL_LAND_PARCEL", "FOREST_PLOT_STAND"] } },
+        { k: "forest_subzone_code", label: "Mã tiểu khu", def: u.forest_subzone_code || "", visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
+        { k: "forest_compartment_code", label: "Mã khoảnh", def: u.forest_compartment_code || "", visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
+        { k: "forest_plot_code", label: "Mã lô rừng", def: u.forest_plot_code || "", visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
+        { k: "forest_origin_type", label: "Nguồn gốc rừng (nếu là lô rừng)", type: "select", def: u.forest_origin_type || "", options: FOREST_ORIGINS, visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
+        { k: "aquaculture_water_type", label: "Loại hình mặt nước (nếu nuôi thủy sản)", type: "select", def: u.aquaculture_water_type || "", options: AQUA_WATERS , visIf: { k: "unit_type", in: ["AQUACULTURE_POND_CAGE"] } },
+        { k: "vessel_reg_number", label: "Số đăng ký tàu cá (nếu là tàu cá)", def: u.vessel_reg_number || "" , visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
+        { k: "vessel_length_max_m", label: "Chiều dài lớn nhất tàu (m)", type: "number", step: "0.01", def: u.vessel_length_max_m ?? "" , visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
+        { k: "tech_safety_cert_no", label: "Số GCN an toàn kỹ thuật tàu cá", def: u.tech_safety_cert_no || "" , visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
+        { k: "vms_device_serial", label: "Số seri thiết bị giám sát hành trình (VMS)", def: u.vms_device_serial || "" , visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
       ], async (p) => { await T(`/spatial-units/${encodeURIComponent(u.code)}`, { method: "PATCH", body: p }); invalidate("parcels"); });
     });
     $("#addLink").onclick = async () => {
@@ -1240,13 +1258,17 @@ VIEWS.parcels = async () => {
       { k: "land_cert_serial", label: "Số giấy chứng nhận" },
       { k: "land_legal_owner_name", label: "Chủ đất theo giấy tờ" },
       { k: "owner_consent_doc_url", label: "Văn bản đồng ý của chủ đất (URL)", placeholder: "https://…" },
-      { k: "earth_terrace_compliant", label: "Đã làm băng đất đồng mức (vùng dốc)", type: "bool", options: BOOL_OPTS },
-      { k: "forest_origin_type", label: "Nguồn gốc rừng (nếu là lô rừng)", type: "select", options: FOREST_ORIGINS },
-      { k: "aquaculture_water_type", label: "Loại hình mặt nước (nếu nuôi thủy sản)", type: "select", options: AQUA_WATERS },
-      { k: "vessel_reg_number", label: "Số đăng ký tàu cá (nếu là tàu cá)" },
-      { k: "vessel_length_max_m", label: "Chiều dài lớn nhất tàu (m)", type: "number", step: "0.01" },
-      { k: "tech_safety_cert_no", label: "Số GCN an toàn kỹ thuật tàu cá" },
-      { k: "vms_device_serial", label: "Số seri thiết bị giám sát hành trình (VMS)" },
+      { k: "slope_degree", label: "Độ dốc (°)", type: "number", step: "0.1", visIf: { k: "unit_type", in: ["AGRICULTURAL_LAND_PARCEL", "FOREST_PLOT_STAND"] } },
+      { k: "earth_terrace_compliant", label: "Đã làm băng đất đồng mức (vùng dốc)", type: "bool", options: BOOL_OPTS, visIf: { k: "unit_type", in: ["AGRICULTURAL_LAND_PARCEL", "FOREST_PLOT_STAND"] } },
+      { k: "forest_subzone_code", label: "Mã tiểu khu", visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
+      { k: "forest_compartment_code", label: "Mã khoảnh", visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
+      { k: "forest_plot_code", label: "Mã lô rừng", visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
+      { k: "forest_origin_type", label: "Nguồn gốc rừng (nếu là lô rừng)", type: "select", options: FOREST_ORIGINS, visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
+      { k: "aquaculture_water_type", label: "Loại hình mặt nước (nếu nuôi thủy sản)", type: "select", options: AQUA_WATERS , visIf: { k: "unit_type", in: ["AQUACULTURE_POND_CAGE"] } },
+      { k: "vessel_reg_number", label: "Số đăng ký tàu cá (nếu là tàu cá)" , visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
+      { k: "vessel_length_max_m", label: "Chiều dài lớn nhất tàu (m)", type: "number", step: "0.01" , visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
+      { k: "tech_safety_cert_no", label: "Số GCN an toàn kỹ thuật tàu cá" , visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
+      { k: "vms_device_serial", label: "Số seri thiết bị giám sát hành trình (VMS)" , visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
     ], async (p) => { await T("/spatial-units", { method: "POST", body: p }); invalidate("parcels"); });
   });
 };
