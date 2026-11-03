@@ -345,77 +345,13 @@ class LazyWorkerStore:
             raise RuntimeError("store backend is not bound yet (no request env seen)")
         return self._impl
 
-    async def reset(self):
-        return await self._d().reset()
-
-    async def record_audit(self, **kwargs):
-        return await self._d().record_audit(**kwargs)
-
-    async def list_audit(self):
-        return await self._d().list_audit()
-
-    async def audit_for_tenant(self, tenant_id):
-        return await self._d().audit_for_tenant(tenant_id)
-
-    async def create_tenant(self, slug, name):
-        return await self._d().create_tenant(slug, name)
-
-    async def get_tenant(self, slug):
-        return await self._d().get_tenant(slug)
-
-    async def list_tenants(self):
-        return await self._d().list_tenants()
-
-    async def set_tenant_status(self, slug, status):
-        return await self._d().set_tenant_status(slug, status)
-
-    async def create_user(self, tenant, username, display_name, role,
-                          linked_actor_code=None, jurisdiction_admin_code=None,
-                          auth_provider_type=None):
-        return await self._d().create_user(
-            tenant, username, display_name, role,
-            linked_actor_code=linked_actor_code,
-            jurisdiction_admin_code=jurisdiction_admin_code,
-            auth_provider_type=auth_provider_type)
-
-    async def update_user(self, tenant, username, fields):
-        return await self._d().update_user(tenant, username, fields)
-
-    async def get_user(self, tenant, username):
-        return await self._d().get_user(tenant, username)
-
-    async def list_users(self, tenant):
-        return await self._d().list_users(tenant)
-
-    async def tenant_user_count(self, tenant):
-        return await self._d().tenant_user_count(tenant)
-
-    async def create_workspace(self, tenant, name):
-        return await self._d().create_workspace(tenant, name)
-
-    async def list_workspace_names(self, tenant):
-        return await self._d().list_workspace_names(tenant)
-
-    async def create_record(self, tenant, kind, fields):
-        return await self._d().create_record(tenant, kind, fields)
-
-    async def list_records(self, tenant, kind):
-        return await self._d().list_records(tenant, kind)
-
-    async def count_records(self, tenant, kind):
-        return await self._d().count_records(tenant, kind)
-
-    async def delete_record(self, tenant, kind, code):
-        return await self._d().delete_record(tenant, kind, code)
-
-    async def get_record_by_code(self, tenant, kind, code):
-        return await self._d().get_record_by_code(tenant, kind, code)
-
-    async def update_record(self, tenant, kind, code, fields):
-        return await self._d().update_record(tenant, kind, code, fields)
-
-    async def update_record_by_id(self, tenant, kind, record_id, fields):
-        return await self._d().update_record_by_id(tenant, kind, record_id, fields)
+    def __getattr__(self, name):
+        # T-032 slice 1: forward every store operation to the bound
+        # backend automatically. New store methods need NO wrapper
+        # boilerplate here any more (previously ~22 one-liners per class).
+        if name.startswith("_"):
+            raise AttributeError(name)
+        return getattr(self._d(), name)
 
 
 class LazyD1Store:
@@ -457,77 +393,13 @@ class LazyD1Store:
             raise RuntimeError("store backend is not bound yet (no request env seen)")
         return self._impl
 
-    async def reset(self):
-        return await self._d().reset()
-
-    async def record_audit(self, **kwargs):
-        return await self._d().record_audit(**kwargs)
-
-    async def list_audit(self):
-        return await self._d().list_audit()
-
-    async def audit_for_tenant(self, tenant_id):
-        return await self._d().audit_for_tenant(tenant_id)
-
-    async def create_tenant(self, slug, name):
-        return await self._d().create_tenant(slug, name)
-
-    async def get_tenant(self, slug):
-        return await self._d().get_tenant(slug)
-
-    async def list_tenants(self):
-        return await self._d().list_tenants()
-
-    async def set_tenant_status(self, slug, status):
-        return await self._d().set_tenant_status(slug, status)
-
-    async def create_user(self, tenant, username, display_name, role,
-                          linked_actor_code=None, jurisdiction_admin_code=None,
-                          auth_provider_type=None):
-        return await self._d().create_user(
-            tenant, username, display_name, role,
-            linked_actor_code=linked_actor_code,
-            jurisdiction_admin_code=jurisdiction_admin_code,
-            auth_provider_type=auth_provider_type)
-
-    async def update_user(self, tenant, username, fields):
-        return await self._d().update_user(tenant, username, fields)
-
-    async def get_user(self, tenant, username):
-        return await self._d().get_user(tenant, username)
-
-    async def list_users(self, tenant):
-        return await self._d().list_users(tenant)
-
-    async def tenant_user_count(self, tenant):
-        return await self._d().tenant_user_count(tenant)
-
-    async def create_workspace(self, tenant, name):
-        return await self._d().create_workspace(tenant, name)
-
-    async def list_workspace_names(self, tenant):
-        return await self._d().list_workspace_names(tenant)
-
-    async def create_record(self, tenant, kind, fields):
-        return await self._d().create_record(tenant, kind, fields)
-
-    async def list_records(self, tenant, kind):
-        return await self._d().list_records(tenant, kind)
-
-    async def count_records(self, tenant, kind):
-        return await self._d().count_records(tenant, kind)
-
-    async def delete_record(self, tenant, kind, code):
-        return await self._d().delete_record(tenant, kind, code)
-
-    async def get_record_by_code(self, tenant, kind, code):
-        return await self._d().get_record_by_code(tenant, kind, code)
-
-    async def update_record(self, tenant, kind, code, fields):
-        return await self._d().update_record(tenant, kind, code, fields)
-
-    async def update_record_by_id(self, tenant, kind, record_id, fields):
-        return await self._d().update_record_by_id(tenant, kind, record_id, fields)
+    def __getattr__(self, name):
+        # T-032 slice 1: forward every store operation to the bound
+        # backend automatically. New store methods need NO wrapper
+        # boilerplate here any more (previously ~22 one-liners per class).
+        if name.startswith("_"):
+            raise AttributeError(name)
+        return getattr(self._d(), name)
 
 
 def make_store():

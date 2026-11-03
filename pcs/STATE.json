@@ -1,5 +1,5 @@
 {
-  "revision": 44,
+  "revision": 45,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "T-031 TECH_DONE (rev 44): full 33-table field conformance in code - Bang 13 history, Bang 12 withdraw, Bang 32/33 SYS pack, Q-TX-03 PII (hash + optional encryption), sector-field sweep; latent T-029 schema DDL defect found and fixed. Awaiting token to deploy. Open Owner decisions: Q-TX-01, Q-TX-02; phase 3 vs T-005; cron keep-warm vs always-warm host; set IAICT_PII_KEY to activate PII encryption.",
+      "last_completed_step": "T-032 slice 1 DONE (lazy __getattr__ delegation, 44 boilerplate lines removed, suites green); architecture proposal delivered. T-031 awaits deploy token. Owner decisions open: T-032 slices 2-4 scope; Q-TX-01/02; phase 3 vs T-005; keep-warm; IAICT_PII_KEY.",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -517,9 +517,19 @@
         "blockers": [
           "Deploy pending: Owner pastes the Cloudflare token in-session."
         ]
+      },
+      {
+        "id": "T-032",
+        "title": "Change-in-one-place architecture (research-backed): slice 1 lazy delegation done; slices 2-4 proposed",
+        "status": "IN_PROGRESS",
+        "srs_refs": [],
+        "evidence": "Owner asked 2026-11-04 05:18 +07 to research how big companies structure code so changes do not scatter, and apply it. Deep web research completed (report in research notes 'big-tech-evolvable-architecture', 41 KB, sourced; Amazon API mandate flagged secondary-only). Core finding: one authoritative artefact + everything else generated + machine checks on the boundary (Protobuf/codegen, Stripe's single canonical spec, Shopify modular monolith + Packwerk, schema-generated UI with an 80/20 limit, Fowler expand-migrate-contract + versioned migrations, dialect/adapter isolation). Internal audit measured our own scatter: one new field = 7 files; one new store method = 4 store files + 44 hand-written delegate lines in the two lazy wrappers; one new record kind = ~10 touch points. Proposal document delivered to the Owner (de-an-thay-doi-mot-noi-04-11-2026.md): 4 independent slices. SLICE 1 APPLIED same day: LazyWorkerStore/LazyD1Store now forward via __getattr__ - all 44 delegate one-liners removed, new store methods need no wrapper edits; suites 71 passed + 2 skipped in both memory and D1 modes after the change. Slices 2 (single field registry + code generation for SPECS/DDL/RecordIn/UI meta + drift test), 3 (numbered migrations replacing ad-hoc ALTER lists), 4 (dialect-unified SQL store core) are PLANNED pending the Owner's choice.",
+        "blockers": [
+          "Slices 2-4 await the Owner's go-ahead (options presented 2026-11-04)."
+        ]
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T22:16:16Z"
+  "updated_at": "2026-11-03T22:24:13Z"
 }
