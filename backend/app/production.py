@@ -162,10 +162,6 @@ class RecordIn(BaseModel):
     device: str | None = None
     notes: str | None = None
     materials: list[dict] | None = None
-    growth_stage: str | None = None
-    target_pest: str | None = None
-    dosage: str | None = None
-    quantity_applied: float | None = None
     phi_days: int | None = None
     application_method: str | None = None
     fruit_bagging_count: int | None = None
@@ -174,8 +170,6 @@ class RecordIn(BaseModel):
     harvest_date: date | None = None
     quantity: float | None = None
     unit: str | None = None
-    harvested_by: str | None = None
-    quality_grade: str | None = None
     expiry_date: date | None = None
     weigh_slip_number: str | None = None
     traceability_code: str | None = None
@@ -283,7 +277,7 @@ async def _prepare_lot(tenant: str, fields: dict) -> None:
             "lot_code": fields.get("code"), "plan_code": plan_code,
             "max_safe_harvest_date": max_safe,
             "actual_harvest_date": fields["harvest_date"],
-            "outcome": "BLOCKED_VIOLATION_PHI" if blocked else "PASSED_SAFE",
+            "validation_outcome": "BLOCKED_VIOLATION_PHI" if blocked else "PASSED_SAFE",
             "last_treatment_ref": last_ref,
         })
         if blocked:

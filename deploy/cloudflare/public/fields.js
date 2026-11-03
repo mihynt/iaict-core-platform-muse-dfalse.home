@@ -20,15 +20,14 @@ window.IAICT_META = {
   "ics_training_completed": "Đã tập huấn ICS",
   "valid_from": "Hiệu lực từ",
   "valid_to": "Công nhận đến",
-  "status": "Trạng thái",
   "crop_name": "Cây trồng",
   "variety_name": "Tên giống",
-  "seed_origin": "Nguồn giống",
   "planting_density": "Mật độ trồng",
   "seed_origin_doc": "Hồ sơ nguồn gốc giống",
   "start_date": "Ngày bắt đầu",
   "end_date": "Ngày kết thúc",
   "target_yield_kg": "Sản lượng mục tiêu (kg)",
+  "status": "Trạng thái",
   "zone_code": "Vùng",
   "plant_code": "Cây đầu dòng",
   "parcel_code": "Thửa đất",
@@ -45,8 +44,6 @@ window.IAICT_META = {
   "scheme_code": "Mã tiêu chuẩn / chứng nhận",
   "event_type": "Loại sự kiện",
   "occurred_at": "Thời điểm",
-  "device": "Thiết bị",
-  "notes": "Ghi chú",
   "phi_days": "Ngày cách ly (PHI)",
   "safe_harvest_date": "Thu hoạch an toàn từ",
   "application_method": "Phương pháp áp dụng",
@@ -63,15 +60,12 @@ window.IAICT_META = {
   "batch_no": "Số lô nhà sản xuất",
   "purchase_date": "Ngày mua",
   "quantity": "Sản lượng",
-  "unit": "Đơn vị",
   "expiry_date": "Hạn dùng",
   "purchase_invoice_no": "Số hóa đơn mua",
   "qcvn_scheme_id": "Mã quy chuẩn (QCVN)",
-  "brand_name": "Thương hiệu",
   "supplier_code": "Nhà cung cấp",
   "harvest_date": "Ngày thu hoạch",
-  "harvested_by": "Người thu hoạch",
-  "quality_grade": "Phân loại chất lượng",
+  "unit": "Đơn vị",
   "weigh_slip_number": "Số phiếu cân",
   "data_retention_until": "Lưu dữ liệu đến",
   "farmer_code": "Nông hộ",
@@ -95,7 +89,6 @@ window.IAICT_META = {
   "allocated_weight_kg": "Khối lượng phân bổ (kg)",
   "harvest_lot_code": "Lô thu hoạch đầu vào",
   "phc_code": "Mã cơ sở đóng gói (PHC)",
-  "product_name": "Tên sản phẩm",
   "output_weight_kg": "Sản lượng thành phẩm (kg)",
   "yield_norm_ratio": "Định mức thu hồi",
   "storage_type": "Loại bảo quản",
@@ -108,7 +101,6 @@ window.IAICT_META = {
   "lot_code": "Lô thu hoạch",
   "max_safe_harvest_date": "Ngày thu hoạch an toàn",
   "actual_harvest_date": "Ngày thu hoạch thực tế",
-  "outcome": "Kết luận",
   "last_treatment_ref": "Lần xử lý quyết định",
   "validation_outcome": "Kết luận",
   "unit_type": "Loại thửa",
@@ -128,6 +120,7 @@ window.IAICT_META = {
   "vessel_length_max_m": "Chiều dài lớn nhất tàu (m)",
   "tech_safety_cert_no": "Số GCN an toàn kỹ thuật tàu cá",
   "vms_device_serial": "Số seri thiết bị giám sát hành trình (VMS)",
+  "product_name": "Tên sản phẩm",
   "product_image_url": "Ảnh sản phẩm",
   "business_unit_name": "Tên cơ sở / doanh nghiệp",
   "business_unit_address": "Địa chỉ cơ sở",
@@ -142,7 +135,6 @@ window.IAICT_META = {
   "membership_status": "Trạng thái tham gia",
   "joined_date": "Ngày tham gia vùng",
   "left_date": "Ngày rời vùng",
-  "area_ha": "Diện tích (ha)",
   "owner_actor_code": "Chủ thể sở hữu vùng",
   "puc_code": "Mã số vùng trồng (PUC)",
   "puc_status": "Trạng thái mã vùng",
@@ -156,9 +148,6 @@ window.IAICT_META = {
   "dist_to_sensitive_zone_m": "Cách vùng nhạy cảm (m)",
   "bee_site_min_dist_km": "Cách điểm nuôi ong tối thiểu (km)",
   "initial_declared_area_ha": "Diện tích khai báo ban đầu (ha)",
-  "province": "Tỉnh/TP",
-  "district": "Quận/Huyện",
-  "ward": "Xã/Phường",
   "farm_scale_tier": "Quy mô cơ sở chăn nuôi",
   "submission_channel": "Kênh nộp hồ sơ cấp mã",
   "application_received_at": "Thời điểm xã tiếp nhận hồ sơ",
@@ -192,8 +181,7 @@ window.IAICT_META = {
    "is_group_leader",
    "ics_training_completed",
    "valid_from",
-   "valid_to",
-   "status"
+   "valid_to"
   ],
   "crop_plans": [
    "code",
@@ -203,7 +191,6 @@ window.IAICT_META = {
    "plant_code",
    "parcel_code",
    "variety_name",
-   "seed_origin",
    "seed_origin_doc",
    "planting_density",
    "forest_harvest_plan_no",
@@ -238,15 +225,12 @@ window.IAICT_META = {
    "crop_animal_growth_stage",
    "target_pest_disease_reason",
    "fruit_bagging_count",
-   "device",
-   "notes",
    "actor"
   ],
   "input_lots": [
    "code",
    "name",
    "category",
-   "brand_name",
    "substance_code",
    "vn_registration_number",
    "batch_no",
@@ -255,10 +239,8 @@ window.IAICT_META = {
    "supplier_code",
    "purchase_date",
    "quantity",
-   "unit",
    "phi_days",
-   "expiry_date",
-   "status"
+   "expiry_date"
   ],
   "lots": [
    "code",
@@ -270,12 +252,9 @@ window.IAICT_META = {
    "weigh_slip_number",
    "quantity",
    "unit",
-   "quality_grade",
-   "harvested_by",
    "expiry_date",
    "traceability_code",
-   "data_retention_until",
-   "status"
+   "data_retention_until"
   ],
   "mother_plants": [
    "code",
@@ -299,14 +278,12 @@ window.IAICT_META = {
    "sscc_code",
    "cites_specimen_mark_code",
    "package_spec",
-   "units_count",
-   "status"
+   "units_count"
   ],
   "packing_lots": [
    "code",
    "facility_code",
    "phc_code",
-   "product_name",
    "food_safety_cert_id",
    "carcass_serial_id",
    "ecdt_cc_cert_number",
@@ -315,8 +292,7 @@ window.IAICT_META = {
    "yield_norm_ratio",
    "storage_type",
    "packed_at",
-   "expiry_date",
-   "status"
+   "expiry_date"
   ],
   "phi_validations": [
    "lot_code",
@@ -328,7 +304,6 @@ window.IAICT_META = {
   ],
   "spatial_units": [
    "code",
-   "name",
    "unit_type",
    "operator_code",
    "province_code",
@@ -349,8 +324,7 @@ window.IAICT_META = {
    "tech_safety_cert_no",
    "vms_device_serial",
    "valid_from",
-   "valid_to",
-   "status"
+   "valid_to"
   ],
   "traceability_records": [
    "traceability_code",
@@ -365,8 +339,7 @@ window.IAICT_META = {
    "data_carrier_type",
    "sync_status",
    "synced_at",
-   "data_retention_until",
-   "status"
+   "data_retention_until"
   ],
   "zone_parcel_links": [
    "zone_code",
@@ -374,13 +347,10 @@ window.IAICT_META = {
    "registered_area_m2",
    "membership_status",
    "joined_date",
-   "left_date",
-   "status"
+   "left_date"
   ],
   "zones": [
    "code",
-   "name",
-   "status",
    "puc_code",
    "puc_status",
    "vsic_code",
@@ -388,12 +358,7 @@ window.IAICT_META = {
    "market_scope",
    "primary_species",
    "scientific_name",
-   "area_ha",
    "initial_declared_area_ha",
-   "province",
-   "district",
-   "ward",
-   "address",
    "owner_actor_code",
    "farm_scale_tier",
    "submission_channel",

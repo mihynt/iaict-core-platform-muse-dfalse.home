@@ -26,14 +26,13 @@ message Actor {
   bool ics_training_completed = 17;  // Đã tập huấn ICS
   string valid_from = 18;  // Hiệu lực từ
   string valid_to = 19;  // Công nhận đến
-  string status = 20;  // Trạng thái
+  reserved 20;
 }
 
 message CropPlan {
   string name = 1;  // Tên
   string crop_name = 2;  // Cây trồng
   string variety_name = 3;  // Tên giống
-  string seed_origin = 4;  // Nguồn giống
   double planting_density = 5;  // Mật độ trồng
   string seed_origin_doc = 6;  // Hồ sơ nguồn gốc giống
   string start_date = 7;  // Ngày bắt đầu
@@ -47,6 +46,7 @@ message CropPlan {
   string forest_harvest_plan_no = 15;  // Số VB phê duyệt PA khai thác rừng (nếu có)
   string departure_port_code = 16;  // Mã cảng xuất bến (thủy sản, nếu có)
   string arrival_port_code = 17;  // Mã cảng cập bến (thủy sản, nếu có)
+  reserved 4;
 }
 
 message CteStage {
@@ -63,16 +63,7 @@ message CteStage {
 message FieldEvent {
   string event_type = 1;  // Loại sự kiện
   string occurred_at = 2;  // Thời điểm
-  double lat = 3;
-  double lon = 4;
   string actor = 5;
-  string device = 6;  // Thiết bị
-  string notes = 7;  // Ghi chú
-  string materials = 8;
-  string growth_stage = 9;
-  string target_pest = 10;
-  string dosage = 11;
-  double quantity_applied = 12;
   int64 phi_days = 13;  // Ngày cách ly (PHI)
   string safe_harvest_date = 14;  // Thu hoạch an toàn từ
   string application_method = 15;  // Phương pháp áp dụng
@@ -84,6 +75,7 @@ message FieldEvent {
   string total_quantity_applied = 21;  // Tổng lượng đã dùng
   string crop_animal_growth_stage = 22;  // Giai đoạn sinh trưởng
   string target_pest_disease_reason = 23;  // Đối tượng / lý do xử lý
+  reserved 3, 4, 6, 7, 8, 9, 10, 11, 12;
 }
 
 message InputLot {
@@ -94,24 +86,19 @@ message InputLot {
   string batch_no = 5;  // Số lô nhà sản xuất
   string purchase_date = 6;  // Ngày mua
   double quantity = 7;  // Sản lượng
-  string unit = 8;  // Đơn vị
   int64 phi_days = 9;  // Ngày cách ly (PHI)
   string expiry_date = 10;  // Hạn dùng
   string purchase_invoice_no = 11;  // Số hóa đơn mua
   string qcvn_scheme_id = 12;  // Mã quy chuẩn (QCVN)
   string code = 13;  // Mã
-  string brand_name = 14;  // Thương hiệu
   string supplier_code = 15;  // Nhà cung cấp
-  string status = 16;  // Trạng thái
+  reserved 8, 14, 16;
 }
 
 message Lot {
   string harvest_date = 1;  // Ngày thu hoạch
   double quantity = 2;  // Sản lượng
   string unit = 3;  // Đơn vị
-  string harvested_by = 4;  // Người thu hoạch
-  string quality_grade = 5;  // Phân loại chất lượng
-  string status = 6;  // Trạng thái
   string expiry_date = 7;  // Hạn dùng
   string weigh_slip_number = 8;  // Số phiếu cân
   string traceability_code = 9;  // Mã truy xuất
@@ -122,6 +109,7 @@ message Lot {
   string farmer_code = 14;  // Nông hộ
   string parcel_code = 15;  // Thửa đất
   string harvest_time = 16;  // Giờ thu hoạch
+  reserved 4, 5, 6;
 }
 
 message MotherPlant {
@@ -152,7 +140,7 @@ message PackagingUnit {
   string code = 6;  // Mã
   string packing_lot_code = 7;  // Lô đóng gói
   string cites_specimen_mark_code = 8;  // Mã nhãn đánh dấu mẫu vật CITES (nếu có)
-  string status = 9;  // Trạng thái
+  reserved 9;
 }
 
 message PackingInput {
@@ -164,19 +152,18 @@ message PackingInput {
 
 message PackingLot {
   string phc_code = 1;  // Mã cơ sở đóng gói (PHC)
-  string product_name = 2;  // Tên sản phẩm
   double output_weight_kg = 3;  // Sản lượng thành phẩm (kg)
   double yield_norm_ratio = 4;  // Định mức thu hồi
   string storage_type = 5;  // Loại bảo quản
   string packed_at = 6;  // Thời điểm đóng gói
   string expiry_date = 7;  // Hạn dùng
-  string status = 8;  // Trạng thái
   string code = 9;  // Mã
   string facility_code = 10;  // Cơ sở đóng gói
   string food_safety_cert_id = 11;  // Số chứng nhận an toàn thực phẩm của cơ sở
   string carcass_serial_id = 12;  // Mã thân thịt (nếu là thịt)
   string ecdt_cc_cert_number = 13;  // Số giấy chứng nhận nguồn gốc thủy sản (CC)
   string cites_permit_number = 14;  // Số giấy phép CITES (nếu có)
+  reserved 2, 8;
 }
 
 message PhiValidation {
@@ -184,13 +171,12 @@ message PhiValidation {
   string plan_code = 2;  // Kế hoạch
   string max_safe_harvest_date = 3;  // Ngày thu hoạch an toàn
   string actual_harvest_date = 4;  // Ngày thu hoạch thực tế
-  string outcome = 5;  // Kết luận
   string last_treatment_ref = 6;  // Lần xử lý quyết định
   string validation_outcome = 7;  // Kết luận
+  reserved 5;
 }
 
 message SpatialUnit {
-  string name = 1;  // Tên
   string unit_type = 2;  // Loại thửa
   string national_land_parcel_id = 3;  // Mã định danh thửa đất quốc gia
   string map_sheet_number = 4;  // Số tờ bản đồ
@@ -217,7 +203,7 @@ message SpatialUnit {
   string vms_device_serial = 25;  // Số seri thiết bị giám sát hành trình (VMS)
   string valid_from = 26;  // Hiệu lực từ
   string valid_to = 27;  // Công nhận đến
-  string status = 28;  // Trạng thái
+  reserved 1, 28;
 }
 
 message TraceabilityRecord {
@@ -234,7 +220,7 @@ message TraceabilityRecord {
   string sync_status = 11;  // Trạng thái đồng bộ
   string synced_at = 12;  // Đồng bộ lúc
   string packaging_unit_code = 13;  // Đơn vị đóng gói (SKU)
-  string status = 14;  // Trạng thái
+  reserved 14;
 }
 
 message ZoneParcelLink {
@@ -244,7 +230,7 @@ message ZoneParcelLink {
   string left_date = 4;  // Ngày rời vùng
   string zone_code = 5;  // Vùng
   string parcel_code = 6;  // Thửa đất
-  string status = 7;  // Trạng thái
+  reserved 7;
 }
 
 message ZoneStatusHistory {
@@ -258,13 +244,7 @@ message ZoneStatusHistory {
 }
 
 message Zone {
-  string name = 1;  // Tên
-  double area_ha = 2;  // Diện tích (ha)
-  string address = 3;  // Địa chỉ
-  double lat = 4;
-  double lon = 5;
   string geom = 6;
-  string status = 11;  // Trạng thái
   string owner_actor_code = 12;  // Chủ thể sở hữu vùng
   string puc_code = 13;  // Mã số vùng trồng (PUC)
   string puc_status = 14;  // Trạng thái mã vùng
@@ -281,13 +261,10 @@ message Zone {
   double bee_site_min_dist_km = 25;  // Cách điểm nuôi ong tối thiểu (km)
   string code = 26;  // Mã
   string initial_declared_area_ha = 27;  // Diện tích khai báo ban đầu (ha)
-  string province = 28;  // Tỉnh/TP
-  string district = 29;  // Quận/Huyện
-  string ward = 30;  // Xã/Phường
   string farm_scale_tier = 31;  // Quy mô cơ sở chăn nuôi
   string submission_channel = 32;  // Kênh nộp hồ sơ cấp mã
   string application_received_at = 33;  // Thời điểm xã tiếp nhận hồ sơ
   string valid_from = 34;  // Hiệu lực từ
   string valid_to = 35;  // Công nhận đến
-  reserved 7, 8, 9, 10;
+  reserved 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 28, 29, 30;
 }

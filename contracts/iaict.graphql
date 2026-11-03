@@ -24,7 +24,6 @@ type Actor {
   ics_training_completed: Boolean
   valid_from: String
   valid_to: String
-  status: String
 }
 
 type CropPlan {
@@ -32,7 +31,6 @@ type CropPlan {
   name: String
   crop_name: String
   variety_name: String
-  seed_origin: String
   planting_density: Float
   seed_origin_doc: String
   start_date: String
@@ -64,16 +62,7 @@ type FieldEvent {
   id: ID
   event_type: String
   occurred_at: String
-  lat: Float
-  lon: Float
   actor: String
-  device: String
-  notes: String
-  materials: String
-  growth_stage: String
-  target_pest: String
-  dosage: String
-  quantity_applied: Float
   phi_days: Int
   safe_harvest_date: String
   application_method: String
@@ -96,15 +85,12 @@ type InputLot {
   batch_no: String
   purchase_date: String
   quantity: Float
-  unit: String
   phi_days: Int
   expiry_date: String
   purchase_invoice_no: String
   qcvn_scheme_id: String
   code: String
-  brand_name: String
   supplier_code: String
-  status: String
 }
 
 type Lot {
@@ -112,9 +98,6 @@ type Lot {
   harvest_date: String
   quantity: Float
   unit: String
-  harvested_by: String
-  quality_grade: String
-  status: String
   expiry_date: String
   weigh_slip_number: String
   traceability_code: String
@@ -157,7 +140,6 @@ type PackagingUnit {
   code: String
   packing_lot_code: String
   cites_specimen_mark_code: String
-  status: String
 }
 
 type PackingInput {
@@ -171,13 +153,11 @@ type PackingInput {
 type PackingLot {
   id: ID
   phc_code: String
-  product_name: String
   output_weight_kg: Float
   yield_norm_ratio: Float
   storage_type: String
   packed_at: String
   expiry_date: String
-  status: String
   code: String
   facility_code: String
   food_safety_cert_id: String
@@ -192,14 +172,12 @@ type PhiValidation {
   plan_code: String
   max_safe_harvest_date: String
   actual_harvest_date: String
-  outcome: String
   last_treatment_ref: String
   validation_outcome: String
 }
 
 type SpatialUnit {
   id: ID
-  name: String
   unit_type: String
   national_land_parcel_id: String
   map_sheet_number: String
@@ -226,7 +204,6 @@ type SpatialUnit {
   vms_device_serial: String
   valid_from: String
   valid_to: String
-  status: String
 }
 
 type TraceabilityRecord {
@@ -244,7 +221,6 @@ type TraceabilityRecord {
   sync_status: String
   synced_at: String
   packaging_unit_code: String
-  status: String
 }
 
 type ZoneParcelLink {
@@ -255,7 +231,6 @@ type ZoneParcelLink {
   left_date: String
   zone_code: String
   parcel_code: String
-  status: String
 }
 
 type ZoneStatusHistory {
@@ -271,13 +246,7 @@ type ZoneStatusHistory {
 
 type Zone {
   id: ID
-  name: String
-  area_ha: Float
-  address: String
-  lat: Float
-  lon: Float
   geom: String
-  status: String
   owner_actor_code: String
   puc_code: String
   puc_status: String
@@ -294,9 +263,6 @@ type Zone {
   bee_site_min_dist_km: Float
   code: String
   initial_declared_area_ha: String
-  province: String
-  district: String
-  ward: String
   farm_scale_tier: String
   submission_channel: String
   application_received_at: String

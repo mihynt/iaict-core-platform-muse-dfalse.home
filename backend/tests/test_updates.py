@@ -92,5 +92,5 @@ def test_phi_validation_records_last_treatment(client):
     assert r.status_code == 201, r.text
     vals = client.get("/api/v1/phi-validations", headers=A).json()["items"]
     assert len(vals) == 1
-    assert vals[0]["outcome"] == "PASSED_SAFE"
+    assert vals[0]["validation_outcome"] == "PASSED_SAFE"
     assert vals[0]["last_treatment_ref"] == event_id

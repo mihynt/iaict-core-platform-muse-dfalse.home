@@ -133,7 +133,7 @@ def test_lot_blocked_by_phi_and_logged(client):
     assert client.get("/api/v1/lots", headers=A).json()["items"] == []
     vals = client.get("/api/v1/phi-validations", headers=A).json()["items"]
     assert len(vals) == 1
-    assert vals[0]["outcome"] == "BLOCKED_VIOLATION_PHI"
+    assert vals[0]["validation_outcome"] == "BLOCKED_VIOLATION_PHI"
     assert vals[0]["max_safe_harvest_date"] == "2026-09-24"
     assert vals[0]["lot_code"] == "LOT-EARLY"
 
@@ -152,7 +152,7 @@ def test_lot_passes_phi_traceability_and_retention(client):
         "PLAN-1|VN-66-650-24370-94-21|HARV-20261014-H05-T42|2026-10-14"
     assert lot["data_retention_until"] == "2027-10-14"
     vals = client.get("/api/v1/phi-validations", headers=A).json()["items"]
-    assert [v["outcome"] for v in vals] == ["PASSED_SAFE"]
+    assert [v["validation_outcome"] for v in vals] == ["PASSED_SAFE"]
 
 
 def test_mass_balance_ceiling(client):

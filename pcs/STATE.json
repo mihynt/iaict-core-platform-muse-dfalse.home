@@ -1,5 +1,5 @@
 {
-  "revision": 48,
+  "revision": 49,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "T-033 DONE (rev 48): 4 excess zone fields cut at the registry, deployed and browser-verified; stored data preserved. Open: T-032 slices 3-4; the 2 mild duplicates (seed_origin, traceability status) if the Owner wants them; Q-TX-01/02; phase 3 vs T-005; keep-warm; IAICT_PII_KEY.",
+      "last_completed_step": "T-034 DONE (rev 49): platform fields now conform to the 33 dossier tables (34 cut, structural exceptions documented). Open: T-032 slices 3-4; Q-TX-01/02; phase 3 vs T-005; keep-warm; IAICT_PII_KEY.",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -535,9 +535,19 @@
         ],
         "evidence": "Audit (minutes: ra-soat-truong-thua-04-11-2026.md): every registry field diffed against its dossier table and the SRS baseline - most diffs are verified synonyms (puc_code<->puc_national_code etc.) or SRS-baseline fields; genuine excess concentrated in zones. Owner approved cutting 4: managing_entity (duplicate of the FK-validated owner_actor_code), season (belongs to crop_plans/Bang 15; held probe junk on Z-TMP), crop_group (duplicated by primary_species/scientific_name + plan crop), water_source (no Bang 7 home; empty everywhere). No backend logic read any of them. Cut executed at the registry + both zone forms + zone card template + RecordIn declarations; regeneration propagated it (Protobuf contract now reserves numbers 7-10 for Zone, never reused). Suites 76 passed + 2 skipped in both modes; jsdom simulation: zone form down to 27 fields, zero errors. DEPLOYED Worker 050aa146: API no longer returns the 4 fields; verified directly on production D1 that stored values are untouched (Z-01 crop_group still 'rau cu' in the zones table - display/API cut only, expand-contract discipline). Browser test PASSED: 27-field form without the 4 fields, Z-01 detail and card clean, main fields intact. Two mild duplicates elsewhere (crop_plans seed_origin vs seed_origin_doc; traceability_records generic status vs sync_status) were reported but NOT cut - awaiting the Owner.",
         "blockers": []
+      },
+      {
+        "id": "T-034",
+        "title": "Full field conformance: only the 33 dossier tables' fields remain",
+        "status": "TECH_DONE",
+        "srs_refs": [
+          "DEC-013"
+        ],
+        "evidence": "Owner directive superseded the T-033 classification: SRS-baseline fields are also cut when the 33 tables lack the concept. Minutes: ra-soat-toan-bo-33-bang-04-11-2026.md. 34 fields cut across 12 kinds: zones name/area_ha/address/lat/lon/status/province/district/ward; actors status; spatial_units name/status; zone_parcel_links status (dup of membership_status); crop_plans seed_origin (dup of seed_origin_doc); field_events lat/lon/device/notes/materials + the 4 legacy duplicate names (growth_stage/target_pest/dosage/quantity_applied) shadowed by their dossier names; input_lots unit/brand_name/status; lots quality_grade/status/harvested_by; packing_lots product_name (moved to the issuance step, where Bang 29 puts it) + status; packaging_units status; traceability_records status; phi_validations outcome RENAMED to the dossier's validation_outcome at the write path - which also fixed a latent bug: the PHI screen had been reading validation_outcome while the backend wrote outcome, so outcome chips could never render (invisible with zero PHI rows). Documented structural exceptions kept (relations and gate parameters, listed in the minutes): plan/event/lot zone+plant+parcel relations, farmer/parcel on lots (TX-02), phi_days (from Bang 17), packing output_weight_kg/packed_at/expiry_date (TX-04/TX-10 gate inputs), lot traceability_code/data_retention_until, and the mother_plants kind (SRS MPL entity, no dossier table). UI fallout handled: zone/parcel option labels now code+PUC/parcel-number, zone card area reads initial_declared_area_ha, issue form collects product_name for the record, quick input-lot form fixed to write the real name field. Suites 76 passed + 2 skipped in both modes; jsdom sims clean (zone form 21 fields; issue form has the Bang 29 product name). DEPLOYED Worker a7932088: API no longer surfaces the cut fields (first probe raced Worker propagation; recheck + raw D1 read confirmed - stored column values untouched, as always). Pilot data care: Z-01's 10.5 ha moved into initial_declared_area_ha via PATCH so the zone card keeps its area line. Browser test PASSED all 4 items (card shows code only + area, 21-field zone form, diary form without notes/device, input form without brand/unit).",
+        "blockers": []
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T23:22:53Z"
+  "updated_at": "2026-11-03T23:33:33Z"
 }
