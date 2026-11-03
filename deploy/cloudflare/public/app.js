@@ -285,10 +285,42 @@ const DETAIL_LABELS = {
   actual_harvest_date: "Ngày thu hoạch thực tế", validation_outcome: "Kết luận",
   last_treatment_ref: "Lần xử lý quyết định", sync_status: "Trạng thái đồng bộ", synced_at: "Đồng bộ lúc",
   created_at: "Tạo lúc", updated_at: "Cập nhật lúc",
+  lot_code: "Lô thu hoạch", membership_status: "Trạng thái tham gia",
+  registered_area_m2: "Diện tích đăng ký (m²)", left_date: "Ngày rời vùng",
+  production_event_time: "Thời điểm sản xuất", business_name: "Tên cơ sở / doanh nghiệp",
+  business_address: "Địa chỉ cơ sở", brand_or_serial: "Thương hiệu / số seri",
+  data_carrier_type: "Loại mã mang dữ liệu", cultivar_code: "Mã giống",
+  owner_manager: "Chủ sở hữu / người quản lý", crop_group: "Nhóm cây",
+  water_source: "Nguồn nước", managing_entity: "Chủ thể quản lý",
+  category: "Nhóm vật tư", packaging_unit_code: "Đơn vị đóng gói (SKU)",
+  expiration_date: "Hạn dùng", product_image_url: "Ảnh sản phẩm",
+  substance_code: "Hoạt chất / thành phần", vn_registration_number: "Số đăng ký lưu hành VN",
+  batch_no: "Số lô nhà sản xuất", national_land_parcel_id: "Mã định danh thửa đất quốc gia",
+  map_sheet_number: "Số tờ bản đồ", parcel_number: "Số thửa",
+  land_tenure_doc_type: "Loại giấy tờ đất", land_cert_serial: "Số giấy chứng nhận",
+  land_legal_owner_name: "Chủ đất theo giấy tờ", cultivar: "Giống",
+  outcome: "Kết luận", harvest_lot_code: "Lô thu hoạch đầu vào",
+  packing_lot_code: "Lô đóng gói", allocated_weight_kg: "Khối lượng phân bổ (kg)",
+  gtin_code: "Mã GTIN", sscc_code: "Mã SSCC", package_spec: "Quy cách đóng gói",
+  units_count: "Số đơn vị", level: "Cấp đóng gói", stage_no: "Công đoạn số",
+  stage_name: "Tên công đoạn", applied_scheme_id: "Tiêu chuẩn áp dụng",
+  scheme_code: "Mã tiêu chuẩn / chứng nhận", event_time: "Thời điểm sự kiện",
+  product_trace_code: "Mã truy xuất sản phẩm", location_trace_code: "Mã truy xuất địa điểm",
+  batch_lot_number: "Số lô", quantity_received: "Số lượng nhập",
 };
 
+const DETAIL_VALUE_MAPS = {
+  actor_type: { HOUSEHOLD: "Nông hộ", COMPANY: "Doanh nghiệp", COOPERATIVE: "Hợp tác xã", FACILITY: "Cơ sở đóng gói/chế biến", OTHER: "Khác" },
+  unit_type: { LAND_PARCEL: "Thửa ruộng", PARCEL: "Thửa ruộng", GREENHOUSE: "Nhà kính", POND: "Ao nuôi", AQUATIC_POND: "Ao nuôi", PEN: "Chuồng trại", LIVESTOCK_PEN: "Chuồng trại", FOREST_PLOT: "Lô rừng", OTHER: "Khác" },
+  storage_type: { FRESH_AMBIENT: "Tươi, nhiệt độ thường", CHILLED_COOL: "Mát lạnh", FROZEN_PROCESSED: "Đông lạnh / chế biến" },
+  validation_outcome: { PASSED_SAFE: "Đạt — an toàn", BLOCKED_VIOLATION_PHI: "Chặn — vi phạm thời gian cách ly", CONDITIONAL_LAB_TEST_REQUIRED: "Điều kiện — cần xét nghiệm dư lượng" },
+  sync_status: { PENDING_SYNC: "Chờ đồng bộ cổng quốc gia", SYNCED: "Đã đồng bộ" },
+  data_carrier_type: { QR_CODE: "Mã QR", BARCODE: "Mã vạch", RFID: "RFID" },
+};
 function fmtDetailVal(k2, v) {
   if (typeof v === "boolean") return v ? "Có" : "Không";
+  const vm = DETAIL_VALUE_MAPS[k2];
+  if (vm && typeof v === "string" && vm[v]) return vm[v];
   if (typeof v === "object") return JSON.stringify(v);
   if (/_at$/.test(k2)) return String(v).replace("T", " ").slice(0, 16);
   if (/_date$/.test(k2) || ["valid_from", "valid_to", "data_retention_until"].includes(k2)) return fmtDate(v);
@@ -296,25 +328,48 @@ function fmtDetailVal(k2, v) {
   return String(v);
 }
 
-function openDetail(title, rec) {
+// Complete field lists per record kind: the detail sheet shows EVERY
+// field in a fixed order, empty ones as "-", so nothing is hidden just
+// because it has no value yet (Owner review 2026-11-03).
+const DETAIL_SPECS = {
+  zones: ["code", "name", "status", "puc_code", "puc_status", "vsic_code", "sector_category", "market_scope", "primary_species", "scientific_name", "crop_group", "area_ha", "province", "district", "ward", "address", "season", "water_source", "managing_entity", "issue_date", "issuing_authority", "post_inspect_due_date", "dist_to_residential_m", "dist_to_sensitive_zone_m", "bee_site_min_dist_km"],
+  mother_plants: ["code", "species", "variety", "scientific_name", "cultivar_code", "zone_code", "planting_year", "origin", "owner_manager", "recognition_no", "valid_to", "status"],
+  actors: ["code", "name", "actor_type", "gln_code", "parent_code", "province_code", "district_code", "commune_code", "address", "phone", "email", "valid_from", "valid_to", "status"],
+  spatial_units: ["code", "name", "unit_type", "operator_code", "national_land_parcel_id", "map_sheet_number", "parcel_number", "area_m2", "land_tenure_doc_type", "land_cert_serial", "land_legal_owner_name", "status"],
+  zone_parcel_links: ["zone_code", "parcel_code", "registered_area_m2", "membership_status", "joined_date", "left_date", "status"],
+  input_lots: ["code", "name", "category", "brand_name", "substance_code", "vn_registration_number", "batch_no", "purchase_invoice_no", "qcvn_scheme_id", "supplier_code", "purchase_date", "quantity", "unit", "phi_days", "expiry_date", "status"],
+  crop_plans: ["code", "name", "crop_name", "zone_code", "plant_code", "parcel_code", "variety_name", "seed_origin", "seed_origin_doc", "planting_density", "start_date", "end_date", "target_yield_kg", "status"],
+  lots: ["code", "zone_code", "plan_code", "harvest_date", "farmer_code", "parcel_code", "weigh_slip_number", "quantity", "unit", "quality_grade", "harvested_by", "expiry_date", "traceability_code", "data_retention_until", "status"],
+  packing_lots: ["code", "facility_code", "phc_code", "product_name", "output_weight_kg", "yield_norm_ratio", "storage_type", "packed_at", "expiry_date", "status"],
+  traceability_records: ["traceability_code", "product_name", "product_image_url", "business_name", "business_address", "production_event_time", "brand_or_serial", "expiration_date", "packaging_unit_code", "data_carrier_type", "sync_status", "synced_at", "data_retention_until", "status"],
+  phi_validations: ["lot_code", "plan_code", "validation_outcome", "max_safe_harvest_date", "actual_harvest_date", "last_treatment_ref"],
+};
+
+function openDetail(title, rec, kind) {
   $("#sheetTitle").textContent = title;
-  const rows = Object.entries(rec)
-    .filter(([k2, v]) => !["id", "tenant_id", "data"].includes(k2) && v != null && v !== "")
-    .map(([k2, v]) => `<div class="drow"><span>${esc(DETAIL_LABELS[k2] || k2)}</span><b>${esc(fmtDetailVal(k2, v))}</b></div>`).join("");
-  $("#sheetForm").innerHTML = `<div class="dlist">${rows || '<p class="sub">Không có thêm thông tin.</p>'}</div>
+  const spec = DETAIL_SPECS[kind] || [];
+  const internal = new Set(["id", "tenant_id", "data", "created_at", "updated_at"]);
+  const row = (k2, v) => `<div class="drow"><span>${esc(DETAIL_LABELS[k2] || k2)}</span><b>${v == null || v === "" ? "—" : esc(fmtDetailVal(k2, v))}</b></div>`;
+  let rows = spec.map((k2) => row(k2, rec[k2])).join("");
+  const seen = new Set([...internal, ...spec]);
+  rows += Object.entries(rec).filter(([k2]) => !seen.has(k2)).map(([k2, v]) => row(k2, v)).join("");
+  if (rec.created_at) rows += row("created_at", rec.created_at);
+  if (rec.updated_at) rows += row("updated_at", rec.updated_at);
+  $("#sheetForm").innerHTML = `<div class="dlist">${rows}</div>
     <div class="form-actions"><button type="button" class="btn btn-primary" id="sheetCancel">Đóng</button></div>`;
   sheetSubmit = null;
+  sheetOnCancel = null;
   $("#sheetBackdrop").hidden = false;
   $("#sheet").hidden = false;
   $("#sheetCancel").onclick = closeSheet;
 }
 
-function wireCardDetails(container, items, titleOf) {
+function wireCardDetails(container, items, titleOf, kind) {
   container.querySelectorAll("[data-card]").forEach((card) => {
     card.addEventListener("click", (ev) => {
       if (ev.target.closest("button, a")) return;
       const rec = items.find((x) => String(x.code ?? x.id) === card.dataset.card);
-      if (rec) openDetail(titleOf(rec), rec);
+      if (rec) openDetail(titleOf(rec), rec, kind);
     });
   });
 }
@@ -346,6 +401,7 @@ $("#sheetForm").addEventListener("submit", async (e) => {
   btn.disabled = true; btn.textContent = "Đang lưu…";
   try {
     await sheetSubmit.onSubmit(payload);
+    invalidate("audit");
     sheetOnCancel = null;
     closeSheet();
     toast("Đã lưu thành công.");
@@ -422,9 +478,30 @@ function chipFor(status) {
     PASSED_SAFE: "", BLOCKED_VIOLATION_PHI: "red", CONDITIONAL_LAB_TEST_REQUIRED: "amber" };
   return `<span class="chip ${map[status] ?? "grey"}">${esc(status || "—")}</span>`;
 }
-async function ensure(kind, path) {
-  if (!state.cache[kind]) state.cache[kind] = (await T(path)).items;
-  return state.cache[kind];
+async function ensure(kind, path, maxAgeMs = 60000) {
+  const c = state.cache[kind];
+  if (c && Date.now() - c.at < maxAgeMs) return c.data;
+  const data = (await T(path)).items;
+  state.cache[kind] = { at: Date.now(), data };
+  return data;
+}
+
+// Warm every main list once after sign-in so screen switches render from
+// cache instead of waiting on a (possibly cold) Worker each time; a light
+// /health ping every 4 minutes while the app is open improves the odds the
+// next real request lands on a warm isolate (T-027).
+let warmStarted = false;
+function prefetchAll() {
+  const jobs = [["zones", "/zones"], ["plants", "/mother-plants"], ["plans", "/crop-plans"],
+    ["events", "/field-events"], ["lots", "/lots"], ["actors", "/actors"],
+    ["inputs", "/input-lots"], ["parcels", "/spatial-units"], ["zlinks", "/zone-parcel-links"],
+    ["packing", "/packing-lots"], ["trecords", "/traceability-records"],
+    ["phi", "/phi-validations"], ["users", "/users"], ["audit", "/audit"]];
+  jobs.forEach(([k, pth]) => { if (!state.cache[k]) ensure(k, pth).catch(() => {}); });
+  if (!warmStarted) {
+    warmStarted = true;
+    setInterval(() => { if (!document.hidden && store.tenant) api("/health").catch(() => {}); }, 240000);
+  }
 }
 function invalidate(...kinds) { kinds.forEach((k) => delete state.cache[k]); }
 
@@ -436,6 +513,7 @@ VIEWS.dashboard = async () => {
     // One summary call (audit T-021, pack P1): counts + recent audit +
     // service info in a single request instead of health + 4 lists + audit.
     const dash = await T("/dashboard");
+    prefetchAll();
     const health = { env: dash.env, storage: dash.storage, version: dash.version };
     state.health = health;
     const failed = [];
@@ -481,7 +559,7 @@ VIEWS.dashboard = async () => {
 VIEWS.zones = async () => {
   const el = $("#view");
   el.innerHTML = `<div class="section-head"><h2>🗺️ Vùng nguyên liệu</h2>
-    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(3);
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + (state.cache.zones ? "" : skeleton(3));
   $("#reload").onclick = () => { invalidate("zones"); navigate("zones", true); };
   try {
     const items = await ensure("zones", "/zones");
@@ -520,7 +598,7 @@ VIEWS.zones = async () => {
         { k: "managing_entity", label: "Chủ thể quản lý", def: z.managing_entity || "" },
       ], async (p) => { await T(`/zones/${encodeURIComponent(z.code)}`, { method: "PATCH", body: p }); invalidate("zones"); });
     });
-    wireCardDetails(el, items, (z) => `Vùng ${z.code}`);
+    wireCardDetails(el, items, (z) => `Vùng ${z.code}`, "zones");
     el.querySelectorAll("[data-del-zone]").forEach((b) => b.onclick = () =>
       confirmDelete(`vùng ${b.dataset.delZone}`, `/zones/${encodeURIComponent(b.dataset.delZone)}`, ["zones"]));
   } catch (err) { el.innerHTML = banner(err); }
@@ -544,7 +622,7 @@ VIEWS.zones = async () => {
 VIEWS.plants = async () => {
   const el = $("#view");
   el.innerHTML = `<div class="section-head"><h2>🌳 Cây đầu dòng</h2>
-    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(3);
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + (state.cache.plants ? "" : skeleton(3));
   $("#reload").onclick = () => { invalidate("plants"); navigate("plants", true); };
   try {
     const items = await ensure("plants", "/mother-plants");
@@ -580,7 +658,7 @@ VIEWS.plants = async () => {
         { k: "owner_manager", label: "Chủ sở hữu / người quản lý", def: pl.owner_manager || "" },
       ], async (p) => { await T(`/mother-plants/${encodeURIComponent(pl.code)}`, { method: "PATCH", body: p }); invalidate("plants"); });
     });
-    wireCardDetails(el, items, (pl) => `Cây ${pl.code}`);
+    wireCardDetails(el, items, (pl) => `Cây ${pl.code}`, "mother_plants");
     el.querySelectorAll("[data-del-plant]").forEach((b) => b.onclick = () =>
       confirmDelete(`cây ${b.dataset.delPlant}`, `/mother-plants/${encodeURIComponent(b.dataset.delPlant)}`, ["plants"]));
   } catch (err) { el.innerHTML = banner(err); }
@@ -613,7 +691,7 @@ const EVENT_TYPES = [
 VIEWS.plans = async () => {
   const el = $("#view");
   el.innerHTML = `<div class="section-head"><h2>📅 Mùa vụ & nhật ký</h2>
-    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(4);
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + (state.cache.plans && state.cache.events ? "" : skeleton(4));
   $("#reload").onclick = () => { invalidate("plans", "events"); navigate("plans", true); };
   try {
     const settledP = await Promise.allSettled([
@@ -712,7 +790,7 @@ VIEWS.plans = async () => {
 VIEWS.lots = async () => {
   const el = $("#view");
   el.innerHTML = `<div class="section-head"><h2>📦 Lô thu hoạch</h2>
-    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(3);
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + (state.cache.lots ? "" : skeleton(3));
   $("#reload").onclick = () => { invalidate("lots"); navigate("lots", true); };
   try {
     const items = await ensure("lots", "/lots");
@@ -732,7 +810,7 @@ VIEWS.lots = async () => {
         </div></div></div>`).join("")}</div>`
       : emptyState("📦", "Chưa có lô thu hoạch nào", "Bấm nút + để tạo lô từ vùng/kế hoạch đã thu hoạch."));
   } catch (err) { el.innerHTML = banner(err); }
-  wireCardDetails(el, items, (l) => `Lô thu hoạch ${l.code}`);
+  wireCardDetails(el, items, (l) => `Lô thu hoạch ${l.code}`, "lots");
   fab("Tạo lô thu hoạch", async () => {
     const [zones, plans, actors, parcels] = await Promise.all([
       ensure("zones", "/zones").catch(() => []), ensure("plans", "/crop-plans").catch(() => []),
@@ -768,7 +846,7 @@ VIEWS.lots = async () => {
 VIEWS.packing = async () => {
   const el = $("#view");
   el.innerHTML = `<div class="section-head"><h2>🏭 Đóng gói & truy xuất</h2>
-    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(3);
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + (state.cache.packing ? "" : skeleton(3));
   $("#reload").onclick = () => { invalidate("packing", "trecords"); navigate("packing", true); };
   try {
     const [plots, records] = await Promise.all([
@@ -791,7 +869,7 @@ VIEWS.packing = async () => {
         : emptyState("🏭", "Chưa có lô đóng gói nào", "Bấm nút + để tạo lô đóng gói từ các lô thu hoạch."))
       + `<div class="section-head" style="margin-top:18px"><h2 style="font-size:15.5px">🔎 Bản ghi truy xuất nguồn gốc</h2></div>`
       + (records.length ? `<div class="list">${records.map((r) => `
-      <div class="card"><div class="thumb sky">🔎</div><div class="body">
+      <div class="card" data-card="${r.id}"><div class="thumb sky">🔎</div><div class="body">
         <div class="title">${esc(r.product_name || "Sản phẩm")}</div>
         <div class="sub" style="word-break:break-all">${esc(r.traceability_code || "")}</div>
         <div class="meta">
@@ -806,7 +884,7 @@ VIEWS.packing = async () => {
         </div></div>`).join("")}</div>`
         : emptyState("🔎", "Chưa có bản ghi truy xuất nào", "Cấp mã truy xuất từ một lô đóng gói để sinh bản ghi.")));
     el.querySelectorAll("[data-issue]").forEach((b) => b.onclick = () => issueTraceCode(b.dataset.issue));
-    wireCardDetails(el, plots, (pk) => `Lô đóng gói ${pk.code}`);
+    wireCardDetails(el, plots, (pk) => `Lô đóng gói ${pk.code}`, "packing_lots");
     el.querySelectorAll("[data-del-packing]").forEach((b) => b.onclick = () =>
       confirmDelete(`lô đóng gói ${b.dataset.delPacking}`, `/packing-lots/${encodeURIComponent(b.dataset.delPacking)}`, ["packing"]));
     el.querySelectorAll("[data-edit-packing]").forEach((b) => b.onclick = () => {
@@ -823,6 +901,7 @@ VIEWS.packing = async () => {
         { k: "expiry_date", label: "Hạn dùng", type: "date", def: pk.expiry_date ? String(pk.expiry_date).slice(0, 10) : "" },
       ], async (p) => { await T(`/packing-lots/${encodeURIComponent(pk.code)}`, { method: "PATCH", body: p }); invalidate("packing"); });
     });
+    wireCardDetails(el, records, (r) => `Bản ghi truy xuất`, "traceability_records");
     el.querySelectorAll("[data-cte]").forEach((b) => b.onclick = async () => {
       const box = b.closest(".card").querySelector(".cte-box");
       if (!box.hidden) { box.hidden = true; return; }
@@ -900,7 +979,7 @@ const INPUT_CATEGORIES = [
 VIEWS.inputs = async () => {
   const el = $("#view");
   el.innerHTML = `<div class="section-head"><h2>🧪 Vật tư đầu vào</h2>
-    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(3);
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + (state.cache.inputs ? "" : skeleton(3));
   $("#reload").onclick = () => { invalidate("inputs"); navigate("inputs", true); };
   try {
     const items = await ensure("inputs", "/input-lots");
@@ -919,7 +998,7 @@ VIEWS.inputs = async () => {
         <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-input="${esc(i.code)}">✏️ Sửa</button> <button class="btn btn-ghost btn-sm" data-del-input="${esc(i.code)}">🗑️ Xoá</button></div>
       </div></div>`).join("")}</div>`
       : emptyState("🧪", "Chưa có lô vật tư nào", "Bấm nút + để nhập lô thuốc/phân/giống đầu tiên — nhật ký đồng ruộng sẽ chọn được từ đây."));
-    wireCardDetails(el, items, (i) => `Lô vật tư ${i.code}`);
+    wireCardDetails(el, items, (i) => `Lô vật tư ${i.code}`, "input_lots");
     el.querySelectorAll("[data-del-input]").forEach((b) => b.onclick = () =>
       confirmDelete(`lô vật tư ${b.dataset.delInput}`, `/input-lots/${encodeURIComponent(b.dataset.delInput)}`, ["inputs"]));
     el.querySelectorAll("[data-edit-input]").forEach((b) => b.onclick = async () => {
@@ -976,7 +1055,7 @@ const UNIT_TYPES = [
 VIEWS.parcels = async () => {
   const el = $("#view");
   el.innerHTML = `<div class="section-head"><h2>🧩 Thửa đất & liên kết vùng</h2>
-    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(3);
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + (state.cache.parcels ? "" : skeleton(3));
   $("#reload").onclick = () => { invalidate("parcels", "zlinks"); navigate("parcels", true); };
   try {
     const [items, links] = await Promise.all([
@@ -999,14 +1078,15 @@ VIEWS.parcels = async () => {
       + `<div class="section-head" style="margin-top:18px"><h2 style="font-size:15.5px">🔗 Thửa thuộc vùng</h2>
            <button class="btn btn-ghost btn-sm" id="addLink">+ Liên kết</button></div>`
       + (links.length ? `<div class="list">${links.map((l) => `
-      <div class="card"><div class="thumb">🔗</div><div class="body">
+      <div class="card" data-card="${l.id}"><div class="thumb">🔗</div><div class="body">
         <div class="title">${esc(l.zone_code || "")} ↔ ${esc(l.parcel_code || "")} ${chipFor(l.membership_status)}</div>
         <div class="meta">
           ${l.registered_area_m2 != null ? `<span>📐 Đăng ký ${fmtNum(l.registered_area_m2)} m²</span>` : ""}
           ${l.joined_date ? `<span>🗓️ Từ ${fmtDate(l.joined_date)}</span>` : ""}
         </div></div></div>`).join("")}</div>`
         : emptyState("🔗", "Chưa có liên kết nào", "Liên kết thửa vào vùng để vùng trồng gồm đúng các thửa thành viên.")));
-    wireCardDetails(el, items, (u) => `Thửa ${u.code}`);
+    wireCardDetails(el, items, (u) => `Thửa ${u.code}`, "spatial_units");
+    wireCardDetails(el, links, (l) => `Liên kết ${l.zone_code || ""} ↔ ${l.parcel_code || ""}`, "zone_parcel_links");
     el.querySelectorAll("[data-del-parcel]").forEach((b) => b.onclick = () =>
       confirmDelete(`thửa ${b.dataset.delParcel}`, `/spatial-units/${encodeURIComponent(b.dataset.delParcel)}`, ["parcels"]));
     el.querySelectorAll("[data-edit-parcel]").forEach((b) => b.onclick = async () => {
@@ -1076,7 +1156,7 @@ VIEWS.parcels = async () => {
 VIEWS.philogs = async () => {
   const el = $("#view");
   el.innerHTML = `<div class="section-head"><h2>🛡️ Kiểm tra PHI trước thu hoạch</h2>
-    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(3);
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + (state.cache.phi ? "" : skeleton(3));
   $("#reload").onclick = () => { invalidate("phi"); navigate("philogs", true); };
   try {
     const items = await ensure("phi", "/phi-validations");
@@ -1092,7 +1172,7 @@ VIEWS.philogs = async () => {
           <span>🕒 ${fmtTs(v.created_at)}</span>
         </div></div></div>`).join("")}</div>`
       : emptyState("🛡️", "Chưa có lượt kiểm tra nào", "Mỗi lần tạo lô thu hoạch, hệ thống tự kiểm tra thời gian cách ly và ghi lại tại đây."));
-    wireCardDetails(el, items, (v) => `Kiểm tra PHI · Lô ${v.lot_code || ""}`);
+    wireCardDetails(el, items, (v) => `Kiểm tra PHI · Lô ${v.lot_code || ""}`, "phi_validations");
   } catch (err) { el.innerHTML = banner(err); }
 };
 
@@ -1102,7 +1182,7 @@ const ACTOR_TYPE_VI = Object.fromEntries(ACTOR_TYPES.map((t) => [t.v, t.t]));
 VIEWS.actors = async () => {
   const el = $("#view");
   el.innerHTML = `<div class="section-head"><h2>🧑‍🌾 Chủ thể</h2>
-    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(3);
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + (state.cache.actors ? "" : skeleton(3));
   $("#reload").onclick = () => { invalidate("actors"); navigate("actors", true); };
   try {
     const items = await ensure("actors", "/actors");
@@ -1120,7 +1200,7 @@ VIEWS.actors = async () => {
         <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-actor="${esc(a.code)}">✏️ Sửa</button> <button class="btn btn-ghost btn-sm" data-del-actor="${esc(a.code)}">🗑️ Xoá</button></div>
       </div></div>`).join("")}</div>`
       : emptyState("🧑‍🌾", "Chưa có chủ thể nào", "Bấm nút + để khai nông hộ, cơ sở đóng gói hoặc nhà cung cấp đầu tiên."));
-    wireCardDetails(el, items, (a) => `Chủ thể ${a.code}`);
+    wireCardDetails(el, items, (a) => `Chủ thể ${a.code}`, "actors");
     el.querySelectorAll("[data-del-actor]").forEach((b) => b.onclick = () =>
       confirmDelete(`chủ thể ${b.dataset.delActor}`, `/actors/${encodeURIComponent(b.dataset.delActor)}`, ["actors"]));
     el.querySelectorAll("[data-edit-actor]").forEach((b) => b.onclick = async () => {
@@ -1170,10 +1250,10 @@ const ROLE_VI = { TENANT_ADMIN: "Quản trị tenant", OPERATOR: "Vận hành", 
 VIEWS.users = async () => {
   const el = $("#view");
   el.innerHTML = `<div class="section-head"><h2>👥 Người dùng & nhật ký</h2>
-    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(4);
-  $("#reload").onclick = () => navigate("users", true);
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + (state.cache.users ? "" : skeleton(4));
+  $("#reload").onclick = () => { invalidate("users", "audit"); navigate("users", true); };
   try {
-    const [users, audit] = await Promise.all([T("/users"), T("/audit")]);
+    const [users, audit] = await Promise.all([ensure("users", "/users"), ensure("audit", "/audit")]);
     el.querySelectorAll(".skel").forEach((s) => s.remove());
     el.insertAdjacentHTML("beforeend", `
       <div class="section-head"><h2 style="font-size:15.5px">Người dùng trong tenant</h2></div>
@@ -1194,7 +1274,7 @@ VIEWS.users = async () => {
     { k: "display_name", label: "Tên hiển thị", required: true, placeholder: "vd: Văn An" },
     { k: "role", label: "Vai trò", type: "select", options: [
       { v: "VIEWER", t: "Chỉ xem" }, { v: "OPERATOR", t: "Vận hành (ghi dữ liệu)" }, { v: "TENANT_ADMIN", t: "Quản trị tenant" }] },
-  ], async (p) => { await T("/users", { method: "POST", body: p }); }));
+  ], async (p) => { await T("/users", { method: "POST", body: p }); invalidate("users", "audit"); }));
 };
 
 /* ---------------- platform tenants ---------------- */
