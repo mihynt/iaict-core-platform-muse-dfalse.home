@@ -1,5 +1,5 @@
 {
-  "revision": 34,
+  "revision": 35,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "T-026 UX completion pack built and verified locally (62+2 both modes); deploy to beta pending the Owner's Cloudflare token in-session, then the live browser test.",
+      "last_completed_step": "T-026 UX completion pack DEPLOYED LIVE (Worker 3bddc15e) incl. the quick-create cancel-return fix verified in the browser. Open owner decisions unchanged: Q-TX-01..03, phase 3 vs T-005, performance P2.",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -196,7 +196,7 @@
         "name": "UX completion: delete + detail view + actors catalogue + inline create in pickers",
         "priority": "P1",
         "status": "TECH_DONE",
-        "notes": "Owner feedback 2026-11-03: CRUD completeness, inline create like WordPress, date pickers, do not be rigid about the SRS for interaction design. Built in T-026; deploy pending token."
+        "notes": "Owner feedback 2026-11-03: CRUD completeness, inline create like WordPress, date pickers, do not be rigid about the SRS for interaction design. Built in T-026; deploy pending token. Deployed live 2026-11-03 (Worker 3bddc15e)."
       }
     ],
     "flows": [],
@@ -265,10 +265,8 @@
         "status": "TECH_DONE",
         "priority": "P1",
         "phase": "M2",
-        "evidence": "DELETE endpoints for the 7 master kinds (TENANT_ADMIN; API-layer reference scan -> 409 RECORD_IN_USE; audit <PREFIX>_DELETE; delete_record in all 4 stores + lazy delegates; tests test_t026_delete.py 3/3). UI: new Actors catalogue view (list/create/edit/delete/detail); tap any card (zones, plants, lots, packing, inputs, parcels, PHI logs, actors) for a read-only detail sheet; delete buttons with confirm sheet on all master cards; '+ Them moi' inline quick-create inside the main reference pickers (zone/plant/actor/input-lot/parcel) — parent form reopens with typed values kept, options refreshed, new record pre-selected; date pickers completed (zone issue/post-inspection dates, plant recognition expiry, actor validity). Also fixed a latent philogs bug (view read v.outcome instead of v.validation_outcome). Suites: memory 62 passed + 2 skipped, D1 62 + 2 skipped; build + wrangler dry-run OK. NOT yet deployed: awaiting the Owner's Cloudflare token in-session (same standing arrangement); post-deploy browser test still owed per the standing rule.",
-        "blockers": [
-          "Beta deploy + live browser test need the Owner's Cloudflare API token pasted in-session"
-        ]
+        "evidence": "DELETE endpoints for the 7 master kinds (TENANT_ADMIN; API-layer reference scan -> 409 RECORD_IN_USE; audit <PREFIX>_DELETE; delete_record in all 4 stores + lazy delegates; tests test_t026_delete.py 3/3). UI: new Actors catalogue view (list/create/edit/delete/detail); tap any card (zones, plants, lots, packing, inputs, parcels, PHI logs, actors) for a read-only detail sheet; delete buttons with confirm sheet on all master cards; '+ Them moi' inline quick-create inside the main reference pickers (zone/plant/actor/input-lot/parcel) — parent form reopens with typed values kept, options refreshed, new record pre-selected; date pickers completed (zone issue/post-inspection dates, plant recognition expiry, actor validity). Also fixed a latent philogs bug (view read v.outcome instead of v.validation_outcome). Suites: memory 62 passed + 2 skipped, D1 62 + 2 skipped; build + wrangler dry-run OK. NOT yet deployed: awaiting the Owner's Cloudflare token in-session (same standing arrangement); post-deploy browser test still owed per the standing rule. DEPLOYED 2026-11-03 21:44-21:52 +07 (first Worker 351e72cd, then 3bddc15e with the cancel-return fix). Production probes: full create->delete cycle on /actors (200, then GET 404); DELETE /zones/Z-TMP refused with 409 RECORD_IN_USE naming the referencing field_events record - the in-use guard works live and explains the long-standing test zone. Browser test: Actors screen present (empty state correct), zone cards have Edit+Delete, tap-to-detail opens, '+ Them moi' opens the quick-create. One UX defect found by that test and fixed same session: cancelling a quick-create closed the whole flow and lost the parent form; quick-create sheets now take an onCancel hook that restores the parent form with typed values intact - browser recheck PASSED (parent form reopened, previously chosen event type retained).",
+        "blockers": []
       },
       {
         "id": "T-001",
@@ -441,5 +439,5 @@
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T14:31:38Z"
+  "updated_at": "2026-11-03T14:50:18Z"
 }

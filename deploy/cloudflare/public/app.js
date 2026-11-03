@@ -134,7 +134,9 @@ function toast(msg, isErr = false) {
 
 /* ---------------- bottom sheet forms ---------------- */
 let sheetSubmit = null;
-function openSheet(title, fields, onSubmit) {
+let sheetOnCancel = null;
+function openSheet(title, fields, onSubmit, opts = {}) {
+  sheetOnCancel = opts.onCancel || null;
   $("#sheetTitle").textContent = title;
   const form = $("#sheetForm");
   form.innerHTML = fields.map((f) => {
@@ -171,13 +173,14 @@ function openSheet(title, fields, onSubmit) {
         if (inp) snapshot[pf.k] = inp.value;
       }
       const parent = { title, fields, onSubmit };
-      f.addNew(async (newCode) => {
+      const restore = async (newCode) => {
         for (const pf of parent.fields) {
           if (pf.refreshOptions) { try { pf.options = await pf.refreshOptions(); } catch { /* keep */ } }
-          pf.def = pf.k === f.k ? newCode : snapshot[pf.k];
+          pf.def = newCode && pf.k === f.k ? newCode : snapshot[pf.k];
         }
         openSheet(parent.title, parent.fields, parent.onSubmit);
-      });
+      };
+      f.addNew((code) => restore(code), () => restore(null));
     };
   });
   $("#sheetBackdrop").hidden = false;
@@ -190,6 +193,9 @@ function closeSheet() {
   $("#sheetBackdrop").hidden = true;
   $("#sheet").hidden = true;
   sheetSubmit = null;
+  const cb = sheetOnCancel;
+  sheetOnCancel = null;
+  if (cb) cb();
 }
 $("#sheetClose").addEventListener("click", closeSheet);
 
@@ -205,38 +211,38 @@ const ACTOR_TYPES = [
   { v: "COOPERATIVE", t: "Hợp tác xã" }, { v: "FACILITY", t: "Cơ sở đóng gói/chế biến" },
   { v: "OTHER", t: "Khác" }];
 
-function quickZone(done) {
+function quickZone(done, back) {
   openSheet("Thêm vùng mới", [
     { k: "code", label: "Mã vùng", required: true, placeholder: "vd: Z-03" },
     { k: "name", label: "Tên vùng" },
     { k: "area_ha", label: "Diện tích (ha)", type: "number", step: "0.01" },
     { k: "puc_code", label: "Mã số vùng trồng (PUC)" },
-  ], async (p) => { const r = await T("/zones", { method: "POST", body: p }); invalidate("zones"); toast("Đã thêm vùng " + r.code); done(r.code); });
+  ], async (p) => { const r = await T("/zones", { method: "POST", body: p }); invalidate("zones"); toast("Đã thêm vùng " + r.code); done(r.code); }, { onCancel: back });
 }
-function quickPlant(done) {
+function quickPlant(done, back) {
   openSheet("Thêm cây đầu dòng mới", [
     { k: "code", label: "Mã cây", required: true, placeholder: "vd: MPL-002" },
     { k: "species", label: "Loài cây", required: true },
     { k: "variety", label: "Giống" },
-  ], async (p) => { const r = await T("/mother-plants", { method: "POST", body: p }); invalidate("plants"); toast("Đã thêm cây " + r.code); done(r.code); });
+  ], async (p) => { const r = await T("/mother-plants", { method: "POST", body: p }); invalidate("plants"); toast("Đã thêm cây " + r.code); done(r.code); }, { onCancel: back });
 }
-function quickActor(done) {
+function quickActor(done, back) {
   openSheet("Thêm chủ thể mới", [
     { k: "code", label: "Mã chủ thể", required: true, placeholder: "vd: H05" },
     { k: "name", label: "Tên chủ thể", required: true },
     { k: "actor_type", label: "Loại chủ thể", type: "select", options: ACTOR_TYPES },
     { k: "phone", label: "Số điện thoại" },
-  ], async (p) => { const r = await T("/actors", { method: "POST", body: p }); invalidate("actors"); toast("Đã thêm chủ thể " + r.code); done(r.code); });
+  ], async (p) => { const r = await T("/actors", { method: "POST", body: p }); invalidate("actors"); toast("Đã thêm chủ thể " + r.code); done(r.code); }, { onCancel: back });
 }
-function quickInputLot(done) {
+function quickInputLot(done, back) {
   openSheet("Thêm lô vật tư mới", [
     { k: "code", label: "Mã lô vật tư", required: true, placeholder: "vd: VT-001" },
     { k: "product_name", label: "Tên sản phẩm", required: true },
     { k: "phi_days", label: "Số ngày cách ly (PHI)", type: "number", step: "1" },
     { k: "expiry_date", label: "Hạn dùng", type: "date" },
-  ], async (p) => { const r = await T("/input-lots", { method: "POST", body: p }); invalidate("inputs"); toast("Đã thêm lô vật tư " + r.code); done(r.code); });
+  ], async (p) => { const r = await T("/input-lots", { method: "POST", body: p }); invalidate("inputs"); toast("Đã thêm lô vật tư " + r.code); done(r.code); }, { onCancel: back });
 }
-function quickParcel(done) {
+function quickParcel(done, back) {
   openSheet("Thêm thửa đất mới", [
     { k: "code", label: "Mã thửa", required: true, placeholder: "vd: T42" },
     { k: "name", label: "Tên thửa" },
@@ -244,7 +250,7 @@ function quickParcel(done) {
       { v: "PARCEL", t: "Thửa ruộng" }, { v: "GREENHOUSE", t: "Nhà kính" },
       { v: "POND", t: "Ao nuôi" }, { v: "PEN", t: "Chuồng trại" }, { v: "OTHER", t: "Khác" }] },
     { k: "area_m2", label: "Diện tích (m²)", type: "number", step: "0.01" },
-  ], async (p) => { const r = await T("/spatial-units", { method: "POST", body: p }); invalidate("parcels"); toast("Đã thêm thửa " + r.code); done(r.code); });
+  ], async (p) => { const r = await T("/spatial-units", { method: "POST", body: p }); invalidate("parcels"); toast("Đã thêm thửa " + r.code); done(r.code); }, { onCancel: back });
 }
 
 const DETAIL_LABELS = {
@@ -340,6 +346,7 @@ $("#sheetForm").addEventListener("submit", async (e) => {
   btn.disabled = true; btn.textContent = "Đang lưu…";
   try {
     await sheetSubmit.onSubmit(payload);
+    sheetOnCancel = null;
     closeSheet();
     toast("Đã lưu thành công.");
     navigate(state.view, true);
