@@ -1,5 +1,5 @@
 {
-  "revision": 39,
+  "revision": 40,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "T-029 built and verified locally (65+2 both modes; D1 upgrade verified); deploy to beta pending the Owner's Cloudflare token in-session, then the live browser test.",
+      "last_completed_step": "T-029 DEPLOYED LIVE (Worker 920420f7): entry forms completed for every detail field, zone-owner actor relationship live on production D1. Open owner decisions unchanged: Q-TX-01..03, phase 3 vs T-005.",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -210,7 +210,7 @@
         "name": "Entry/detail field consistency + zone-owner actor relationship",
         "priority": "P1",
         "status": "TECH_DONE",
-        "notes": "Owner review 2026-11-03 23:10. Built in T-029; deploy pending token."
+        "notes": "Owner review 2026-11-03 23:10. Built in T-029; deploy pending token. Deployed live 2026-11-03 (Worker 920420f7)."
       }
     ],
     "flows": [],
@@ -279,10 +279,8 @@
         "status": "TECH_DONE",
         "priority": "P1",
         "phase": "M2",
-        "evidence": "Owner caught display-only fields added by T-028 (detail spec without entry forms) - valid criticism, fixed systematically. Scripted entry-vs-detail sweep per kind, then: zones create/edit gained sector/market/scientific name/issuing authority/province/district/ward/declared area/validity/3 VietGAP buffer distances (backend-ready since T-024 but never form-wired) + PUC status as a select with the dossier's 5 states (Bang 7 enum read from the root dossier); plants gained cultivar_code + recognition_no; actors gained gs1_role_ai + is_group_leader/ics_training_completed as bool selects (new 'bool' sheet field type); inputs gained brand_name + qcvn_scheme_id; plans gained the parcel picker (+inline create) + variety_name + seed_origin; zone-parcel link form gained membership_status (Bang 12 enum); the issuance form gained packaging level + SSCC + brand_trademark_serial. RELATIONSHIP completed per Bang 7: zones.owner_actor_code is now a principal validated reference to actors (RECORD_REFS + SPECS + REF_ID_COLUMN + both schemas + D1 ALTER loop; in-place upgrade verified on a pre-T-029 database; invalid owner -> 400 REF_UNKNOWN; owner actor delete -> 409 RECORD_IN_USE). Also fixed wrong detail-spec keys for traceability records (business_name -> business_unit_name etc., matching the backend's dossier names). Suites: 65 passed + 2 skipped in BOTH memory and D1 modes (3 new tests test_t029_consistency.py). NOT yet deployed: awaiting the Owner's Cloudflare token in-session.",
-        "blockers": [
-          "Beta deploy + live browser test need the Owner's Cloudflare API token pasted in-session"
-        ]
+        "evidence": "Owner caught display-only fields added by T-028 (detail spec without entry forms) - valid criticism, fixed systematically. Scripted entry-vs-detail sweep per kind, then: zones create/edit gained sector/market/scientific name/issuing authority/province/district/ward/declared area/validity/3 VietGAP buffer distances (backend-ready since T-024 but never form-wired) + PUC status as a select with the dossier's 5 states (Bang 7 enum read from the root dossier); plants gained cultivar_code + recognition_no; actors gained gs1_role_ai + is_group_leader/ics_training_completed as bool selects (new 'bool' sheet field type); inputs gained brand_name + qcvn_scheme_id; plans gained the parcel picker (+inline create) + variety_name + seed_origin; zone-parcel link form gained membership_status (Bang 12 enum); the issuance form gained packaging level + SSCC + brand_trademark_serial. RELATIONSHIP completed per Bang 7: zones.owner_actor_code is now a principal validated reference to actors (RECORD_REFS + SPECS + REF_ID_COLUMN + both schemas + D1 ALTER loop; in-place upgrade verified on a pre-T-029 database; invalid owner -> 400 REF_UNKNOWN; owner actor delete -> 409 RECORD_IN_USE). Also fixed wrong detail-spec keys for traceability records (business_name -> business_unit_name etc., matching the backend's dossier names). Suites: 65 passed + 2 skipped in BOTH memory and D1 modes (3 new tests test_t029_consistency.py). NOT yet deployed: awaiting the Owner's Cloudflare token in-session. DEPLOYED 2026-11-03 23:28-23:30 +07 (Worker 920420f7). Production probes ran the full relation cycle: actor created -> zone created with owner_actor_code + PUC status/VSIC/buffer values stored -> ghost owner rejected REF_UNKNOWN -> deleting the owner actor blocked RECORD_IN_USE naming the zone -> probes deleted cleanly. Production D1 upgraded in place (owner columns live). Browser test: zone create form shows 28 fields incl. the PUC status select with all 5 dossier states and the owner picker with inline create; actor form shows the GS1 field + both Co/Khong selects; plan form shows the parcel picker with inline create + variety/seed-origin fields.",
+        "blockers": []
       },
       {
         "id": "T-028",
@@ -482,5 +480,5 @@
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T16:13:31Z"
+  "updated_at": "2026-11-03T16:30:22Z"
 }
