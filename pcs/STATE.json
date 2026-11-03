@@ -1,5 +1,5 @@
 {
-  "revision": 25,
+  "revision": 26,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "DEC-011 recorded (delta D-STD-03): the traceability-standard dossier is designated the foundational baseline for the platform's data standard, with an explicit precedence stack (dossier -> SRS v2.1 Appendix F -> implementation) and a rule that deviations must be recorded as deltas. No code or document content changed in this step; the beta continues on Worker 75f69cfb.",
+      "last_completed_step": "SRS v2.1.1 errata issued (T-019 TECH_DONE, DEC-012, delta D-STD-04): Appendix F re-grounded on the dossier as root - F.2 is now the dossier's own 33-table + 3-view inventory with pre-existing-requirement cross-references; TX-01/TX-03 narrowed to the dossier's true additions over ZON-09/CMP-10 and FLD-16/FLD-17; the FLD-17 per-parcel implementation gap is recorded in TX-03 and queued for phase 3. Beta unchanged (Worker 75f69cfb).",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -100,6 +100,13 @@
         "date": "2026-11-03",
         "decision": "The Owner-supplied traceability-standard dossier (SHA-256 3afb2be6baf68765e80be68513f84736d94bca1b51a445a59bc59829668cfeb1) is the foundational baseline for the platform's data standard. Precedence: the dossier is the ultimate source for traceability data definitions; SRS v2.1 Appendix F is its consolidated normative form; implementation follows Appendix F. Deviations require a recorded delta with rationale (D-STD-03).",
         "rationale": "Owner directive 2026-11-03: 'Lay tai lieu toi vua gui lam nen tang' (take the document I just sent as the foundation), following the adoption (DEC-009) and the SRS consolidation (DEC-010). A pinned reference copy is kept outside the public repo (workspace/projects/iaict-references/) per DEC-001; only the hash is recorded in the repo.",
+        "status": "ACTIVE"
+      },
+      {
+        "id": "DEC-012",
+        "date": "2026-11-03",
+        "decision": "In SRS Appendix F, tables follow the Owner-supplied dossier as the root: the dossier's own table numbers and names are reproduced without grouping or renaming, every consolidated rule cites its source dossier table, and overlaps with pre-existing SRS requirements are cross-referenced in place (the pre-existing requirement governs; a TX code records only the dossier's addition). Applied in SRS v2.1.1 (delta D-STD-04).",
+        "rationale": "Owner directive 2026-11-03 after catching that TX-01/TX-03 duplicated ZON-09/CMP-10 and FLD-16/FLD-17: 'Cac bang lay theo file toi gui (lam goc)'. Implements DEC-011's foundation designation at document level.",
         "status": "ACTIVE"
       }
     ],
@@ -351,9 +358,16 @@
         "status": "TECH_DONE",
         "classification": "PUBLIC",
         "evidence": "SRS v2.1 built from SRS v2.0 (hash-verified source): file IAICT_SRS_MUSE_v2.1_03-11-2026.docx, SHA-256 eb33a23d84e1283ee3f22ec0d502954ad45332bf6d499ec461d56c7891d6f6f1, delivered with its changelog next to the v2.0 files in the Owner's document folder (full texts stay out of the public repo per DEC-001; hashes recorded here). Contents: Appendix F (F.1 adoption principles + phase status; F.2 the full 33-entity + 3-view standard-to-platform mapping with corrected live statuses for phases 1-2; F.3 business-rule requirements TX-01..TX-12 reflecting the implemented and T-017-hardened behavior; F.4 the TT 02/2024 mandatory-field table with platform fill sources + the TT 17/2021 retention fallback with the case (1)/(3) overlap called out; F.5 open decisions Q-TX-01..03); a §1.4 reference + precedence clause; cover and version history updated to 2.1; TOC extended with Appendix F and page numbers re-verified against a LibreOffice render of v2.1 itself (150 pages; Sec.5-9 and Appendices A-E shifted +1 by table reflow and were corrected to measured values, F = p.144, approval block = p.150; Sec.1-4 verified unchanged). Machine verification: requirement-ID population identical v2.0 vs v2.1 (385 distinct IDs, none lost or renumbered); only additions are TX-01..12 and Q-TX-01..03. SRS v2.1 remains a DRAFT pending IAICT approval (INT-01..06 still open)."
+      },
+      {
+        "id": "T-019",
+        "title": "SRS v2.1.1 errata: Appendix F re-grounded on the dossier as root",
+        "status": "TECH_DONE",
+        "evidence": "SRS v2.1.1 DOCX SHA-256 5313daa709e02e6fff96844600966362bed5633c53b54c7d5bfa398101f542f1, 156 pages (LibreOffice render, TOC re-measured). F.2 = the dossier's own 33 tables + 3 views with platform mapping, status and pre-existing-requirement cross-references; F.3 entries carry dossier-table provenance; TX-01 narrowed to the dossier's additions over ZON-09/ZON-10/CMP-10; TX-03 narrowed to the Bang 24 record model over FLD-16/FLD-17, with the FLD-17 per-parcel implementation gap recorded in the requirement text. ID population verified: nothing lost vs v2.0/v2.1, additions confined to the TX/Q-TX family. Full text stays out of the public repo (DEC-001).",
+        "notes": "Owner-caught defect in T-018's consolidation: F.3 presented TX rules without mapping overlaps with the baseline SRS. Errata issued same day per Owner directive 'cac bang lay theo file toi gui (lam goc)'."
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T10:44:00Z"
+  "updated_at": "2026-11-03T10:54:12Z"
 }

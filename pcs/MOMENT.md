@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 25 · **Updated:** 2026-11-03T10:44:00Z · **Phase:** DISCOVERY
+- **Revision:** 26 · **Updated:** 2026-11-03T10:54:12Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -31,6 +31,16 @@
 
 ## Latest progress
 
+- **SRS v2.1.1 errata — tables follow the dossier as root
+  (2026-11-03, T-019 TECH_DONE, DEC-012):** the Owner caught that
+  TX-01/TX-03 duplicated pre-existing requirements (ZON-09/CMP-10
+  and FLD-16/FLD-17). Appendix F was corrected the same day: F.2
+  now reproduces the dossier's own 33 tables + 3 views with
+  cross-references to pre-existing SRS requirements; F.3 cites
+  each rule's source dossier table; TX-01/TX-03 are narrowed to
+  the dossier's true additions. Recorded gap: phase-1 PHI checks
+  run at plan scope and do not yet meet FLD-17's per-parcel /
+  multi-parcel semantics — phase-3 completion scope.
 - **Dossier designated the foundation (2026-11-03, DEC-011):**
   the traceability-standard dossier is now the foundational
   baseline for the platform's data standard, with an explicit
