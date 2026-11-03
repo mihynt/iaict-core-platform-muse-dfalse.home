@@ -154,6 +154,18 @@ class D1Store:
                 " WHERE traceability_code IS NOT NULL").run()
         except Exception:
             pass
+        # T-023 column upgrades (audit T-021 field gaps): portal sync
+        # timestamp + PHI last-treatment reference. Raw binding only
+        # (see the M3 note above); duplicate-column errors on already
+        # upgraded databases are expected and ignored.
+        for _stmt in (
+            "ALTER TABLE traceability_records ADD COLUMN synced_at TEXT",
+            "ALTER TABLE phi_validations ADD COLUMN last_treatment_ref TEXT",
+        ):
+            try:
+                await self._db.prepare(_stmt).run()
+            except Exception:
+                pass
 
     async def _first(self, sql: str, params: tuple = ()):
         await self._ensure_schema()
@@ -371,6 +383,49 @@ class D1Store:
             record["updated_at"] = row["updated_at"]
         return record
 
+    async def update_record(self, tenant: str, kind: str, code: str,
+                            fields: dict) -> dict | None:
+        table, columns = SPECS[kind]
+        refs = RECORD_REFS[kind]
+        row = await self._first(
+            f"SELECT * FROM {table} WHERE tenant_id = ? AND code = ?",
+            (tenant, code))
+        if row is None:
+            return None
+        values: dict[str, object] = {}
+        for ref_field, ref_kind in refs.items():
+            ref_code = fields.get(ref_field)
+            if ref_code is not None:
+                ref_id = await self._resolve_ref(tenant, ref_kind, ref_code)
+                if ref_id is None:
+                    raise RefUnknown(ref_field)
+                values[REF_ID_COLUMN[ref_field]] = ref_id
+                values[ref_field] = ref_code
+        known = set(columns) | set(refs)
+        extra = {k: v for k, v in fields.items()
+                 if k not in known and k != "code"}
+        if extra:
+            current = row.get("data")
+            data = json.loads(current) if isinstance(current, str) \
+                and current else {}
+            data.update(extra)
+            values["data"] = json.dumps(data)
+        for col, ckind in columns.items():
+            if col in fields:
+                values[col] = _conv_in(fields[col], ckind)
+        if kind != "field_events":
+            values["updated_at"] = utcnow()
+        if values:
+            assignments = ", ".join(f"{k} = ?" for k in values)
+            await self._run(
+                f"UPDATE {table} SET {assignments}"
+                " WHERE tenant_id = ? AND code = ?",
+                tuple(values.values()) + (tenant, code))
+            row = await self._first(
+                f"SELECT * FROM {table} WHERE tenant_id = ? AND code = ?",
+                (tenant, code))
+        return self._row_to_record(row, kind)
+
     async def list_records(self, tenant: str, kind: str) -> list[dict]:
         table, _ = SPECS[kind]
         order = "code" if kind in CODED_KINDS else "id"
@@ -378,6 +433,14 @@ class D1Store:
             f"SELECT * FROM {table} WHERE tenant_id = ? ORDER BY {order}", (tenant,)
         )
         return [self._row_to_record(r, kind) for r in rows]
+
+    async def count_records(self, tenant: str, kind: str) -> int:
+        await self._ensure_schema()
+        table, _ = SPECS[kind]
+        row = await self._first(
+            f"SELECT count(*) AS n FROM {table} WHERE tenant_id = ?", (tenant,)
+        )
+        return int(row["n"]) if row else 0
 
     async def get_record_by_code(self, tenant: str, kind: str, code: str) -> dict | None:
         table, _ = SPECS[kind]

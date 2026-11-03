@@ -33,3 +33,4 @@ deploy/cloudflare/src/app/
 deploy/cloudflare/python_modules/
 deploy/cloudflare/.venv/
 .wrangler/
+deploy/cloudflare/public_dist/

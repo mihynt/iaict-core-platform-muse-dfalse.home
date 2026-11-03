@@ -75,6 +75,13 @@ OPERATOR+; references are given as codes (`zone_code`, `plant_code`,
 (unknown reference → `400 REF_UNKNOWN`; duplicate code → `409 CODE_EXISTS`).
 Fields beyond the principal columns are accepted and stored in `data`.
 
+`GET /api/v1/dashboard` (T-022) returns per-kind counts + the latest
+audit entries + service info in one call for the UI home screen.
+`PATCH /api/v1/{zones|mother-plants|actors|spatial-units|input-lots|packing-lots|packaging-units}/{code}`
+(T-023) corrects master data (OPERATOR+, code immutable, references
+re-validated, `<PREFIX>_UPDATE` audit); evidence-like kinds stay
+append-only and creation gates are not re-run on update.
+
 ## Traceability data standard (D-STD-01, adopted 2026-11-03)
 
 Reference: the Owner-supplied research dossier on the Vietnamese
@@ -171,6 +178,13 @@ check `409 TRACEABILITY_CODE_EXISTS` + partial unique index
 to the latest input harvest date + 12 months per the dossier's
 fallback case (2). The issue form collects the product image URL
 (mandatory field 2 of TT 02/2024) and warns on records missing it.
+
+T-023 field completion (2026-11-03, audit T-021 gaps):
+`traceability_records.synced_at` (portal sync timestamp — NULL while
+`PENDING_SYNC`; the sync itself is still the Q-TX-02 integration) and
+`phi_validations.last_treatment_ref` (the field event whose PHI ends
+last — the platform reference for Bang 24's `last_treatment_log_id`,
+set on every PHI validation write).
 
 Note on the D1 upgrade path: databases created before phase 1 gain the
 new tables from `schema_d1.sql` and the new columns via `ALTER TABLE`

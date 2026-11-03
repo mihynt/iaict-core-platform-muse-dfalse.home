@@ -97,7 +97,7 @@ async function api(path, { method = "GET", body, platform = false, tenant, actor
   let lastErr;
   for (let attempt = 1; attempt <= attempts; attempt++) {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 20000);
+    const timer = setTimeout(() => ctrl.abort(), 8000);
     try {
       const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined, signal: ctrl.signal });
       const data = await res.json().catch(() => ({}));
@@ -200,6 +200,9 @@ const NAV = [
   { id: "plans", ic: "📅", label: "Mùa vụ" },
   { id: "lots", ic: "📦", label: "Lô" },
   { id: "packing", ic: "🏭", label: "Đóng gói" },
+  { id: "inputs", ic: "🧪", label: "Vật tư" },
+  { id: "parcels", ic: "🧩", label: "Thửa đất" },
+  { id: "philogs", ic: "🛡️", label: "Kiểm tra PHI" },
   { id: "users", ic: "👥", label: "Người dùng" },
   { id: "tenants", ic: "🏢", label: "Tenant" },
   { id: "settings", ic: "⚙️", label: "Cài đặt" },
@@ -250,7 +253,8 @@ function fab(label, onclick) {
   $("#view").appendChild(b);
 }
 function chipFor(status) {
-  const map = { ACTIVE: "", ALIVE: "", RUNNING: "sky", IN_STOCK: "", DRAFT: "grey", ENDED: "violet", SUSPENDED: "red" };
+  const map = { ACTIVE: "", ALIVE: "", RUNNING: "sky", IN_STOCK: "", DRAFT: "grey", ENDED: "violet", SUSPENDED: "red",
+    PASSED_SAFE: "", BLOCKED_VIOLATION_PHI: "red", CONDITIONAL_LAB_TEST_REQUIRED: "amber" };
   return `<span class="chip ${map[status] ?? "grey"}">${esc(status || "—")}</span>`;
 }
 async function ensure(kind, path) {
@@ -264,21 +268,16 @@ VIEWS.dashboard = async () => {
   const el = $("#view");
   el.innerHTML = skeleton(4);
   try {
-    const health = await api("/health").catch(() => state.health);
-    if (health) state.health = health;
-    // Each section loads independently: one failing list must not take
-    // the whole dashboard down with it.
-    const sectionNames = ["Vùng", "Cây đầu dòng", "Mùa vụ", "Lô thu hoạch"];
-    const settled = await Promise.allSettled([
-      ensure("zones", "/zones"), ensure("plants", "/mother-plants"),
-      ensure("plans", "/crop-plans"), ensure("lots", "/lots"),
-    ]);
-    const [zones, plants, plans, lots] = settled.map((r) => (r.status === "fulfilled" ? r.value : null));
-    const failed = settled.map((r, i) => (r.status === "rejected" ? sectionNames[i] : null)).filter(Boolean);
-    if (failed.length === 4) throw settled[0].reason;
-    const cnt = (a) => (a ? a.length : "—");
-    let audit = [];
-    try { audit = (await T("/audit")).items.slice(-5).reverse(); } catch { /* read-only tolerance */ }
+    // One summary call (audit T-021, pack P1): counts + recent audit +
+    // service info in a single request instead of health + 4 lists + audit.
+    const dash = await api("/dashboard");
+    const health = { env: dash.env, storage: dash.storage, version: dash.version };
+    state.health = health;
+    const failed = [];
+    const cnt = (n) => (typeof n === "number" ? n : "—");
+    const zones = dash.counts?.zones, plants = dash.counts?.mother_plants;
+    const plans = dash.counts?.crop_plans, lots = dash.counts?.lots;
+    const audit = dash.recent_audit || [];
     el.innerHTML = `
       <section class="hero">
         <h1>Xin chào, ${esc(store.actor || "bạn")} 👋</h1>
@@ -333,8 +332,26 @@ VIEWS.zones = async () => {
           ${z.season ? `<span>🗓️ ${esc(z.season)}</span>` : ""}
           ${z.water_source ? `<span>💧 ${esc(z.water_source)}</span>` : ""}
           ${z.address ? `<span>📍 ${esc(z.address)}</span>` : ""}
-        </div></div></div>`).join("")}</div>`
+        </div>
+        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-zone="${esc(z.code)}">✏️ Sửa</button></div>
+        </div></div>`).join("")}</div>`
       : emptyState("🗺️", "Chưa có vùng nào", "Bấm nút + để tạo vùng nguyên liệu đầu tiên."));
+    el.querySelectorAll("[data-edit-zone]").forEach((b) => b.onclick = () => {
+      const z = items.find((x) => x.code === b.dataset.editZone);
+      if (!z) return;
+      openSheet(`Sửa vùng ${z.code}`, [
+        { k: "name", label: "Tên vùng", def: z.name || "" },
+        { k: "area_ha", label: "Diện tích (ha)", type: "number", step: "0.01", def: z.area_ha ?? "" },
+        { k: "puc_code", label: "Mã số vùng trồng (PUC)", def: z.puc_code || "" },
+        { k: "puc_status", label: "Trạng thái mã số vùng trồng", def: z.puc_status || "" },
+        { k: "primary_species", label: "Cây trồng chính", def: z.primary_species || "" },
+        { k: "crop_group", label: "Nhóm cây", def: z.crop_group || "" },
+        { k: "season", label: "Mùa vụ", def: z.season || "" },
+        { k: "water_source", label: "Nguồn nước", def: z.water_source || "" },
+        { k: "address", label: "Địa chỉ", def: z.address || "" },
+        { k: "managing_entity", label: "Chủ thể quản lý", def: z.managing_entity || "" },
+      ], async (p) => { await T(`/zones/${encodeURIComponent(z.code)}`, { method: "PATCH", body: p }); invalidate("zones"); });
+    });
   } catch (err) { el.innerHTML = banner(err); }
   fab("Tạo vùng", async () => openSheet("Tạo vùng nguyên liệu", [
     { k: "code", label: "Mã vùng", required: true, placeholder: "vd: Z-01" },
@@ -368,8 +385,25 @@ VIEWS.plants = async () => {
           ${p.planting_year ? `<span>🌱 Trồng năm ${esc(p.planting_year)}</span>` : ""}
           ${p.valid_to ? `<span>📜 Công nhận đến ${fmtDate(p.valid_to)}</span>` : ""}
           ${p.owner_manager ? `<span>👤 ${esc(p.owner_manager)}</span>` : ""}
-        </div></div></div>`).join("")}</div>`
+        </div>
+        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-plant="${esc(p.code)}">✏️ Sửa</button></div>
+        </div></div>`).join("")}</div>`
       : emptyState("🌳", "Chưa có cây đầu dòng nào", "Bấm nút + để cấp mã cho cây/cụm cây đầu dòng."));
+    el.querySelectorAll("[data-edit-plant]").forEach((b) => b.onclick = async () => {
+      const pl = items.find((x) => x.code === b.dataset.editPlant);
+      if (!pl) return;
+      const zones = await ensure("zones", "/zones").catch(() => []);
+      openSheet(`Sửa cây ${pl.code}`, [
+        { k: "species", label: "Loài cây", def: pl.species || "" },
+        { k: "variety", label: "Giống", def: pl.variety || "" },
+        { k: "scientific_name", label: "Tên khoa học", def: pl.scientific_name || "" },
+        { k: "zone_code", label: "Thuộc vùng", type: "select", def: pl.zone_code || "",
+          options: [{ v: "", t: "— Không gắn vùng —" }, ...zones.map((z) => ({ v: z.code, t: `${z.code} · ${z.name || ""}` }))] },
+        { k: "planting_year", label: "Năm trồng", type: "number", def: pl.planting_year ?? "" },
+        { k: "origin", label: "Nguồn gốc", def: pl.origin || "" },
+        { k: "owner_manager", label: "Chủ sở hữu / người quản lý", def: pl.owner_manager || "" },
+      ], async (p) => { await T(`/mother-plants/${encodeURIComponent(pl.code)}`, { method: "PATCH", body: p }); invalidate("plants"); });
+    });
   } catch (err) { el.innerHTML = banner(err); }
   fab("Thêm cây đầu dòng", async () => {
     const zones = await ensure("zones", "/zones").catch(() => []);
@@ -437,13 +471,19 @@ VIEWS.plans = async () => {
           </div></div></div>`; }).join("")}</div>`
       : emptyState("📝", "Chưa có nhật ký nào", "Ghi lại tưới, bón, kiểm tra… để truy vết về sau.")}`);
     $("#addEvent").onclick = async () => {
-      const zones = await ensure("zones", "/zones").catch(() => []);
+      const [zones, inputs] = await Promise.all([
+        ensure("zones", "/zones").catch(() => []),
+        ensure("inputs", "/input-lots").catch(() => []),
+      ]);
       openSheet("Ghi nhật ký đồng ruộng", [
         { k: "event_type", label: "Loại sự kiện", type: "select", required: true, options: EVENT_TYPES },
         { k: "plan_code", label: "Kế hoạch mùa vụ", type: "select",
           options: [{ v: "", t: "— Không gắn kế hoạch —" }, ...plans.map((p) => ({ v: p.code, t: `${p.code} · ${p.name || p.crop_name || ""}` }))] },
         { k: "zone_code", label: "Vùng", type: "select",
           options: [{ v: "", t: "— Không gắn vùng —" }, ...zones.map((z) => ({ v: z.code, t: `${z.code} · ${z.name || ""}` }))] },
+        { k: "input_lot_code", label: "Lô vật tư đã dùng", type: "select",
+          options: [{ v: "", t: "— Không ghi vật tư —" }, ...inputs.map((i) => ({ v: i.code, t: `${i.code} · ${i.name || i.substance_code || ""}${i.phi_days != null ? ` · cách ly ${i.phi_days} ngày` : ""}` }))] },
+        { k: "phi_days", label: "Số ngày cách ly PHI (để trống = lấy theo lô vật tư)", type: "number", step: "1" },
         { k: "occurred_at", label: "Thời gian thực hiện", type: "datetime-local" },
         { k: "notes", label: "Ghi chú", type: "textarea", placeholder: "Mô tả công việc, vật tư đã dùng…" },
         { k: "device", label: "Thiết bị", placeholder: "vd: Máy bơm, Drone…" },
@@ -544,7 +584,8 @@ VIEWS.packing = async () => {
           ${p.facility_code ? `<span>🏢 ${esc(p.facility_code)}</span>` : ""}
           ${p.packed_at ? `<span>🗓️ ${esc(String(p.packed_at).slice(0, 10))}</span>` : ""}
         </div>
-        <div style="margin-top:8px"><button class="btn btn-primary btn-sm" data-issue="${esc(p.code)}">🔎 Cấp mã truy xuất</button></div>
+        <div style="margin-top:8px"><button class="btn btn-primary btn-sm" data-issue="${esc(p.code)}">🔎 Cấp mã truy xuất</button>
+        <button class="btn btn-ghost btn-sm" data-edit-packing="${esc(p.code)}">✏️ Sửa</button></div>
       </div></div>`).join("")}</div>`
         : emptyState("🏭", "Chưa có lô đóng gói nào", "Bấm nút + để tạo lô đóng gói từ các lô thu hoạch."))
       + `<div class="section-head" style="margin-top:18px"><h2 style="font-size:15.5px">🔎 Bản ghi truy xuất nguồn gốc</h2></div>`
@@ -557,9 +598,43 @@ VIEWS.packing = async () => {
           <span>${r.sync_status === "SYNCED_SUCCESS" ? "✅ Đã đồng bộ cổng quốc gia" : "⏳ Chờ đồng bộ cổng quốc gia"}</span>
           ${r.product_image_url ? "" : "<span>⚠️ Thiếu ảnh sản phẩm</span>"}
           ${r.data_retention_until ? `<span>🗄️ Lưu trữ tới ${fmtDate(r.data_retention_until)}</span>` : ""}
-        </div></div></div>`).join("")}</div>`
+          ${r.synced_at ? `<span>🔄 Đồng bộ lúc ${fmtTs(r.synced_at)}</span>` : ""}
+        </div>
+        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-cte="${esc(r.traceability_code || "")}">🧬 Xem công đoạn</button></div>
+        <div class="cte-box" hidden style="margin-top:8px"></div>
+        </div></div>`).join("")}</div>`
         : emptyState("🔎", "Chưa có bản ghi truy xuất nào", "Cấp mã truy xuất từ một lô đóng gói để sinh bản ghi.")));
     el.querySelectorAll("[data-issue]").forEach((b) => b.onclick = () => issueTraceCode(b.dataset.issue));
+    el.querySelectorAll("[data-edit-packing]").forEach((b) => b.onclick = () => {
+      const pk = plots.find((x) => x.code === b.dataset.editPacking);
+      if (!pk) return;
+      openSheet(`Sửa lô đóng gói ${pk.code}`, [
+        { k: "product_name", label: "Tên sản phẩm", def: pk.product_name || "" },
+        { k: "phc_code", label: "Mã số cơ sở đóng gói (PHC)", def: pk.phc_code || "" },
+        { k: "output_weight_kg", label: "Khối lượng thành phẩm (kg)", type: "number", step: "0.01", def: pk.output_weight_kg ?? "" },
+        { k: "yield_norm_ratio", label: "Định mức thu hồi (0–1)", type: "number", step: "0.01", def: pk.yield_norm_ratio ?? "" },
+        { k: "storage_type", label: "Hình thức bảo quản", type: "select", def: pk.storage_type || "FRESH_AMBIENT", options: [
+          { v: "FRESH_AMBIENT", t: "Tươi, nhiệt độ thường" }, { v: "CHILLED_COOL", t: "Mát lạnh" },
+          { v: "FROZEN_PROCESSED", t: "Đông lạnh / chế biến" }] },
+        { k: "expiry_date", label: "Hạn dùng", type: "date", def: pk.expiry_date ? String(pk.expiry_date).slice(0, 10) : "" },
+      ], async (p) => { await T(`/packing-lots/${encodeURIComponent(pk.code)}`, { method: "PATCH", body: p }); invalidate("packing"); });
+    });
+    el.querySelectorAll("[data-cte]").forEach((b) => b.onclick = async () => {
+      const box = b.closest(".card").querySelector(".cte-box");
+      if (!box.hidden) { box.hidden = true; return; }
+      if (!box.dataset.loaded) {
+        box.innerHTML = `<div class="sub">Đang tải công đoạn…</div>`; box.hidden = false;
+        try {
+          const stages = (await ensure("cte", "/cte-stages"))
+            .filter((x) => x.traceability_code === b.dataset.cte)
+            .sort((a, b2) => (a.stage_no || 0) - (b2.stage_no || 0));
+          box.innerHTML = stages.length
+            ? stages.map((x) => `<div class="sub" style="margin:3px 0">🧬 <b>${esc(x.stage_no ?? "")}. ${esc(x.stage_name || "")}</b>${x.location_trace_code ? ` · 📍 ${esc(x.location_trace_code)}` : ""}${x.event_time ? ` · 🕒 ${fmtTs(x.event_time)}` : ""}</div>`).join("")
+            : `<div class="sub">Chưa có công đoạn nào được ghi cho mã này.</div>`;
+          box.dataset.loaded = "1";
+        } catch (err) { box.innerHTML = `<div class="sub">⚠️ ${esc(err.message || err)}</div>`; }
+      } else box.hidden = false;
+    });
   } catch (err) { el.innerHTML = banner(err); }
   fab("Tạo lô đóng gói", async () => {
     const actors = await ensure("actors", "/actors").catch(() => []);
@@ -606,9 +681,193 @@ async function issueTraceCode(packingCode) {
       gtin_code: p.gtin_code, package_spec: p.package_spec, units_count: p.units_count } });
     await T("/traceability-records", { method: "POST", body: {
       packaging_unit_code: sku, product_image_url: p.product_image_url } });
-    invalidate("packing", "trecords");
+    invalidate("packing", "trecords", "cte");
   });
 }
+
+/* ---------------- input lots (vat tu dau vao) ---------------- */
+const INPUT_CATEGORIES = [
+  { v: "PESTICIDE", t: "Thuốc bảo vệ thực vật" }, { v: "FERTILIZER", t: "Phân bón" },
+  { v: "SEED", t: "Giống / hạt giống" }, { v: "FEED", t: "Thức ăn chăn nuôi/thủy sản" },
+  { v: "OTHER", t: "Vật tư khác" },
+];
+VIEWS.inputs = async () => {
+  const el = $("#view");
+  el.innerHTML = `<div class="section-head"><h2>🧪 Vật tư đầu vào</h2>
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(3);
+  $("#reload").onclick = () => { invalidate("inputs"); navigate("inputs", true); };
+  try {
+    const items = await ensure("inputs", "/input-lots");
+    el.querySelectorAll(".skel").forEach((x) => x.remove());
+    el.insertAdjacentHTML("beforeend", items.length ? `<div class="list">${items.map((i) => `
+      <div class="card"><div class="thumb">🧪</div><div class="body">
+        <div class="title">${esc(i.name || i.code)}</div>
+        <div class="sub">Mã lô vật tư: <b>${esc(i.code)}</b>${i.substance_code ? ` · Hoạt chất: ${esc(i.substance_code)}` : ""}</div>
+        <div class="meta">
+          ${i.phi_days != null ? `<span>🛡️ Cách ly ${fmtNum(i.phi_days)} ngày</span>` : ""}
+          ${i.batch_no ? `<span>🔖 Lô NSX ${esc(i.batch_no)}</span>` : ""}
+          ${i.quantity != null ? `<span>⚖️ ${fmtNum(i.quantity)} ${esc(i.unit || "")}</span>` : ""}
+          ${i.supplier_code ? `<span>🏢 ${esc(i.supplier_code)}</span>` : ""}
+          ${i.expiry_date ? `<span>⏳ HSD ${fmtDate(i.expiry_date)}</span>` : ""}
+        </div>
+        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-input="${esc(i.code)}">✏️ Sửa</button></div>
+      </div></div>`).join("")}</div>`
+      : emptyState("🧪", "Chưa có lô vật tư nào", "Bấm nút + để nhập lô thuốc/phân/giống đầu tiên — nhật ký đồng ruộng sẽ chọn được từ đây."));
+    el.querySelectorAll("[data-edit-input]").forEach((b) => b.onclick = async () => {
+      const it = items.find((x) => x.code === b.dataset.editInput);
+      if (!it) return;
+      const actors = await ensure("actors", "/actors").catch(() => []);
+      openSheet(`Sửa lô vật tư ${it.code}`, [
+        { k: "name", label: "Tên vật tư", def: it.name || "" },
+        { k: "category", label: "Nhóm vật tư", type: "select", def: it.category || "OTHER", options: INPUT_CATEGORIES },
+        { k: "substance_code", label: "Hoạt chất / thành phần", def: it.substance_code || "" },
+        { k: "vn_registration_number", label: "Số đăng ký lưu hành VN", def: it.vn_registration_number || "" },
+        { k: "batch_no", label: "Số lô nhà sản xuất", def: it.batch_no || "" },
+        { k: "supplier_code", label: "Nhà cung cấp", type: "select", def: it.supplier_code || "",
+          options: [{ v: "", t: "— Không ghi —" }, ...actors.map((a) => ({ v: a.code, t: `${a.code} · ${a.name || ""}` }))] },
+        { k: "quantity", label: "Số lượng nhập", type: "number", step: "0.01", def: it.quantity ?? "" },
+        { k: "unit", label: "Đơn vị", def: it.unit || "" },
+        { k: "phi_days", label: "Số ngày cách ly PHI (theo nhãn)", type: "number", step: "1", def: it.phi_days ?? "" },
+        { k: "expiry_date", label: "Hạn dùng", type: "date", def: it.expiry_date ? String(it.expiry_date).slice(0, 10) : "" },
+      ], async (p) => { await T(`/input-lots/${encodeURIComponent(it.code)}`, { method: "PATCH", body: p }); invalidate("inputs"); });
+    });
+  } catch (err) { el.innerHTML = banner(err); }
+  fab("Nhập lô vật tư", async () => {
+    const actors = await ensure("actors", "/actors").catch(() => []);
+    openSheet("Nhập lô vật tư đầu vào", [
+      { k: "code", label: "Mã lô vật tư", required: true, placeholder: "vd: VT-01" },
+      { k: "name", label: "Tên vật tư", placeholder: "vd: Thuốc trừ sâu X" },
+      { k: "category", label: "Nhóm vật tư", type: "select", options: INPUT_CATEGORIES },
+      { k: "substance_code", label: "Hoạt chất / thành phần", placeholder: "vd: Abamectin" },
+      { k: "vn_registration_number", label: "Số đăng ký lưu hành VN" },
+      { k: "batch_no", label: "Số lô nhà sản xuất" },
+      { k: "supplier_code", label: "Nhà cung cấp", type: "select",
+        options: [{ v: "", t: "— Không ghi —" }, ...actors.map((a) => ({ v: a.code, t: `${a.code} · ${a.name || ""}` }))] },
+      { k: "purchase_date", label: "Ngày nhập", type: "date" },
+      { k: "quantity", label: "Số lượng nhập", type: "number", step: "0.01" },
+      { k: "unit", label: "Đơn vị", placeholder: "kg / lít / bao…" },
+      { k: "phi_days", label: "Số ngày cách ly PHI (theo nhãn)", type: "number", step: "1" },
+      { k: "expiry_date", label: "Hạn dùng", type: "date" },
+    ], async (p) => { await T("/input-lots", { method: "POST", body: p }); invalidate("inputs"); });
+  });
+};
+
+/* ---------------- spatial units & zone links ---------------- */
+const UNIT_TYPES = [
+  { v: "LAND_PARCEL", t: "Thửa đất" }, { v: "POND", t: "Ao nuôi" },
+  { v: "FOREST_PLOT", t: "Lô rừng" }, { v: "GREENHOUSE", t: "Nhà kính / nhà lưới" },
+  { v: "OTHER", t: "Khác" },
+];
+VIEWS.parcels = async () => {
+  const el = $("#view");
+  el.innerHTML = `<div class="section-head"><h2>🧩 Thửa đất & liên kết vùng</h2>
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(3);
+  $("#reload").onclick = () => { invalidate("parcels", "zlinks"); navigate("parcels", true); };
+  try {
+    const [items, links] = await Promise.all([
+      ensure("parcels", "/spatial-units"), ensure("zlinks", "/zone-parcel-links")]);
+    el.querySelectorAll(".skel").forEach((x) => x.remove());
+    el.insertAdjacentHTML("beforeend",
+      (items.length ? `<div class="list">${items.map((u) => `
+      <div class="card"><div class="thumb sky">🧩</div><div class="body">
+        <div class="title">${esc(u.name || u.national_land_parcel_id || u.code)}</div>
+        <div class="sub">Mã thửa: <b>${esc(u.code)}</b>${u.unit_type ? ` · ${esc(u.unit_type)}` : ""}</div>
+        <div class="meta">
+          ${u.area_m2 != null ? `<span>📐 ${fmtNum(u.area_m2)} m²</span>` : ""}
+          ${u.parcel_number ? `<span>🔢 Thửa số ${esc(u.parcel_number)}</span>` : ""}
+          ${u.map_sheet_number ? `<span>🗺️ Tờ bản đồ ${esc(u.map_sheet_number)}</span>` : ""}
+          ${u.operator_code ? `<span>👤 ${esc(u.operator_code)}</span>` : ""}
+        </div>
+        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-parcel="${esc(u.code)}">✏️ Sửa</button></div>
+      </div></div>`).join("")}</div>`
+        : emptyState("🧩", "Chưa có thửa đất nào", "Bấm nút + để khai thửa/ao/lô rừng đầu tiên."))
+      + `<div class="section-head" style="margin-top:18px"><h2 style="font-size:15.5px">🔗 Thửa thuộc vùng</h2>
+           <button class="btn btn-ghost btn-sm" id="addLink">+ Liên kết</button></div>`
+      + (links.length ? `<div class="list">${links.map((l) => `
+      <div class="card"><div class="thumb">🔗</div><div class="body">
+        <div class="title">${esc(l.zone_code || "")} ↔ ${esc(l.parcel_code || "")} ${chipFor(l.membership_status)}</div>
+        <div class="meta">
+          ${l.registered_area_m2 != null ? `<span>📐 Đăng ký ${fmtNum(l.registered_area_m2)} m²</span>` : ""}
+          ${l.joined_date ? `<span>🗓️ Từ ${fmtDate(l.joined_date)}</span>` : ""}
+        </div></div></div>`).join("")}</div>`
+        : emptyState("🔗", "Chưa có liên kết nào", "Liên kết thửa vào vùng để vùng trồng gồm đúng các thửa thành viên.")));
+    el.querySelectorAll("[data-edit-parcel]").forEach((b) => b.onclick = async () => {
+      const u = items.find((x) => x.code === b.dataset.editParcel);
+      if (!u) return;
+      const actors = await ensure("actors", "/actors").catch(() => []);
+      openSheet(`Sửa thửa ${u.code}`, [
+        { k: "name", label: "Tên thửa", def: u.name || "" },
+        { k: "unit_type", label: "Loại đơn vị", type: "select", def: u.unit_type || "LAND_PARCEL", options: UNIT_TYPES },
+        { k: "operator_code", label: "Người/hộ vận hành", type: "select", def: u.operator_code || "",
+          options: [{ v: "", t: "— Không ghi —" }, ...actors.map((a) => ({ v: a.code, t: `${a.code} · ${a.name || ""}` }))] },
+        { k: "national_land_parcel_id", label: "Mã định danh thửa đất quốc gia", def: u.national_land_parcel_id || "" },
+        { k: "map_sheet_number", label: "Số tờ bản đồ", def: u.map_sheet_number || "" },
+        { k: "parcel_number", label: "Số thửa", def: u.parcel_number || "" },
+        { k: "area_m2", label: "Diện tích (m²)", type: "number", step: "0.01", def: u.area_m2 ?? "" },
+        { k: "land_tenure_doc_type", label: "Loại giấy tờ đất", def: u.land_tenure_doc_type || "" },
+        { k: "land_cert_serial", label: "Số giấy chứng nhận", def: u.land_cert_serial || "" },
+        { k: "land_legal_owner_name", label: "Chủ đất theo giấy tờ", def: u.land_legal_owner_name || "" },
+      ], async (p) => { await T(`/spatial-units/${encodeURIComponent(u.code)}`, { method: "PATCH", body: p }); invalidate("parcels"); });
+    });
+    $("#addLink").onclick = async () => {
+      const [zones, parcels] = await Promise.all([
+        ensure("zones", "/zones").catch(() => []),
+        ensure("parcels", "/spatial-units").catch(() => []),
+      ]);
+      openSheet("Liên kết thửa vào vùng", [
+        { k: "zone_code", label: "Vùng", type: "select", required: true,
+          options: [{ v: "", t: "— Chọn vùng —" }, ...zones.map((z) => ({ v: z.code, t: `${z.code} · ${z.name || ""}` }))] },
+        { k: "parcel_code", label: "Thửa đất", type: "select", required: true,
+          options: [{ v: "", t: "— Chọn thửa —" }, ...parcels.map((u) => ({ v: u.code, t: `${u.code} · ${u.name || u.national_land_parcel_id || ""}` }))] },
+        { k: "registered_area_m2", label: "Diện tích đăng ký trong vùng (m²)", type: "number", step: "0.01" },
+        { k: "joined_date", label: "Ngày tham gia vùng", type: "date" },
+      ], async (p) => {
+        if (!p.zone_code || !p.parcel_code) throw new Error("Hãy chọn cả vùng và thửa đất.");
+        await T("/zone-parcel-links", { method: "POST", body: p }); invalidate("zlinks");
+      });
+    };
+  } catch (err) { el.innerHTML = banner(err); }
+  fab("Khai thửa đất", async () => {
+    const actors = await ensure("actors", "/actors").catch(() => []);
+    openSheet("Khai thửa / ao / lô rừng", [
+      { k: "code", label: "Mã thửa", required: true, placeholder: "vd: TH-01" },
+      { k: "name", label: "Tên thửa", placeholder: "vd: Thửa ruộng đầu kênh" },
+      { k: "unit_type", label: "Loại đơn vị", type: "select", options: UNIT_TYPES },
+      { k: "operator_code", label: "Người/hộ vận hành", type: "select",
+        options: [{ v: "", t: "— Không ghi —" }, ...actors.map((a) => ({ v: a.code, t: `${a.code} · ${a.name || ""}` }))] },
+      { k: "national_land_parcel_id", label: "Mã định danh thửa đất quốc gia" },
+      { k: "map_sheet_number", label: "Số tờ bản đồ" },
+      { k: "parcel_number", label: "Số thửa" },
+      { k: "area_m2", label: "Diện tích (m²)", type: "number", step: "0.01" },
+      { k: "land_tenure_doc_type", label: "Loại giấy tờ đất", placeholder: "vd: GCN QSDĐ" },
+      { k: "land_cert_serial", label: "Số giấy chứng nhận" },
+      { k: "land_legal_owner_name", label: "Chủ đất theo giấy tờ" },
+    ], async (p) => { await T("/spatial-units", { method: "POST", body: p }); invalidate("parcels"); });
+  });
+};
+
+/* ---------------- PHI validation log ---------------- */
+VIEWS.philogs = async () => {
+  const el = $("#view");
+  el.innerHTML = `<div class="section-head"><h2>🛡️ Kiểm tra PHI trước thu hoạch</h2>
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(3);
+  $("#reload").onclick = () => { invalidate("phi"); navigate("philogs", true); };
+  try {
+    const items = await ensure("phi", "/phi-validations");
+    el.querySelectorAll(".skel").forEach((x) => x.remove());
+    el.insertAdjacentHTML("beforeend", items.length ? `<div class="list">${items.map((v) => `
+      <div class="card"><div class="thumb ${v.outcome === "BLOCKED_VIOLATION_PHI" ? "red" : "sky"}">🛡️</div><div class="body">
+        <div class="title">Lô ${esc(v.lot_code || "—")} ${chipFor(v.outcome)}</div>
+        <div class="sub">Kế hoạch: <b>${esc(v.plan_code || "—")}</b></div>
+        <div class="meta">
+          ${v.max_safe_harvest_date ? `<span>📅 An toàn từ ${fmtDate(v.max_safe_harvest_date)}</span>` : "<span>📅 Không có lần xử lý nào còn hạn cách ly</span>"}
+          ${v.actual_harvest_date ? `<span>🧺 Thu hoạch ${fmtDate(v.actual_harvest_date)}</span>` : ""}
+          ${v.last_treatment_ref ? `<span>🧪 Lần xử lý quyết định #${esc(v.last_treatment_ref)}</span>` : ""}
+          <span>🕒 ${fmtTs(v.created_at)}</span>
+        </div></div></div>`).join("")}</div>`
+      : emptyState("🛡️", "Chưa có lượt kiểm tra nào", "Mỗi lần tạo lô thu hoạch, hệ thống tự kiểm tra thời gian cách ly và ghi lại tại đây."));
+  } catch (err) { el.innerHTML = banner(err); }
+};
 
 /* ---------------- users & audit ---------------- */
 const ROLE_VI = { TENANT_ADMIN: "Quản trị tenant", OPERATOR: "Vận hành", VIEWER: "Chỉ xem" };
@@ -708,6 +967,12 @@ VIEWS.settings = () => {
         <div class="body"><div class="title">Người dùng & audit</div><div class="sub">Thành viên trong tenant và nhật ký hệ thống</div></div></button>
       <button class="card" onclick="navigate('packing')"><div class="thumb amber">🏭</div>
         <div class="body"><div class="title">Đóng gói & truy xuất</div><div class="sub">Lô đóng gói PHC, cấp mã truy xuất nguồn gốc quốc gia</div></div></button>
+      <button class="card" onclick="navigate('inputs')"><div class="thumb">🧪</div>
+        <div class="body"><div class="title">Vật tư đầu vào</div><div class="sub">Lô thuốc/phân/giống và số ngày cách ly PHI</div></div></button>
+      <button class="card" onclick="navigate('parcels')"><div class="thumb sky">🧩</div>
+        <div class="body"><div class="title">Thửa đất & liên kết vùng</div><div class="sub">Thửa/ao/lô rừng thuộc vùng nguyên liệu</div></div></button>
+      <button class="card" onclick="navigate('philogs')"><div class="thumb violet">🛡️</div>
+        <div class="body"><div class="title">Kiểm tra PHI</div><div class="sub">Lịch sử chặn/cho thu hoạch theo thời gian cách ly</div></div></button>
     </div>`;
   $("#settingsForm").addEventListener("submit", (e) => {
     e.preventDefault();

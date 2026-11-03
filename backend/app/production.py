@@ -18,9 +18,10 @@ the caller's tenant. Field definitions: docs/DATA_MODEL.md.
 """
 from datetime import date, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 
+from .config import settings
 from .deps import require_role
 from .store import CODED_KINDS, RefUnknown, User, store
 from .tenancy import require_tenant
@@ -223,16 +224,23 @@ async def _prepare_lot(tenant: str, fields: dict) -> None:
     plan_code = fields.get("plan_code")
     if plan_code and harvest is not None:
         events = await store.list_records(tenant, "field_events")
-        safe_dates = [e["safe_harvest_date"] for e in events
-                      if e.get("plan_code") == plan_code
-                      and e.get("safe_harvest_date")]
-        max_safe = max(safe_dates) if safe_dates else None
+        dated = [(e["safe_harvest_date"], e) for e in events
+                 if e.get("plan_code") == plan_code
+                 and e.get("safe_harvest_date")]
+        max_safe = max((d for d, _ in dated), default=None)
+        # Bang 24 (LOG_PHI_VALIDATION): keep a reference to the treatment
+        # whose PHI ends last — the one that set the safe date.
+        last_ref = None
+        if max_safe is not None:
+            last_event = max(dated, key=lambda de: de[0])[1]
+            last_ref = str(last_event.get("id"))
         blocked = max_safe is not None and fields["harvest_date"] < max_safe
         await store.create_record(tenant, "phi_validations", {
             "lot_code": fields.get("code"), "plan_code": plan_code,
             "max_safe_harvest_date": max_safe,
             "actual_harvest_date": fields["harvest_date"],
             "outcome": "BLOCKED_VIOLATION_PHI" if blocked else "PASSED_SAFE",
+            "last_treatment_ref": last_ref,
         })
         if blocked:
             raise HTTPException(
@@ -508,6 +516,31 @@ async def create_zone(body: RecordIn, tenant: str = Depends(require_tenant),
     return await _create(tenant, actor, "zones", "ZON", body)
 
 
+DASHBOARD_KINDS = ("zones", "mother_plants", "crop_plans", "field_events",
+                   "lots", "actors", "input_lots", "packing_lots",
+                   "traceability_records")
+
+
+@router.get("/dashboard")
+async def dashboard(request: Request, tenant: str = Depends(require_tenant)) -> dict:
+    """One-call summary for the UI home screen (audit T-021, pack P1):
+    per-kind counts plus the latest audit entries, replacing the previous
+    fan-out of one health call + one full list per stat card."""
+    counts = {}
+    for kind in DASHBOARD_KINDS:
+        counts[kind] = await store.count_records(tenant, kind)
+    counts["users"] = await store.tenant_user_count(tenant)
+    audit = await store.audit_for_tenant(tenant)
+    env_name = settings.app_env
+    scope_env = request.scope.get("env")
+    if scope_env is not None and getattr(scope_env, "APP_ENV", None):
+        env_name = scope_env.APP_ENV
+    return {"tenant": tenant, "counts": counts,
+            "recent_audit": list(reversed(audit[-5:])),
+            "storage": getattr(store, "kind", "unknown"),
+            "env": env_name, "version": request.app.version}
+
+
 @router.get("/zones")
 async def list_zones(tenant: str = Depends(require_tenant)) -> dict:
     return await _list(tenant, "zones")
@@ -711,3 +744,89 @@ async def create_cte_stage(body: RecordIn, tenant: str = Depends(require_tenant)
 @router.get("/cte-stages")
 async def list_cte_stages(tenant: str = Depends(require_tenant)) -> dict:
     return await _list(tenant, "cte_stages")
+
+
+# ---- Updates (T-023) -------------------------------------------------------
+# Master-data kinds can be corrected after creation; evidence-like kinds
+# (field events, harvest lots, packing links, traceability records, CTE
+# stages, PHI validations) stay append-only, and creation gates are NOT
+# re-run on update — dependent gates read current values when they run
+# (e.g. the packing mass-balance gate at record issuance).
+
+async def _update(tenant: str, actor: User, kind: str, prefix: str,
+                  code: str, body: RecordIn) -> dict:
+    fields = body.model_dump(mode="json", exclude_none=True)
+    for key in RESERVED:
+        fields.pop(key, None)
+    if "code" in fields and fields["code"] != code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "CODE_IMMUTABLE",
+                    "message": "code cannot be changed after creation"})
+    fields.pop("code", None)
+    try:
+        record = await store.update_record(tenant, kind, code, fields)
+    except RefUnknown as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "REF_UNKNOWN",
+                    "message": f"Reference does not exist in this tenant: {exc.field_name}"},
+        ) from exc
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail={"code": "NOT_FOUND",
+                                    "message": "Object not found"})
+    await store.record_audit(scope="tenant", tenant_id=tenant,
+                             actor=actor.username,
+                             action=f"{prefix}_UPDATE",
+                             target=code, outcome="OK")
+    return record
+
+
+@router.patch("/zones/{code}")
+async def update_zone(code: str, body: RecordIn,
+                      tenant: str = Depends(require_tenant),
+                      actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update(tenant, actor, "zones", "ZON", code, body)
+
+
+@router.patch("/mother-plants/{code}")
+async def update_mother_plant(code: str, body: RecordIn,
+                              tenant: str = Depends(require_tenant),
+                              actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update(tenant, actor, "mother_plants", "MPL", code, body)
+
+
+@router.patch("/actors/{code}")
+async def update_actor(code: str, body: RecordIn,
+                       tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update(tenant, actor, "actors", "ACT", code, body)
+
+
+@router.patch("/spatial-units/{code}")
+async def update_spatial_unit(code: str, body: RecordIn,
+                              tenant: str = Depends(require_tenant),
+                              actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update(tenant, actor, "spatial_units", "SPU", code, body)
+
+
+@router.patch("/input-lots/{code}")
+async def update_input_lot(code: str, body: RecordIn,
+                           tenant: str = Depends(require_tenant),
+                           actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update(tenant, actor, "input_lots", "INP", code, body)
+
+
+@router.patch("/packing-lots/{code}")
+async def update_packing_lot(code: str, body: RecordIn,
+                             tenant: str = Depends(require_tenant),
+                             actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update(tenant, actor, "packing_lots", "PKL", code, body)
+
+
+@router.patch("/packaging-units/{code}")
+async def update_packaging_unit(code: str, body: RecordIn,
+                                tenant: str = Depends(require_tenant),
+                                actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update(tenant, actor, "packaging_units", "PKU", code, body)

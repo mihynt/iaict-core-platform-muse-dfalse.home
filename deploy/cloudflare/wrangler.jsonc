@@ -8,13 +8,15 @@
   "vars": {
     "APP_ENV": "beta"
   },
-  // Web UI: static files in ./public, served through the Worker so the
-  // app can proxy them behind the API origin (see the catch-all route in
-  // backend/app/main.py). run_worker_first keeps API routes authoritative.
+  // Web UI (audit T-021, pack P1): ./build.sh assembles ./public_dist with
+  // content-stamped asset names + immutable cache headers. The Worker runs
+  // FIRST only for API/service routes; every other path (the SPA shell and
+  // its JS/CSS) is served directly by the assets binding at the edge, so a
+  // page load no longer pays a Python Worker invocation per static file.
   "assets": {
-    "directory": "./public",
+    "directory": "./public_dist",
     "binding": "ASSETS",
-    "run_worker_first": true
+    "run_worker_first": ["/api/*", "/health", "/docs", "/openapi.json"]
   },
   // Primary store since T-014 / DEC-008 (2026-11-03): D1 database
   // "iaict-core". The store layer (app/d1store.py) binds env.DB from the

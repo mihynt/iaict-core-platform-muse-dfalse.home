@@ -214,6 +214,28 @@ class InMemoryStore:
     async def get_record_by_code(self, tenant: str, kind: str, code: str) -> dict | None:
         return self._bucket(kind, tenant)["by_code"].get(code)
 
+    async def update_record(self, tenant: str, kind: str, code: str,
+                            fields: dict) -> dict | None:
+        record = self._bucket(kind, tenant)["by_code"].get(code)
+        if record is None:
+            return None
+        for ref_field, ref_kind in RECORD_REFS[kind].items():
+            ref_code = fields.get(ref_field)
+            if ref_code is not None and \
+                    self._bucket(ref_kind, tenant)["by_code"].get(ref_code) is None:
+                raise RefUnknown(ref_field)
+        for key, value in fields.items():
+            if key != "code":
+                record[key] = value
+        record["updated_at"] = utcnow()
+        return record
+
+    async def count_records(self, tenant: str, kind: str) -> int:
+        bucket = self._bucket(kind, tenant)
+        if kind in CODED_KINDS:
+            return len(bucket["by_code"])
+        return len(bucket["events"])
+
 
 class LazyWorkerStore:
     """Defers backend creation until the first request supplies the Workers
@@ -301,8 +323,14 @@ class LazyWorkerStore:
     async def list_records(self, tenant, kind):
         return await self._d().list_records(tenant, kind)
 
+    async def count_records(self, tenant, kind):
+        return await self._d().count_records(tenant, kind)
+
     async def get_record_by_code(self, tenant, kind, code):
         return await self._d().get_record_by_code(tenant, kind, code)
+
+    async def update_record(self, tenant, kind, code, fields):
+        return await self._d().update_record(tenant, kind, code, fields)
 
 
 class LazyD1Store:
@@ -392,8 +420,14 @@ class LazyD1Store:
     async def list_records(self, tenant, kind):
         return await self._d().list_records(tenant, kind)
 
+    async def count_records(self, tenant, kind):
+        return await self._d().count_records(tenant, kind)
+
     async def get_record_by_code(self, tenant, kind, code):
         return await self._d().get_record_by_code(tenant, kind, code)
+
+    async def update_record(self, tenant, kind, code, fields):
+        return await self._d().update_record(tenant, kind, code, fields)
 
 
 def make_store():

@@ -71,7 +71,7 @@ SPECS: dict[str, tuple[str, dict[str, str]]] = {
     "phi_validations": ("phi_validations", {
         "lot_code": "text", "plan_code": "text",
         "max_safe_harvest_date": "date", "actual_harvest_date": "date",
-        "outcome": "text",
+        "outcome": "text", "last_treatment_ref": "text",
     }),
     "packing_lots": ("packing_lots", {
         "phc_code": "text", "product_name": "text", "output_weight_kg": "num",
@@ -91,7 +91,7 @@ SPECS: dict[str, tuple[str, dict[str, str]]] = {
         "business_unit_address": "text", "production_event_time": "ts",
         "brand_trademark_serial": "text", "expiration_date": "date",
         "data_carrier_type": "text", "data_retention_until": "date",
-        "sync_status": "text",
+        "sync_status": "text", "synced_at": "ts",
     }),
     "cte_stages": ("cte_stages", {
         "traceability_code": "text", "stage_no": "int", "stage_name": "text",

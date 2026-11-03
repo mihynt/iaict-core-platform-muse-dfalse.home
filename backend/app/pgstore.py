@@ -201,6 +201,49 @@ class PgStore:
             cur.execute(f"SELECT * FROM {table} WHERE id = %s", (new_id,))
             return self._row_to_record(cur.fetchone(), kind)
 
+    async def update_record(self, tenant: str, kind: str, code: str,
+                            fields: dict) -> dict | None:
+        table, columns = SPECS[kind]
+        refs = RECORD_REFS[kind]
+        with self._lock, self._conn.cursor() as cur:
+            cur.execute(
+                f"SELECT id FROM {table} WHERE tenant_id = %s AND code = %s",
+                (tenant, code))
+            if cur.fetchone() is None:
+                return None
+            values: dict[str, object] = {}
+            for ref_field, ref_kind in refs.items():
+                ref_code = fields.get(ref_field)
+                if ref_code is not None:
+                    ref_id = self._resolve_ref(cur, tenant, ref_kind, ref_code)
+                    if ref_id is None:
+                        raise RefUnknown(ref_field)
+                    values[REF_ID_COLUMN[ref_field]] = ref_id
+                    values[ref_field] = ref_code
+            for col, ckind in columns.items():
+                if col in fields:
+                    values[col] = Jsonb(fields[col]) if ckind == "json" \
+                        else fields[col]
+            known = set(columns) | set(refs)
+            extra = {k: v for k, v in fields.items()
+                     if k not in known and k != "code"}
+            sets = [f"{k} = %s" for k in values]
+            params: list = list(values.values())
+            if extra:
+                sets.append("data = data || %s")
+                params.append(Jsonb(extra))
+            if kind != "field_events":
+                sets.append("updated_at = now()")
+            if sets:
+                cur.execute(
+                    f"UPDATE {table} SET {', '.join(sets)}"
+                    " WHERE tenant_id = %s AND code = %s",
+                    params + [tenant, code])
+            cur.execute(
+                f"SELECT * FROM {table} WHERE tenant_id = %s AND code = %s",
+                (tenant, code))
+            return self._row_to_record(cur.fetchone(), kind)
+
     def _row_to_record(self, row: dict, kind: str) -> dict:
         _, columns = SPECS[kind]
         record: dict = {"id": row["id"], "tenant_id": row["tenant_id"]}
@@ -225,6 +268,13 @@ class PgStore:
             cur.execute(f"SELECT * FROM {table} WHERE tenant_id = %s ORDER BY {order}",
                         (tenant,))
             return [self._row_to_record(r, kind) for r in cur.fetchall()]
+
+    async def count_records(self, tenant: str, kind: str) -> int:
+        table, _ = SPECS[kind]
+        with self._lock, self._conn.cursor() as cur:
+            cur.execute(f"SELECT count(*) AS n FROM {table} WHERE tenant_id = %s",
+                        (tenant,))
+            return int(cur.fetchone()["n"])
 
     async def get_record_by_code(self, tenant: str, kind: str, code: str) -> dict | None:
         table, _ = SPECS[kind]

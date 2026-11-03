@@ -242,6 +242,7 @@ CREATE TABLE IF NOT EXISTS phi_validations (
     max_safe_harvest_date DATE,
     actual_harvest_date   DATE,
     outcome       TEXT,  -- PASSED_SAFE | BLOCKED_VIOLATION_PHI
+    last_treatment_ref TEXT,
     data          JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -444,6 +445,7 @@ CREATE TABLE IF NOT EXISTS traceability_records (
     data_carrier_type TEXT,  -- QR_CODE | GS1_128_BARCODE | DATAMATRIX | RFID_TAG | NFC_CHIP
     data_retention_until DATE,
     sync_status   TEXT NOT NULL DEFAULT 'PENDING_SYNC',
+    synced_at TIMESTAMPTZ,
     data          JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),

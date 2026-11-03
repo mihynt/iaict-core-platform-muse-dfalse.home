@@ -1,5 +1,5 @@
 {
-  "revision": 28,
+  "revision": 30,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -28,8 +28,8 @@
       }
     ],
     "current": {
-      "active_task": "T-005",
-      "last_completed_step": "Full-project audit completed (T-021 TECH_DONE): data layer concept-complete for the implemented scope with a short list of genuine field gaps; backend sound (47 tests green) but create/read-only with no pagination; 5 API resources lack UI; the slow-load root cause is architectural - every request, static assets included, runs the Python Worker (max-age=0 revalidation), and the dashboard fans out to 7 invocations. Prioritized fix plan recorded; awaiting the Owner's choice of work pack. Beta unchanged (Worker 75f69cfb).",
+      "active_task": "T-023",
+      "last_completed_step": "Functional pack (T-023) TECH_DONE locally: PATCH master-data updates, synced_at + last-treatment fields, 3 new UI views + input-lot picker + CTE toggle. Both packs await deployment (token) and GitHub push (rev-29 push was declined; not retried).",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -178,6 +178,12 @@
         "name": "Traceability data standard - phase 2 (packing chain PHC/SKU, national traceability records, CTE stages)",
         "status": "TECH_DONE",
         "evidence": "Live on the beta 2026-11-03 (Worker 146e24f2, D1 upgraded in place, browser-verified). See T-016 evidence."
+      },
+      {
+        "id": "F-008",
+        "name": "Performance pack P1 + functional pack (audit T-021 follow-up)",
+        "status": "TECH_DONE",
+        "notes": "Both packs (T-022 performance + T-023 functional) complete locally at STATE rev 30; deployment to beta pending Owner token + push approval."
       }
     ],
     "flows": [],
@@ -379,9 +385,23 @@
         "status": "TECH_DONE",
         "evidence": "Minutes: bien-ban-ra-soat-toan-du-an-03-11-2026.md (kept with the audit files, outside the public repo). Data: 16/33 dossier tables implemented + 2/3 view rules; genuine field gaps at concept level: traceability_records lacks synced_at (TX-12 needs it), phi_validations lacks the last-treatment link (Bang 24), actors PII encryption = Q-TX-03, audit lacks old/new snapshots + IP/device, users lack account status/actor link. Backend: suite re-run 47 passed + 2 skipped (memory mode), no TODO/FIXME; NO update/delete endpoints for master data; no list pagination. UI: 5 API resources have no UI (spatial_units, zone_parcel_links, input_lots, phi_validations, cte_stages). Performance (measured live 2026-11-03): payloads tiny (156-1360 B); latency is TTFB-bound - run_worker_first routes even static assets through the Python Worker and app.js is served max-age=0/must-revalidate; the dashboard costs 7 Worker invocations (health + 6 full lists counted client-side); audit list unbounded. Fix plan P1 (assets bypass + /api/v1/dashboard summary endpoint), P2 (per-session view caching, list limits), P3 (GET timeout 20s -> ~8s, optional warm-up ping).",
         "notes": "Owner directive 2026-11-03: full re-audit from the start of the project, report per part, focus on optimization because loading still feels slow. Fixes await the Owner's pick of a work pack."
+      },
+      {
+        "id": "T-022",
+        "title": "Performance pack P1: static assets bypass the Worker + /api/v1/dashboard summary endpoint",
+        "status": "TECH_DONE",
+        "evidence": "wrangler.jsonc: run_worker_first limited to [/api/*, /health, /docs, /openapi.json]; build.sh assembles public_dist with content-stamped app.<hash>.js / styles.<hash>.css + _headers (immutable, 1y) — validated by wrangler deploy --dry-run (4 asset files, bindings OK). Backend: count_records added to all 4 stores + lazy delegates; GET /api/v1/dashboard returns counts + last-5 audit + storage/env/version in one call; UI dashboard rewritten to the single call; GET timeout 20s -> 8s. Tests: test_dashboard.py (counts, isolation, tenant required); suite green memory 49+2 skipped, D1 50+1 skipped. Deploy pending — ships together with T-023.",
+        "notes": "Audit T-021 fix plan P1-a/P1-b (+P3 timeout pulled forward)."
+      },
+      {
+        "id": "T-023",
+        "title": "Functional pack: UI for the 5 API-only resources + PATCH master-data updates + synced_at/last-treatment fields",
+        "status": "TECH_DONE",
+        "evidence": "Backend: update_record in all 4 stores + lazy delegates; PATCH routes for zones/mother_plants/actors/spatial_units/input_lots/packing_lots/packaging_units (OPERATOR+, CODE_IMMUTABLE, refs revalidated, PREFIX_UPDATE audit); traceability_records.synced_at + phi_validations.last_treatment_ref added to both schemas + SPECS, D1 in-place ALTER upgrade verified against a pre-T-023 schema copy (columns added, create+update work); _prepare_lot records the field event whose PHI ends last. UI: new views inputs (list/create/edit), parcels (spatial units list/create/edit + zone-parcel links list/create), philogs (read-only, shows last treatment); field-event form gains the input-lot picker + PHI days; edit buttons on zones/plants/packing cards; CTE stage toggle on traceability cards; synced_at shown when set; NAV + settings quick-access entries. Tests: test_updates.py (5 tests); suite green memory 54+2 skipped, D1 55+1 skipped; app.js node --check OK; build stamp assembled; wrangler dry-run OK. Deploy pending with T-022 (needs the Owner token + a fresh push approval — the rev-29 push was declined by the Owner on 2026-11-03 and has NOT been retried).",
+        "notes": "Audit T-021 gaps: spatial_units, zone_parcel_links, input_lots (+ picker in the field-event form), phi_validations, cte_stages views; PATCH for non-gated master kinds with audit; traceability_records.synced_at; phi_validations last-treatment reference."
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T11:48:07Z"
+  "updated_at": "2026-11-03T12:36:12Z"
 }

@@ -108,7 +108,7 @@ a{color:var(--brand)}
   width:46px; height:46px; flex:none; border-radius:14px; display:grid; place-items:center; font-size:22px;
   background:var(--brand-soft);
 }
-.card .thumb.amber{background:var(--amber-soft)} .card .thumb.sky{background:var(--sky-soft)} .card .thumb.violet{background:var(--violet-soft)}
+.card .thumb.amber{background:var(--amber-soft)} .card .thumb.sky{background:var(--sky-soft)} .card .thumb.violet{background:var(--violet-soft)} .card .thumb.red{background:#fde8e4}
 .card .body{flex:1; min-width:0}
 .card .title{font-weight:700; font-size:15.5px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
 .card .sub{color:var(--ink-2); font-size:13px; margin-top:1px; overflow:hidden; text-overflow:ellipsis}
