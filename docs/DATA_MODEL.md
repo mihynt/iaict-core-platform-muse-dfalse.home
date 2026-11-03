@@ -186,6 +186,21 @@ T-023 field completion (2026-11-03, audit T-021 gaps):
 last — the platform reference for Bang 24's `last_treatment_log_id`,
 set on every PHI validation write).
 
+T-024 field completion (2026-11-03, phase-review follow-up):
+`zones` gains `vsic_code` + the VietGAP buffer distances
+(`dist_to_residential_m`, `dist_to_sensitive_zone_m`,
+`bee_site_min_dist_km`); `input_lots` gains `purchase_invoice_no` +
+`qcvn_scheme_id`; `field_events` gains `application_method` +
+`fruit_bagging_count`; `crop_plans` gains `planting_density` +
+`seed_origin_doc`. Actor descriptive fields (`is_group_leader`,
+`ics_training_completed`, `valid_from`, `valid_to`) are accepted via
+the API and stored in the flexible `data` payload. Cross-store parity:
+duplicate zone-parcel / packing-input links now return 409 on the
+in-memory store exactly as on the SQL stores, and auto-emitted CTE
+stages write `CTE_CREATE` audit entries. GTIN discipline: a declared
+`gtin_code` must be all digits (`400 GTIN_INVALID`); length/check-digit
+enforcement stays deferred (see the T-024 minutes).
+
 Note on the D1 upgrade path: databases created before phase 1 gain the
 new tables from `schema_d1.sql` and the new columns via `ALTER TABLE`
 (plain columns — SQLite cannot add FKs by ALTER; reference resolution is

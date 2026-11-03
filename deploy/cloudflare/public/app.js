@@ -218,7 +218,7 @@ function paintNav() {
     const n = NAV.find((x) => x.id === id);
     return `<button type="button" data-nav="${id}" class="${state.view === id ? "active" : ""}">
       <span class="ic">${n.ic}</span>${n.label}</button>`;
-  }).join("") + `<button type="button" data-nav="settings" class="${state.view === "settings" || state.view === "tenants" ? "active" : ""}">
+  }).join("") + `<button type="button" data-nav="more" class="${["more", "settings", "tenants", "packing", "inputs", "parcels", "philogs"].includes(state.view) ? "active" : ""}">
       <span class="ic">☰</span>Khác</button>`;
   document.querySelectorAll("[data-nav]").forEach((b) =>
     b.addEventListener("click", () => navigate(b.dataset.nav)));
@@ -270,7 +270,7 @@ VIEWS.dashboard = async () => {
   try {
     // One summary call (audit T-021, pack P1): counts + recent audit +
     // service info in a single request instead of health + 4 lists + audit.
-    const dash = await api("/dashboard");
+    const dash = await T("/dashboard");
     const health = { env: dash.env, storage: dash.storage, version: dash.version };
     state.health = health;
     const failed = [];
@@ -344,6 +344,7 @@ VIEWS.zones = async () => {
         { k: "area_ha", label: "Diện tích (ha)", type: "number", step: "0.01", def: z.area_ha ?? "" },
         { k: "puc_code", label: "Mã số vùng trồng (PUC)", def: z.puc_code || "" },
         { k: "puc_status", label: "Trạng thái mã số vùng trồng", def: z.puc_status || "" },
+        { k: "vsic_code", label: "Mã ngành VSIC", def: z.vsic_code || "" },
         { k: "primary_species", label: "Cây trồng chính", def: z.primary_species || "" },
         { k: "crop_group", label: "Nhóm cây", def: z.crop_group || "" },
         { k: "season", label: "Mùa vụ", def: z.season || "" },
@@ -484,6 +485,8 @@ VIEWS.plans = async () => {
         { k: "input_lot_code", label: "Lô vật tư đã dùng", type: "select",
           options: [{ v: "", t: "— Không ghi vật tư —" }, ...inputs.map((i) => ({ v: i.code, t: `${i.code} · ${i.name || i.substance_code || ""}${i.phi_days != null ? ` · cách ly ${i.phi_days} ngày` : ""}` }))] },
         { k: "phi_days", label: "Số ngày cách ly PHI (để trống = lấy theo lô vật tư)", type: "number", step: "1" },
+        { k: "application_method", label: "Phương pháp áp dụng", placeholder: "vd: Phun áp lực, Tưới nhỏ giọt…" },
+        { k: "fruit_bagging_count", label: "Số trái đã bao (nếu có)", type: "number", step: "1" },
         { k: "occurred_at", label: "Thời gian thực hiện", type: "datetime-local" },
         { k: "notes", label: "Ghi chú", type: "textarea", placeholder: "Mô tả công việc, vật tư đã dùng…" },
         { k: "device", label: "Thiết bị", placeholder: "vd: Máy bơm, Drone…" },
@@ -510,6 +513,8 @@ VIEWS.plans = async () => {
       { k: "start_date", label: "Ngày bắt đầu", type: "date" },
       { k: "end_date", label: "Ngày kết thúc dự kiến", type: "date" },
       { k: "target_yield_kg", label: "Mục tiêu sản lượng (kg)", type: "number", step: "0.1" },
+      { k: "planting_density", label: "Mật độ trồng (cây/ha)", type: "number", step: "0.1" },
+      { k: "seed_origin_doc", label: "Hồ sơ nguồn gốc giống", placeholder: "Số giấy chứng nhận / hóa đơn giống" },
       { k: "status", label: "Trạng thái", type: "select", options: [
         { v: "DRAFT", t: "Dự thảo" }, { v: "RUNNING", t: "Đang chạy" }, { v: "ENDED", t: "Đã kết thúc" }] },
     ], async (p) => { await T("/crop-plans", { method: "POST", body: p }); invalidate("plans"); });
@@ -723,6 +728,7 @@ VIEWS.inputs = async () => {
         { k: "substance_code", label: "Hoạt chất / thành phần", def: it.substance_code || "" },
         { k: "vn_registration_number", label: "Số đăng ký lưu hành VN", def: it.vn_registration_number || "" },
         { k: "batch_no", label: "Số lô nhà sản xuất", def: it.batch_no || "" },
+        { k: "purchase_invoice_no", label: "Số hóa đơn mua", def: it.purchase_invoice_no || "" },
         { k: "supplier_code", label: "Nhà cung cấp", type: "select", def: it.supplier_code || "",
           options: [{ v: "", t: "— Không ghi —" }, ...actors.map((a) => ({ v: a.code, t: `${a.code} · ${a.name || ""}` }))] },
         { k: "quantity", label: "Số lượng nhập", type: "number", step: "0.01", def: it.quantity ?? "" },
@@ -741,6 +747,7 @@ VIEWS.inputs = async () => {
       { k: "substance_code", label: "Hoạt chất / thành phần", placeholder: "vd: Abamectin" },
       { k: "vn_registration_number", label: "Số đăng ký lưu hành VN" },
       { k: "batch_no", label: "Số lô nhà sản xuất" },
+      { k: "purchase_invoice_no", label: "Số hóa đơn mua" },
       { k: "supplier_code", label: "Nhà cung cấp", type: "select",
         options: [{ v: "", t: "— Không ghi —" }, ...actors.map((a) => ({ v: a.code, t: `${a.code} · ${a.name || ""}` }))] },
       { k: "purchase_date", label: "Ngày nhập", type: "date" },
@@ -984,6 +991,44 @@ VIEWS.settings = () => {
     navigate("dashboard", true);
   });
   $("#disconnect").onclick = () => { store.clear(); location.reload(); };
+};
+
+/* ---------------- all-functions menu (mobile "Khac" tab) ----------------
+   On phones the sidebar is hidden and the tab bar holds only six views;
+   every other function lives behind this menu so nothing is buried
+   inside Settings (mobile navigation fix, 2026-11-03). */
+const MORE_TITLES = {
+  dashboard: "Tổng quan", zones: "Vùng nguyên liệu", plants: "Cây đầu dòng",
+  plans: "Mùa vụ & nhật ký đồng ruộng", lots: "Lô thu hoạch",
+  packing: "Đóng gói & truy xuất", inputs: "Vật tư đầu vào",
+  parcels: "Thửa đất & liên kết vùng", philogs: "Kiểm tra PHI",
+  users: "Người dùng & audit", tenants: "Quản trị tenant",
+  settings: "Cài đặt kết nối",
+};
+const MORE_SUBS = {
+  dashboard: "Số liệu sản xuất và hoạt động gần đây",
+  zones: "Vùng trồng, mã số vùng trồng PUC",
+  plants: "Cây/cụm cây đầu dòng",
+  plans: "Kế hoạch mùa vụ và nhật ký tưới, bón, xử lý…",
+  lots: "Lô thu hoạch, phiếu cân, mã truy xuất",
+  packing: "Lô đóng gói PHC, cấp mã truy xuất quốc gia, công đoạn CTE",
+  inputs: "Lô thuốc/phân/giống và số ngày cách ly PHI",
+  parcels: "Thửa/ao/lô rừng và liên kết thửa vào vùng",
+  philogs: "Lịch sử chặn/cho thu hoạch theo thời gian cách ly",
+  users: "Thành viên trong tenant và nhật ký hệ thống",
+  tenants: "Danh sách, tạo mới, khóa/mở tenant (cần khóa platform)",
+  settings: "Tenant, người dùng, khóa platform trên thiết bị này",
+};
+VIEWS.more = () => {
+  const el = $("#view");
+  const thumbs = ["", "sky", "amber", "violet"];
+  el.innerHTML = `
+    <div class="section-head"><h2>☰ Tất cả chức năng</h2></div>
+    <div class="list">
+      ${NAV.map((n, i) => `
+      <button class="card" onclick="navigate('${n.id}')"><div class="thumb ${thumbs[i % 4]}">${n.ic}</div>
+        <div class="body"><div class="title">${esc(MORE_TITLES[n.id] || n.label)}</div><div class="sub">${esc(MORE_SUBS[n.id] || "")}</div></div></button>`).join("")}
+    </div>`;
 };
 
 /* ---------------- boot & login ---------------- */

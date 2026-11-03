@@ -58,6 +58,11 @@ class RecordIn(BaseModel):
     season: str | None = None
     water_source: str | None = None
     managing_entity: str | None = None
+    # ZON — industry code & VietGAP buffer distances (T-024, Bang 7)
+    vsic_code: str | None = None
+    dist_to_residential_m: float | None = None
+    dist_to_sensitive_zone_m: float | None = None
+    bee_site_min_dist_km: float | None = None
     # ZON — PUC identity block (D-STD-01)
     puc_code: str | None = None
     puc_status: str | None = None
@@ -68,6 +73,10 @@ class RecordIn(BaseModel):
     post_inspect_due_date: date | None = None
     # ACT — actors / households (D-STD-01)
     actor_type: str | None = None
+    is_group_leader: bool | None = None
+    ics_training_completed: bool | None = None
+    valid_from: date | None = None
+    valid_to: date | None = None
     gln_code: str | None = None
     province_code: str | None = None
     district_code: str | None = None
@@ -93,6 +102,8 @@ class RecordIn(BaseModel):
     joined_date: date | None = None
     left_date: date | None = None
     # INP — input material lots (D-STD-01)
+    purchase_invoice_no: str | None = None
+    qcvn_scheme_id: str | None = None
     category: str | None = None
     substance_code: str | None = None
     vn_registration_number: str | None = None
@@ -127,6 +138,8 @@ class RecordIn(BaseModel):
     dosage: str | None = None
     quantity_applied: float | None = None
     phi_days: int | None = None
+    application_method: str | None = None
+    fruit_bagging_count: int | None = None
     safe_harvest_date: date | None = None
     # LOT
     harvest_date: date | None = None
@@ -167,6 +180,8 @@ class RecordIn(BaseModel):
     batch_lot_number: str | None = None
     event_time: datetime | None = None
     scheme_code: str | None = None
+    planting_density: float | None = None
+    seed_origin_doc: str | None = None
     # references (resolved inside the tenant)
     zone_code: str | None = None
     plant_code: str | None = None
@@ -415,7 +430,8 @@ async def _prepare_traceability_record(tenant: str, fields: dict) -> None:
                 fields["data_retention_until"] = _add_months(anchor, 12).isoformat()
 
 
-async def _emit_cte_stages(tenant: str, record: dict) -> None:
+async def _emit_cte_stages(tenant: str, record: dict,
+                           actor: User | None = None) -> None:
     """Auto-build the CTE stage chain for a fresh traceability record:
     one harvest stage per packing input, then the packing stage."""
     unit, plot, _facility = await _packing_context(tenant, record)
@@ -441,7 +457,7 @@ async def _emit_cte_stages(tenant: str, record: dict) -> None:
                                                   harvest["zone_code"])
             if zone is not None and zone.get("puc_code"):
                 location = zone["puc_code"]
-        await store.create_record(tenant, "cte_stages", {
+        stage = await store.create_record(tenant, "cte_stages", {
             "traceability_code": code, "stage_no": 1,
             "stage_name": "Thu hoach tai vung trong",
             "product_trace_code": harvest["code"],
@@ -449,7 +465,11 @@ async def _emit_cte_stages(tenant: str, record: dict) -> None:
             "batch_lot_number": harvest["code"],
             "event_time": harvest.get("harvest_date"),
         })
-    await store.create_record(tenant, "cte_stages", {
+        if actor is not None and stage is not None:
+            await store.record_audit(
+                scope="tenant", tenant_id=tenant, actor=actor.username,
+                action="CTE_CREATE", target=code, outcome="OK")
+    stage = await store.create_record(tenant, "cte_stages", {
         "traceability_code": code, "stage_no": 2,
         "stage_name": "So che va dong goi",
         "product_trace_code": unit.get("gtin_code") or unit["code"],
@@ -457,6 +477,26 @@ async def _emit_cte_stages(tenant: str, record: dict) -> None:
         "batch_lot_number": plot["code"],
         "event_time": record.get("production_event_time"),
     })
+    if actor is not None and stage is not None:
+        await store.record_audit(
+            scope="tenant", tenant_id=tenant, actor=actor.username,
+            action="CTE_CREATE", target=code, outcome="OK")
+
+
+def _validate_gtin(fields: dict) -> None:
+    """GS1 format discipline (T-024): when a GTIN is declared it must be
+    all digits. Length (8/12/13/14) and check-digit (mod-10) enforcement
+    are deliberately NOT applied yet — placeholder and sample codes
+    already in circulation (including dossier-era examples used in
+    tests and the UI) fail those rules, so hard enforcement would
+    break the pilot; full GS1 validation lands with a data-cleanup
+    decision (review leftover L1)."""
+    gtin = fields.get("gtin_code")
+    if gtin is not None and not str(gtin).isdigit():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "GTIN_INVALID",
+                    "message": "gtin_code must contain digits only"})
 
 
 async def _create(tenant: str, actor: User, kind: str, prefix: str, body: RecordIn) -> dict:
@@ -478,6 +518,8 @@ async def _create(tenant: str, actor: User, kind: str, prefix: str, body: Record
         await _prepare_packing_input(tenant, fields)
     elif kind == "traceability_records":
         await _prepare_traceability_record(tenant, fields)
+    elif kind == "packaging_units":
+        _validate_gtin(fields)
     try:
         record = await store.create_record(tenant, kind, fields)
     except RefUnknown as exc:
@@ -726,7 +768,7 @@ async def get_packaging_unit(code: str, tenant: str = Depends(require_tenant)) -
 async def create_traceability_record(body: RecordIn, tenant: str = Depends(require_tenant),
                                      actor: User = Depends(require_role("OPERATOR"))) -> dict:
     record = await _create(tenant, actor, "traceability_records", "TXR", body)
-    await _emit_cte_stages(tenant, record)
+    await _emit_cte_stages(tenant, record, actor)
     return record
 
 

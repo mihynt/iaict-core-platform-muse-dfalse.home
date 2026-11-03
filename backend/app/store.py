@@ -70,6 +70,12 @@ CODED_KINDS = {"zones", "mother_plants", "crop_plans", "lots",
                "packing_lots", "packaging_units"}
 
 
+LINK_UNIQUE_FIELDS: dict[str, tuple[str, ...]] = {
+    "zone_parcel_links": ("zone_code", "parcel_code"),
+    "packing_inputs": ("packing_lot_code", "harvest_lot_code"),
+}
+
+
 class RefUnknown(ValueError):
     """A record field references an object that does not exist in the tenant."""
 
@@ -202,6 +208,14 @@ class InMemoryStore:
                     return None
                 bucket["by_code"][fields["code"]] = record
             else:
+                # Parity with the SQL stores (T-024): link kinds carry a
+                # UNIQUE constraint over their two ends there; a duplicate
+                # link must return None (-> 409) here too, not append.
+                unique_fields = LINK_UNIQUE_FIELDS.get(kind)
+                if unique_fields and any(
+                        all(e.get(f) == fields.get(f) for f in unique_fields)
+                        for e in bucket["events"]):
+                    return None
                 bucket["events"].append(record)
             return record
 

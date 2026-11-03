@@ -20,6 +20,8 @@ SPECS: dict[str, tuple[str, dict[str, str]]] = {
         "market_scope": "text", "primary_species": "text",
         "scientific_name": "text", "issue_date": "date",
         "issuing_authority": "text", "post_inspect_due_date": "date",
+        "vsic_code": "text", "dist_to_residential_m": "num",
+        "dist_to_sensitive_zone_m": "num", "bee_site_min_dist_km": "num",
     }),
     "mother_plants": ("mother_plants", {
         "species": "text", "variety": "text", "scientific_name": "text",
@@ -50,10 +52,12 @@ SPECS: dict[str, tuple[str, dict[str, str]]] = {
         "vn_registration_number": "text", "batch_no": "text",
         "purchase_date": "date", "quantity": "num", "unit": "text",
         "phi_days": "int", "expiry_date": "date",
+        "purchase_invoice_no": "text", "qcvn_scheme_id": "text",
     }),
     "crop_plans": ("crop_plans", {
         "name": "text", "crop_name": "text", "variety_name": "text",
-        "seed_origin": "text", "start_date": "date",
+        "seed_origin": "text", "planting_density": "num",
+        "seed_origin_doc": "text", "start_date": "date",
         "end_date": "date", "target_yield_kg": "num", "status": "text",
     }),
     "field_events": ("field_events", {
@@ -61,6 +65,7 @@ SPECS: dict[str, tuple[str, dict[str, str]]] = {
         "actor": "text", "device": "text", "notes": "text", "materials": "json",
         "growth_stage": "text", "target_pest": "text", "dosage": "text",
         "quantity_applied": "num", "phi_days": "int", "safe_harvest_date": "date",
+        "application_method": "text", "fruit_bagging_count": "int",
     }),
     "lots": ("lots", {
         "harvest_date": "date", "quantity": "num", "unit": "text",

@@ -1,5 +1,5 @@
 {
-  "revision": 30,
+  "revision": 33,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -28,8 +28,8 @@
       }
     ],
     "current": {
-      "active_task": "T-023",
-      "last_completed_step": "Functional pack (T-023) TECH_DONE locally: PATCH master-data updates, synced_at + last-treatment fields, 3 new UI views + input-lot picker + CTE toggle. Both packs await deployment (token) and GitHub push (rev-29 push was declined; not retried).",
+      "active_task": "T-005",
+      "last_completed_step": "T-022..T-025 DEPLOYED LIVE on beta (Worker 0bbaac5b): performance P1, functional pack, phase-review supplements, mobile all-functions menu. Dashboard path bug found by the post-deploy browser test and fixed/redeployed in the same session; recheck passed. Remaining owner-side items: Q-TX-01..03 decisions, phase 3 vs T-005 roadmap, performance P2 if wanted.",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -183,7 +183,13 @@
         "id": "F-008",
         "name": "Performance pack P1 + functional pack (audit T-021 follow-up)",
         "status": "TECH_DONE",
-        "notes": "Both packs (T-022 performance + T-023 functional) complete locally at STATE rev 30; deployment to beta pending Owner token + push approval."
+        "notes": "Both packs (T-022 performance + T-023 functional) complete locally at STATE rev 30; deployment to beta pending Owner token + push approval. Deployed live 2026-11-03 (Worker 0bbaac5b)."
+      },
+      {
+        "id": "F-009",
+        "name": "Phase-review supplements (T-024)",
+        "status": "TECH_DONE",
+        "notes": "Principal fields (zones VSIC/buffers, input-lot invoice/QCVN, field-event application method/bagging, plan density/seed doc), duplicate-link parity, CTE audit, GTIN digits discipline. Deploy pending with T-022/T-023. Deployed live 2026-11-03 (Worker 0bbaac5b)."
       }
     ],
     "flows": [],
@@ -390,18 +396,32 @@
         "id": "T-022",
         "title": "Performance pack P1: static assets bypass the Worker + /api/v1/dashboard summary endpoint",
         "status": "TECH_DONE",
-        "evidence": "wrangler.jsonc: run_worker_first limited to [/api/*, /health, /docs, /openapi.json]; build.sh assembles public_dist with content-stamped app.<hash>.js / styles.<hash>.css + _headers (immutable, 1y) — validated by wrangler deploy --dry-run (4 asset files, bindings OK). Backend: count_records added to all 4 stores + lazy delegates; GET /api/v1/dashboard returns counts + last-5 audit + storage/env/version in one call; UI dashboard rewritten to the single call; GET timeout 20s -> 8s. Tests: test_dashboard.py (counts, isolation, tenant required); suite green memory 49+2 skipped, D1 50+1 skipped. Deploy pending — ships together with T-023.",
+        "evidence": "wrangler.jsonc: run_worker_first limited to [/api/*, /health, /docs, /openapi.json]; build.sh assembles public_dist with content-stamped app.<hash>.js / styles.<hash>.css + _headers (immutable, 1y) — validated by wrangler deploy --dry-run (4 asset files, bindings OK). Backend: count_records added to all 4 stores + lazy delegates; GET /api/v1/dashboard returns counts + last-5 audit + storage/env/version in one call; UI dashboard rewritten to the single call; GET timeout 20s -> 8s. Tests: test_dashboard.py (counts, isolation, tenant required); suite green memory 49+2 skipped, D1 50+1 skipped. Deploy pending — ships together with T-023. DEPLOYED 2026-11-03 ~20:30 +07 (Worker 40a5cbf5, superseded same session by 0bbaac5b with the dashboard path fix). Production verification: /health ok (d1); stamped assets served at the edge with immutable cache; GET /api/v1/dashboard returns real beta-pilot counts (2/1/1/1/1); PATCH /zones/Z-TMP succeeded on production D1 (in-place schema upgrade + update path healthy, ZON_UPDATE audit visible in the UI); duplicate POST returns clean 409; browser test: new views render, zone edit sheet opens with the VSIC field, field-event form shows the input-lot picker + application method. POST-DEPLOY BUG (found by the mandatory browser test, fixed same session): the rewritten dashboard called api(\"/dashboard\") instead of T(\"/dashboard\"), so the Overview rendered 'Chua ket noi duoc du lieu' while the API itself was healthy (curl probe passed). One-line fix, redeployed as Worker 0bbaac5b; browser recheck PASSED (4 stat cards 2/1/1/1, recent activity incl. the ZON_UPDATE probe, no error banner). Lesson recorded: API probes do not cover UI path wiring — the browser test is the gate, as the Owner's standing rule says.",
         "notes": "Audit T-021 fix plan P1-a/P1-b (+P3 timeout pulled forward)."
       },
       {
         "id": "T-023",
         "title": "Functional pack: UI for the 5 API-only resources + PATCH master-data updates + synced_at/last-treatment fields",
         "status": "TECH_DONE",
-        "evidence": "Backend: update_record in all 4 stores + lazy delegates; PATCH routes for zones/mother_plants/actors/spatial_units/input_lots/packing_lots/packaging_units (OPERATOR+, CODE_IMMUTABLE, refs revalidated, PREFIX_UPDATE audit); traceability_records.synced_at + phi_validations.last_treatment_ref added to both schemas + SPECS, D1 in-place ALTER upgrade verified against a pre-T-023 schema copy (columns added, create+update work); _prepare_lot records the field event whose PHI ends last. UI: new views inputs (list/create/edit), parcels (spatial units list/create/edit + zone-parcel links list/create), philogs (read-only, shows last treatment); field-event form gains the input-lot picker + PHI days; edit buttons on zones/plants/packing cards; CTE stage toggle on traceability cards; synced_at shown when set; NAV + settings quick-access entries. Tests: test_updates.py (5 tests); suite green memory 54+2 skipped, D1 55+1 skipped; app.js node --check OK; build stamp assembled; wrangler dry-run OK. Deploy pending with T-022 (needs the Owner token + a fresh push approval — the rev-29 push was declined by the Owner on 2026-11-03 and has NOT been retried).",
+        "evidence": "Backend: update_record in all 4 stores + lazy delegates; PATCH routes for zones/mother_plants/actors/spatial_units/input_lots/packing_lots/packaging_units (OPERATOR+, CODE_IMMUTABLE, refs revalidated, PREFIX_UPDATE audit); traceability_records.synced_at + phi_validations.last_treatment_ref added to both schemas + SPECS, D1 in-place ALTER upgrade verified against a pre-T-023 schema copy (columns added, create+update work); _prepare_lot records the field event whose PHI ends last. UI: new views inputs (list/create/edit), parcels (spatial units list/create/edit + zone-parcel links list/create), philogs (read-only, shows last treatment); field-event form gains the input-lot picker + PHI days; edit buttons on zones/plants/packing cards; CTE stage toggle on traceability cards; synced_at shown when set; NAV + settings quick-access entries. Tests: test_updates.py (5 tests); suite green memory 54+2 skipped, D1 55+1 skipped; app.js node --check OK; build stamp assembled; wrangler dry-run OK. Deploy pending with T-022 (needs the Owner token + a fresh push approval — the rev-29 push was declined by the Owner on 2026-11-03 and has NOT been retried). DEPLOYED 2026-11-03 ~20:30 +07 (Worker 40a5cbf5, superseded same session by 0bbaac5b with the dashboard path fix). Production verification: /health ok (d1); stamped assets served at the edge with immutable cache; GET /api/v1/dashboard returns real beta-pilot counts (2/1/1/1/1); PATCH /zones/Z-TMP succeeded on production D1 (in-place schema upgrade + update path healthy, ZON_UPDATE audit visible in the UI); duplicate POST returns clean 409; browser test: new views render, zone edit sheet opens with the VSIC field, field-event form shows the input-lot picker + application method.",
         "notes": "Audit T-021 gaps: spatial_units, zone_parcel_links, input_lots (+ picker in the field-event form), phi_validations, cte_stages views; PATCH for non-gated master kinds with audit; traceability_records.synced_at; phi_validations last-treatment reference."
+      },
+      {
+        "id": "T-024",
+        "title": "Phase-by-phase review supplements: missing principal fields, duplicate-link parity, CTE audit, GTIN format discipline",
+        "status": "TECH_DONE",
+        "evidence": "Review minutes: ~/workspace/your_files/iaict-full-audit/bien-ban-ra-soat-tung-giai-doan-03-11-2026.md. Fields added to SPECS + schema.sql + schema_d1.sql + D1 in-place ALTER list (verified on a pre-T-023 schema copy: all 12 T-023/T-024 columns added, create+update work); actors descriptive fields accepted via RecordIn (data payload). InMemory LINK_UNIQUE_FIELDS parity for zone_parcel_links + packing_inputs (409 like SQL stores). _emit_cte_stages writes CTE_CREATE audit rows per stage with the issuing actor. GTIN: digits-only enforcement (400 GTIN_INVALID) — length/check-digit deliberately deferred with evidence (both circulating sample GTINs fail GS1 mod-10; T-017 tests use numeric placeholders). Tests: test_t024_supplements.py (5 tests); suite green memory 59+2 skipped, D1 60+1 skipped; build + wrangler dry-run OK. Deploy pending (Owner token) together with T-022/T-023. DEPLOYED 2026-11-03 ~20:30 +07 (Worker 40a5cbf5, superseded same session by 0bbaac5b with the dashboard path fix). Production verification: /health ok (d1); stamped assets served at the edge with immutable cache; GET /api/v1/dashboard returns real beta-pilot counts (2/1/1/1/1); PATCH /zones/Z-TMP succeeded on production D1 (in-place schema upgrade + update path healthy, ZON_UPDATE audit visible in the UI); duplicate POST returns clean 409; browser test: new views render, zone edit sheet opens with the VSIC field, field-event form shows the input-lot picker + application method.",
+        "notes": "Open items recorded in the minutes: Q-TX-01..03, FLD-17 per-parcel PHI (GĐ3), L4 per-SKU volume accounting (needs unit_weight_kg decision), users account_status + audit snapshots (hardening design), performance P2 (not in the chosen pack), phase 3 + T-005 roadmap choice."
+      },
+      {
+        "id": "T-025",
+        "title": "Mobile navigation fix: the Khac tab opens an all-functions menu",
+        "status": "TECH_DONE",
+        "evidence": "Owner reported a function not showing on mobile. Diagnosis (code + CSS + live browser at desktop width): under 1024px the sidebar is display:none and the bottom tab bar holds only 6 views + a Khac button that jumped straight to Settings; Packing (live build) and Inputs/Parcels/PHI-check/Tenants (new builds) had no entry of their own — Packing was reachable only via a quick-access card inside Settings (verified live: exactly 3 quick-access cards). Fix: the Khac tab now opens VIEWS.more, an all-functions menu listing every NAV view with full titles + descriptions; the tab stays highlighted for all menu-reached views. app.js syntax OK; build stamped. Narrow-viewport visual verification could not run pre-deploy (the browser tool cannot resize to 390px and rejects loopback) — it runs on the beta right after deployment. Deploy pending with T-022..T-024 (Owner token). DEPLOYED 2026-11-03 ~20:30 +07 (Worker 40a5cbf5, superseded same session by 0bbaac5b with the dashboard path fix). Production verification: /health ok (d1); stamped assets served at the edge with immutable cache; GET /api/v1/dashboard returns real beta-pilot counts (2/1/1/1/1); PATCH /zones/Z-TMP succeeded on production D1 (in-place schema upgrade + update path healthy, ZON_UPDATE audit visible in the UI); duplicate POST returns clean 409; browser test: new views render, zone edit sheet opens with the VSIC field, field-event form shows the input-lot picker + application method.",
+        "notes": "Stacks on STATE rev 31 (T-024), whose push was approved but failed twice on GitHub auth 503; both revisions push together."
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T12:36:12Z"
+  "updated_at": "2026-11-03T13:35:56Z"
 }

@@ -161,6 +161,17 @@ class D1Store:
         for _stmt in (
             "ALTER TABLE traceability_records ADD COLUMN synced_at TEXT",
             "ALTER TABLE phi_validations ADD COLUMN last_treatment_ref TEXT",
+            # T-024 field completion (phase review follow-up, 2026-11-03)
+            "ALTER TABLE zones ADD COLUMN vsic_code TEXT",
+            "ALTER TABLE zones ADD COLUMN dist_to_residential_m REAL",
+            "ALTER TABLE zones ADD COLUMN dist_to_sensitive_zone_m REAL",
+            "ALTER TABLE zones ADD COLUMN bee_site_min_dist_km REAL",
+            "ALTER TABLE input_lots ADD COLUMN purchase_invoice_no TEXT",
+            "ALTER TABLE input_lots ADD COLUMN qcvn_scheme_id TEXT",
+            "ALTER TABLE field_events ADD COLUMN application_method TEXT",
+            "ALTER TABLE field_events ADD COLUMN fruit_bagging_count INTEGER",
+            "ALTER TABLE crop_plans ADD COLUMN planting_density REAL",
+            "ALTER TABLE crop_plans ADD COLUMN seed_origin_doc TEXT",
         ):
             try:
                 await self._db.prepare(_stmt).run()
