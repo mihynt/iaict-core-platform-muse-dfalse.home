@@ -199,6 +199,7 @@ const NAV = [
   { id: "plants", ic: "🌳", label: "Cây" },
   { id: "plans", ic: "📅", label: "Mùa vụ" },
   { id: "lots", ic: "📦", label: "Lô" },
+  { id: "packing", ic: "🏭", label: "Đóng gói" },
   { id: "users", ic: "👥", label: "Người dùng" },
   { id: "tenants", ic: "🏢", label: "Tenant" },
   { id: "settings", ic: "⚙️", label: "Cài đặt" },
@@ -523,6 +524,88 @@ VIEWS.lots = async () => {
   });
 };
 
+/* ---------------- packing & traceability ---------------- */
+VIEWS.packing = async () => {
+  const el = $("#view");
+  el.innerHTML = `<div class="section-head"><h2>🏭 Đóng gói & truy xuất</h2>
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(3);
+  $("#reload").onclick = () => { invalidate("packing", "trecords"); navigate("packing", true); };
+  try {
+    const [plots, records] = await Promise.all([
+      ensure("packing", "/packing-lots"), ensure("trecords", "/traceability-records")]);
+    el.querySelectorAll(".skel").forEach((s) => s.remove());
+    el.insertAdjacentHTML("beforeend",
+      (plots.length ? `<div class="list">${plots.map((p) => `
+      <div class="card"><div class="thumb amber">🏭</div><div class="body">
+        <div class="title">${esc(p.product_name || p.code)} ${chipFor(p.status)}</div>
+        <div class="sub">Lô đóng gói: <b>${esc(p.code)}</b>${p.phc_code ? ` · PHC: ${esc(p.phc_code)}` : ""}</div>
+        <div class="meta">
+          ${p.output_weight_kg != null ? `<span>⚖️ ${fmtNum(p.output_weight_kg)} kg thành phẩm</span>` : ""}
+          ${p.facility_code ? `<span>🏢 ${esc(p.facility_code)}</span>` : ""}
+          ${p.packed_at ? `<span>🗓️ ${esc(String(p.packed_at).slice(0, 10))}</span>` : ""}
+        </div>
+        <div style="margin-top:8px"><button class="btn btn-primary btn-sm" data-issue="${esc(p.code)}">🔎 Cấp mã truy xuất</button></div>
+      </div></div>`).join("")}</div>`
+        : emptyState("🏭", "Chưa có lô đóng gói nào", "Bấm nút + để tạo lô đóng gói từ các lô thu hoạch."))
+      + `<div class="section-head" style="margin-top:18px"><h2 style="font-size:15.5px">🔎 Bản ghi truy xuất nguồn gốc</h2></div>`
+      + (records.length ? `<div class="list">${records.map((r) => `
+      <div class="card"><div class="thumb sky">🔎</div><div class="body">
+        <div class="title">${esc(r.product_name || "Sản phẩm")}</div>
+        <div class="sub" style="word-break:break-all">${esc(r.traceability_code || "")}</div>
+        <div class="meta">
+          ${r.business_unit_name ? `<span>🏢 ${esc(r.business_unit_name)}</span>` : ""}
+          <span>${r.sync_status === "SYNCED_SUCCESS" ? "✅ Đã đồng bộ cổng quốc gia" : "⏳ Chờ đồng bộ cổng quốc gia"}</span>
+          ${r.data_retention_until ? `<span>🗄️ Lưu trữ tới ${fmtDate(r.data_retention_until)}</span>` : ""}
+        </div></div></div>`).join("")}</div>`
+        : emptyState("🔎", "Chưa có bản ghi truy xuất nào", "Cấp mã truy xuất từ một lô đóng gói để sinh bản ghi.")));
+    el.querySelectorAll("[data-issue]").forEach((b) => b.onclick = () => issueTraceCode(b.dataset.issue));
+  } catch (err) { el.innerHTML = banner(err); }
+  fab("Tạo lô đóng gói", async () => {
+    const actors = await ensure("actors", "/actors").catch(() => []);
+    const facilityField = actors.length
+      ? { k: "facility_code", label: "Cơ sở đóng gói", type: "select",
+          options: [{ v: "", t: "— Chọn cơ sở —" }, ...actors.map((a) => ({ v: a.code, t: `${a.code} · ${a.name || ""}` }))] }
+      : { k: "facility_code", label: "Mã cơ sở đóng gói", placeholder: "vd: PHC-01" };
+    openSheet("Tạo lô đóng gói", [
+      { k: "code", label: "Mã lô đóng gói", required: true, placeholder: "vd: PK-1" },
+      facilityField,
+      { k: "phc_code", label: "Mã số cơ sở đóng gói (PHC)", placeholder: "vd: VN-PHC-66-019" },
+      { k: "product_name", label: "Tên sản phẩm", placeholder: "vd: Bưởi da xanh loại 1" },
+      { k: "output_weight_kg", label: "Khối lượng thành phẩm (kg)", type: "number", step: "0.01" },
+      { k: "yield_norm_ratio", label: "Định mức thu hồi (0–1)", type: "number", step: "0.01", placeholder: "vd: 0.85" },
+      { k: "storage_type", label: "Hình thức bảo quản", type: "select", options: [
+        { v: "FRESH_AMBIENT", t: "Tươi, nhiệt độ thường" }, { v: "CHILLED_COOL", t: "Mát lạnh" },
+        { v: "FROZEN_PROCESSED", t: "Đông lạnh / chế biến" }] },
+      { k: "packed_at", label: "Thời gian đóng gói", type: "datetime-local" },
+      { k: "expiry_date", label: "Hạn dùng", type: "date" },
+    ], async (p) => { await T("/packing-lots", { method: "POST", body: p }); invalidate("packing"); });
+  });
+};
+
+async function issueTraceCode(packingCode) {
+  const lots = await ensure("lots", "/lots").catch(() => []);
+  openSheet(`Cấp mã truy xuất · ${packingCode}`, [
+    { k: "harvest_lot_code", label: "Lô thu hoạch đầu vào", type: "select",
+      options: [{ v: "", t: "— Chọn lô thu hoạch —" }, ...lots.map((l) => ({ v: l.code, t: `${l.code} · ${l.quantity ?? "?"} ${l.unit || "kg"}` }))] },
+    { k: "allocated_weight_kg", label: "Khối lượng đưa vào đóng gói (kg)", type: "number", step: "0.01", required: true },
+    { k: "gtin_code", label: "Mã GTIN sản phẩm", required: true, placeholder: "vd: 08935049501234" },
+    { k: "package_spec", label: "Quy cách bao gói", placeholder: "vd: Thùng carton 10 kg" },
+    { k: "units_count", label: "Số đơn vị bao gói", type: "number", step: "1" },
+  ], async (p) => {
+    try {
+      await T("/packing-inputs", { method: "POST", body: {
+        packing_lot_code: packingCode, harvest_lot_code: p.harvest_lot_code,
+        allocated_weight_kg: p.allocated_weight_kg } });
+    } catch (err) { if (err.status !== 409) throw err; } // already linked: continue
+    const sku = "SKU-" + Date.now().toString(36).toUpperCase();
+    await T("/packaging-units", { method: "POST", body: {
+      code: sku, packing_lot_code: packingCode, level: "SHIPPING_CASE_CARTON",
+      gtin_code: p.gtin_code, package_spec: p.package_spec, units_count: p.units_count } });
+    await T("/traceability-records", { method: "POST", body: { packaging_unit_code: sku } });
+    invalidate("packing", "trecords");
+  });
+}
+
 /* ---------------- users & audit ---------------- */
 const ROLE_VI = { TENANT_ADMIN: "Quản trị tenant", OPERATOR: "Vận hành", VIEWER: "Chỉ xem" };
 VIEWS.users = async () => {
@@ -619,6 +702,8 @@ VIEWS.settings = () => {
         <div class="body"><div class="title">Quản trị tenant</div><div class="sub">Danh sách, tạo mới, khóa/mở tenant (cần khóa platform)</div></div></button>
       <button class="card" onclick="navigate('users')"><div class="thumb sky">👥</div>
         <div class="body"><div class="title">Người dùng & audit</div><div class="sub">Thành viên trong tenant và nhật ký hệ thống</div></div></button>
+      <button class="card" onclick="navigate('packing')"><div class="thumb amber">🏭</div>
+        <div class="body"><div class="title">Đóng gói & truy xuất</div><div class="sub">Lô đóng gói PHC, cấp mã truy xuất nguồn gốc quốc gia</div></div></button>
     </div>`;
   $("#settingsForm").addEventListener("submit", (e) => {
     e.preventDefault();

@@ -58,9 +58,16 @@ RECORD_REFS: dict[str, dict[str, str]] = {
     "lots": {"zone_code": "zones", "plan_code": "crop_plans",
              "farmer_code": "actors", "parcel_code": "spatial_units"},
     "phi_validations": {},
+    "packing_lots": {"facility_code": "actors"},
+    "packing_inputs": {"packing_lot_code": "packing_lots",
+                       "harvest_lot_code": "lots"},
+    "packaging_units": {"packing_lot_code": "packing_lots"},
+    "traceability_records": {"packaging_unit_code": "packaging_units"},
+    "cte_stages": {},
 }
 CODED_KINDS = {"zones", "mother_plants", "crop_plans", "lots",
-               "actors", "spatial_units", "input_lots"}
+               "actors", "spatial_units", "input_lots",
+               "packing_lots", "packaging_units"}
 
 
 class RefUnknown(ValueError):

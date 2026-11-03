@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 21 · **Updated:** 2026-11-03T05:55:59Z · **Phase:** DISCOVERY
+- **Revision:** 22 · **Updated:** 2026-11-03T09:09:44Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -31,6 +31,20 @@
 
 ## Latest progress
 
+- **Traceability standard phase 2 — live (2026-11-03, D-STD-01 /
+  T-016 TECH_DONE):** the packing chain lands on the beta: packing
+  lots at PHC facilities, N-N harvest-input links with an
+  over-allocation guard, SKU packaging units, and national
+  traceability records whose issuance is gated by the packing
+  mass-balance rule (output ≤ inputs × yield norm) and which
+  auto-build their CTE stage chain back to each source harvest lot
+  and zone PUC. New **Đóng gói** UI view with a one-flow
+  "Cấp mã truy xuất" action. Suite green in all four store modes
+  (42+1 / 42+1 / 43 / 43); D1 upgraded in place (5 new tables,
+  beta-pilot intact), Worker `146e24f2`, browser test passed
+  (dashboard 2/1/1/1, packing view + form verified, reload clean).
+  Records wait as `PENDING_SYNC`; the national-portal push is a
+  later integration slice.
 - **Traceability data standard, phase 1 — live (2026-11-03,
   DEC-009 / D-STD-01 / T-015 TECH_DONE):** the Owner supplied the
   national traceability data-standard research (33 tables + 3 views)
@@ -231,6 +245,7 @@
 
 ## Next action
 
-Owner reviews the phase-1 traceability slice on the beta, then
-chooses: phase 2 of D-STD-01 (packing chain + national-portal
-traceability records, with T-006) or T-005 (M3a day-90 IoT gate).
+Owner reviews the packing/traceability slice on the beta, then
+chooses: D-STD-01 phase 3 (reference catalogues, market approvals,
+monitoring logs, transport + recall) and the national-portal sync
+integration, with T-006 — or T-005 (M3a day-90 IoT gate).

@@ -73,12 +73,40 @@ SPECS: dict[str, tuple[str, dict[str, str]]] = {
         "max_safe_harvest_date": "date", "actual_harvest_date": "date",
         "outcome": "text",
     }),
+    "packing_lots": ("packing_lots", {
+        "phc_code": "text", "product_name": "text", "output_weight_kg": "num",
+        "yield_norm_ratio": "num", "storage_type": "text", "packed_at": "ts",
+        "expiry_date": "date", "status": "text",
+    }),
+    "packing_inputs": ("packing_inputs", {
+        "allocated_weight_kg": "num", "linked_at": "ts",
+    }),
+    "packaging_units": ("packaging_units", {
+        "level": "text", "gtin_code": "text", "sscc_code": "text",
+        "package_spec": "text", "units_count": "int",
+    }),
+    "traceability_records": ("traceability_records", {
+        "traceability_code": "text", "product_name": "text",
+        "product_image_url": "text", "business_unit_name": "text",
+        "business_unit_address": "text", "production_event_time": "ts",
+        "brand_trademark_serial": "text", "expiration_date": "date",
+        "data_carrier_type": "text", "data_retention_until": "date",
+        "sync_status": "text",
+    }),
+    "cte_stages": ("cte_stages", {
+        "traceability_code": "text", "stage_no": "int", "stage_name": "text",
+        "product_trace_code": "text", "location_trace_code": "text",
+        "batch_lot_number": "text", "event_time": "ts", "scheme_code": "text",
+    }),
 }
 REF_ID_COLUMN = {
     "zone_code": "zone_id", "plant_code": "plant_id", "plan_code": "plan_id",
     "parcel_code": "parcel_id", "farmer_code": "farmer_id",
     "input_lot_code": "input_lot_id", "supplier_code": "supplier_id",
     "operator_code": "operator_id", "parent_code": "parent_id",
+    "facility_code": "facility_id", "packing_lot_code": "packing_lot_id",
+    "harvest_lot_code": "harvest_lot_id",
+    "packaging_unit_code": "packaging_unit_id",
 }
 
 

@@ -360,3 +360,114 @@ CREATE TABLE IF NOT EXISTS lot_relations (
     FOREIGN KEY (tenant_id, parent_lot_id) REFERENCES lots (tenant_id, id),
     FOREIGN KEY (tenant_id, child_lot_id) REFERENCES lots (tenant_id, id)
 );
+
+-- ---- Traceability standard, phase 2 (D-STD-01): packing chain -------------
+-- Packed/processed lots at a packing house (ENT_PACKING_PROCESSING subset).
+CREATE TABLE IF NOT EXISTS packing_lots (
+    id            BIGSERIAL,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    code          TEXT NOT NULL,
+    facility_id   BIGINT,
+    facility_code TEXT,
+    phc_code      TEXT,
+    product_name  TEXT,
+    output_weight_kg NUMERIC,
+    yield_norm_ratio NUMERIC,  -- max technical recovery ratio (mass balance)
+    storage_type  TEXT,  -- FRESH_AMBIENT | CHILLED_COOL | FROZEN_PROCESSED
+    packed_at     TIMESTAMPTZ,
+    expiry_date   DATE,
+    status        TEXT NOT NULL DEFAULT 'PACKED',
+    data          JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (id),
+    UNIQUE (tenant_id, id),
+    UNIQUE (tenant_id, code),
+    FOREIGN KEY (tenant_id, facility_id) REFERENCES actors (tenant_id, id)
+);
+
+-- Packaging units / SKU (ENT_PACKAGING_UNIT_SKU subset).
+CREATE TABLE IF NOT EXISTS packaging_units (
+    id            BIGSERIAL,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    code          TEXT NOT NULL,
+    packing_lot_id   BIGINT,
+    packing_lot_code TEXT,
+    level         TEXT,  -- CONSUMER_ITEM_SKU | INNER_PACK | SHIPPING_CASE_CARTON | LOGISTIC_PALLET_CONTAINER
+    gtin_code     TEXT,
+    sscc_code     TEXT,
+    package_spec  TEXT,
+    units_count   INTEGER,
+    data          JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (id),
+    UNIQUE (tenant_id, id),
+    UNIQUE (tenant_id, code),
+    FOREIGN KEY (tenant_id, packing_lot_id) REFERENCES packing_lots (tenant_id, id)
+);
+
+-- N-N link: harvest lots consumed by a packing lot (ENT_PACKING_INPUT_LINK).
+CREATE TABLE IF NOT EXISTS packing_inputs (
+    id            BIGSERIAL,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    packing_lot_id   BIGINT,
+    packing_lot_code TEXT,
+    harvest_lot_id   BIGINT,
+    harvest_lot_code TEXT,
+    allocated_weight_kg NUMERIC,
+    linked_at     TIMESTAMPTZ,
+    data          JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (id),
+    UNIQUE (tenant_id, id),
+    UNIQUE (tenant_id, packing_lot_id, harvest_lot_id),
+    FOREIGN KEY (tenant_id, packing_lot_id) REFERENCES packing_lots (tenant_id, id),
+    FOREIGN KEY (tenant_id, harvest_lot_id) REFERENCES lots (tenant_id, id)
+);
+
+-- National traceability records (SYS_TRACEABILITY_RECORD subset).
+CREATE TABLE IF NOT EXISTS traceability_records (
+    id            BIGSERIAL,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    packaging_unit_id   BIGINT,
+    packaging_unit_code TEXT,
+    traceability_code   TEXT,
+    product_name  TEXT,
+    product_image_url TEXT,
+    business_unit_name    TEXT,
+    business_unit_address TEXT,
+    production_event_time TIMESTAMPTZ,
+    brand_trademark_serial TEXT,
+    expiration_date   DATE,
+    data_carrier_type TEXT,  -- QR_CODE | GS1_128_BARCODE | DATAMATRIX | RFID_TAG | NFC_CHIP
+    data_retention_until DATE,
+    sync_status   TEXT NOT NULL DEFAULT 'PENDING_SYNC',
+    data          JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (id),
+    UNIQUE (tenant_id, id),
+    FOREIGN KEY (tenant_id, packaging_unit_id) REFERENCES packaging_units (tenant_id, id)
+);
+
+-- Critical-tracking-event stages of a traceability record
+-- (LOG_CTE_SUPPLY_CHAIN_STAGE subset; linked by traceability_code).
+CREATE TABLE IF NOT EXISTS cte_stages (
+    id            BIGSERIAL,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    traceability_code TEXT,
+    stage_no      INTEGER,
+    stage_name    TEXT,
+    product_trace_code  TEXT,
+    location_trace_code TEXT,
+    batch_lot_number    TEXT,
+    event_time    TIMESTAMPTZ,
+    scheme_code   TEXT,
+    data          JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (id),
+    UNIQUE (tenant_id, id)
+);

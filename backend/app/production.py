@@ -35,6 +35,9 @@ DEFAULTS: dict[str, dict] = {
     "mother_plants": {"status": "ALIVE"},
     "crop_plans": {"status": "DRAFT"},
     "lots": {"status": "IN_STOCK", "unit": "kg"},
+    "packing_lots": {"status": "PACKED"},
+    "traceability_records": {"sync_status": "PENDING_SYNC",
+                             "data_carrier_type": "QR_CODE"},
 }
 
 
@@ -134,6 +137,35 @@ class RecordIn(BaseModel):
     weigh_slip_number: str | None = None
     traceability_code: str | None = None
     data_retention_until: date | None = None
+    # PKL/PKI/PKU/TXR/CTE — packing chain & traceability records (D-STD-01 ph.2)
+    phc_code: str | None = None
+    product_name: str | None = None
+    output_weight_kg: float | None = None
+    yield_norm_ratio: float | None = None
+    storage_type: str | None = None
+    packed_at: datetime | None = None
+    allocated_weight_kg: float | None = None
+    linked_at: datetime | None = None
+    level: str | None = None
+    gtin_code: str | None = None
+    sscc_code: str | None = None
+    package_spec: str | None = None
+    units_count: int | None = None
+    product_image_url: str | None = None
+    business_unit_name: str | None = None
+    business_unit_address: str | None = None
+    production_event_time: datetime | None = None
+    brand_trademark_serial: str | None = None
+    expiration_date: date | None = None
+    data_carrier_type: str | None = None
+    sync_status: str | None = None
+    stage_no: int | None = None
+    stage_name: str | None = None
+    product_trace_code: str | None = None
+    location_trace_code: str | None = None
+    batch_lot_number: str | None = None
+    event_time: datetime | None = None
+    scheme_code: str | None = None
     # references (resolved inside the tenant)
     zone_code: str | None = None
     plant_code: str | None = None
@@ -144,6 +176,10 @@ class RecordIn(BaseModel):
     operator_code: str | None = None
     parent_code: str | None = None
     input_lot_code: str | None = None
+    facility_code: str | None = None
+    packing_lot_code: str | None = None
+    harvest_lot_code: str | None = None
+    packaging_unit_code: str | None = None
 
 
 def _iso_date(value) -> date | None:
@@ -233,6 +269,127 @@ async def _prepare_lot(tenant: str, fields: dict) -> None:
             fields["data_retention_until"] = _add_months(base, 12).isoformat()
 
 
+async def _prepare_packing_input(tenant: str, fields: dict) -> None:
+    """A harvest lot cannot be allocated to packing beyond the quantity
+    it actually holds (ENT_PACKING_INPUT_LINK rule, D-STD-01 phase 2)."""
+    code = fields.get("harvest_lot_code")
+    allocated = fields.get("allocated_weight_kg")
+    if not code or allocated is None:
+        return
+    harvest = await store.get_record_by_code(tenant, "lots", code)
+    if harvest is None or harvest.get("quantity") is None:
+        return
+    used = sum(i.get("allocated_weight_kg") or 0
+               for i in await store.list_records(tenant, "packing_inputs")
+               if i.get("harvest_lot_code") == code)
+    if used + allocated > harvest["quantity"] + 1e-9:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "HARVEST_LOT_OVER_ALLOCATED",
+                    "message": f"Harvest lot {code} holds {harvest['quantity']} kg; "
+                               f"{used} kg already allocated, cannot add {allocated} kg"})
+
+
+async def _packing_context(tenant: str, fields: dict):
+    """Resolve packaging unit -> packing lot -> facility actor."""
+    unit = None
+    if fields.get("packaging_unit_code"):
+        unit = await store.get_record_by_code(tenant, "packaging_units",
+                                              fields["packaging_unit_code"])
+    plot = None
+    if unit is not None and unit.get("packing_lot_code"):
+        plot = await store.get_record_by_code(tenant, "packing_lots",
+                                              unit["packing_lot_code"])
+    facility = None
+    if plot is not None and plot.get("facility_code"):
+        facility = await store.get_record_by_code(tenant, "actors",
+                                                  plot["facility_code"])
+    return unit, plot, facility
+
+
+async def _prepare_traceability_record(tenant: str, fields: dict) -> None:
+    """National traceability record (SYS_TRACEABILITY_RECORD, TT 02/2024):
+    the packing mass-balance gate runs here — no traceability code may be
+    issued for a packed lot whose output exceeds inputs x yield norm —
+    then the record is completed from the packing chain and stamped with
+    its code and retention date."""
+    unit, plot, facility = await _packing_context(tenant, fields)
+    if plot is None:
+        return
+    output = plot.get("output_weight_kg")
+    norm = plot.get("yield_norm_ratio")
+    if output is not None and norm is not None:
+        inputs = sum(i.get("allocated_weight_kg") or 0
+                     for i in await store.list_records(tenant, "packing_inputs")
+                     if i.get("packing_lot_code") == plot["code"])
+        if inputs * norm + 1e-9 < output:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "PACKING_MASS_BALANCE_EXCEEDED",
+                        "message": f"Packed output {output} kg exceeds "
+                                   f"{inputs} kg inputs x yield norm {norm}"})
+    fields.setdefault("product_name", plot.get("product_name"))
+    if fields.get("expiration_date") is None and plot.get("expiry_date"):
+        fields["expiration_date"] = plot["expiry_date"]
+    if fields.get("production_event_time") is None and plot.get("packed_at"):
+        fields["production_event_time"] = plot["packed_at"]
+    if facility is not None:
+        fields.setdefault("business_unit_name", facility.get("name"))
+        fields.setdefault("business_unit_address", facility.get("address"))
+    if not fields.get("traceability_code"):
+        location = plot.get("phc_code") or plot.get("facility_code") or ""
+        event_time = fields.get("production_event_time") or date.today().isoformat()
+        fields["traceability_code"] = "|".join([
+            (unit or {}).get("gtin_code") or (unit or {}).get("code") or "",
+            location, plot["code"], str(event_time)])
+    if not fields.get("data_retention_until"):
+        expiry = _iso_date(fields.get("expiration_date"))
+        packed = _iso_date(fields.get("production_event_time"))
+        if expiry is not None:
+            fields["data_retention_until"] = _add_months(expiry, 12).isoformat()
+        elif packed is not None:
+            months = 24 if plot.get("storage_type") == "FROZEN_PROCESSED" else 12
+            fields["data_retention_until"] = _add_months(packed, months).isoformat()
+
+
+async def _emit_cte_stages(tenant: str, record: dict) -> None:
+    """Auto-build the CTE stage chain for a fresh traceability record:
+    one harvest stage per packing input, then the packing stage."""
+    unit, plot, _facility = await _packing_context(tenant, record)
+    if unit is None or plot is None:
+        return
+    code = record["traceability_code"]
+    inputs = [i for i in await store.list_records(tenant, "packing_inputs")
+              if i.get("packing_lot_code") == plot["code"]]
+    for link in inputs:
+        harvest = await store.get_record_by_code(tenant, "lots",
+                                                 link["harvest_lot_code"])
+        if harvest is None:
+            continue
+        location = harvest.get("zone_code") or ""
+        if harvest.get("zone_code"):
+            zone = await store.get_record_by_code(tenant, "zones",
+                                                  harvest["zone_code"])
+            if zone is not None and zone.get("puc_code"):
+                location = zone["puc_code"]
+        await store.create_record(tenant, "cte_stages", {
+            "traceability_code": code, "stage_no": 1,
+            "stage_name": "Thu hoach tai vung trong",
+            "product_trace_code": harvest["code"],
+            "location_trace_code": location,
+            "batch_lot_number": harvest["code"],
+            "event_time": harvest.get("harvest_date"),
+        })
+    await store.create_record(tenant, "cte_stages", {
+        "traceability_code": code, "stage_no": 2,
+        "stage_name": "So che va dong goi",
+        "product_trace_code": unit.get("gtin_code") or unit["code"],
+        "location_trace_code": plot.get("phc_code") or plot.get("facility_code") or "",
+        "batch_lot_number": plot["code"],
+        "event_time": record.get("production_event_time"),
+    })
+
+
 async def _create(tenant: str, actor: User, kind: str, prefix: str, body: RecordIn) -> dict:
     fields = body.model_dump(mode="json", exclude_none=True)
     for key in RESERVED:
@@ -248,6 +405,10 @@ async def _create(tenant: str, actor: User, kind: str, prefix: str, body: Record
         await _prepare_field_event(tenant, fields)
     elif kind == "lots":
         await _prepare_lot(tenant, fields)
+    elif kind == "packing_inputs":
+        await _prepare_packing_input(tenant, fields)
+    elif kind == "traceability_records":
+        await _prepare_traceability_record(tenant, fields)
     try:
         record = await store.create_record(tenant, kind, fields)
     except RefUnknown as exc:
@@ -421,3 +582,71 @@ async def get_input_lot(code: str, tenant: str = Depends(require_tenant)) -> dic
 @router.get("/phi-validations")
 async def list_phi_validations(tenant: str = Depends(require_tenant)) -> dict:
     return await _list(tenant, "phi_validations")
+
+
+# ---- Packing chain & traceability records (D-STD-01, phase 2) ---------------
+@router.post("/packing-lots", status_code=status.HTTP_201_CREATED)
+async def create_packing_lot(body: RecordIn, tenant: str = Depends(require_tenant),
+                             actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "packing_lots", "PKL", body)
+
+
+@router.get("/packing-lots")
+async def list_packing_lots(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "packing_lots")
+
+
+@router.get("/packing-lots/{code}")
+async def get_packing_lot(code: str, tenant: str = Depends(require_tenant)) -> dict:
+    return await _get(tenant, "packing_lots", code)
+
+
+@router.post("/packing-inputs", status_code=status.HTTP_201_CREATED)
+async def create_packing_input(body: RecordIn, tenant: str = Depends(require_tenant),
+                               actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "packing_inputs", "PKI", body)
+
+
+@router.get("/packing-inputs")
+async def list_packing_inputs(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "packing_inputs")
+
+
+@router.post("/packaging-units", status_code=status.HTTP_201_CREATED)
+async def create_packaging_unit(body: RecordIn, tenant: str = Depends(require_tenant),
+                                actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "packaging_units", "PKU", body)
+
+
+@router.get("/packaging-units")
+async def list_packaging_units(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "packaging_units")
+
+
+@router.get("/packaging-units/{code}")
+async def get_packaging_unit(code: str, tenant: str = Depends(require_tenant)) -> dict:
+    return await _get(tenant, "packaging_units", code)
+
+
+@router.post("/traceability-records", status_code=status.HTTP_201_CREATED)
+async def create_traceability_record(body: RecordIn, tenant: str = Depends(require_tenant),
+                                     actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    record = await _create(tenant, actor, "traceability_records", "TXR", body)
+    await _emit_cte_stages(tenant, record)
+    return record
+
+
+@router.get("/traceability-records")
+async def list_traceability_records(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "traceability_records")
+
+
+@router.post("/cte-stages", status_code=status.HTTP_201_CREATED)
+async def create_cte_stage(body: RecordIn, tenant: str = Depends(require_tenant),
+                           actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "cte_stages", "CTE", body)
+
+
+@router.get("/cte-stages")
+async def list_cte_stages(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "cte_stages")

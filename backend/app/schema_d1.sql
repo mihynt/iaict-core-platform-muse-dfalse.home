@@ -340,3 +340,105 @@ CREATE TABLE IF NOT EXISTS phi_validations (
     updated_at    TEXT NOT NULL,
     UNIQUE (tenant_id, id)
 );
+
+-- Traceability data standard, phase 2 (D-STD-01): packing chain and
+-- national traceability records.
+
+CREATE TABLE IF NOT EXISTS packing_lots (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    code          TEXT NOT NULL,
+    facility_id   INTEGER,
+    facility_code TEXT,
+    phc_code      TEXT,
+    product_name  TEXT,
+    output_weight_kg REAL,
+    yield_norm_ratio REAL,
+    storage_type  TEXT,
+    packed_at     TEXT,
+    expiry_date   TEXT,
+    status        TEXT NOT NULL DEFAULT 'PACKED',
+    data          TEXT NOT NULL DEFAULT '{}',
+    created_at    TEXT NOT NULL,
+    updated_at    TEXT NOT NULL,
+    UNIQUE (tenant_id, id),
+    UNIQUE (tenant_id, code),
+    FOREIGN KEY (tenant_id, facility_id) REFERENCES actors (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS packaging_units (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    code          TEXT NOT NULL,
+    packing_lot_id   INTEGER,
+    packing_lot_code TEXT,
+    level         TEXT,
+    gtin_code     TEXT,
+    sscc_code     TEXT,
+    package_spec  TEXT,
+    units_count   INTEGER,
+    data          TEXT NOT NULL DEFAULT '{}',
+    created_at    TEXT NOT NULL,
+    updated_at    TEXT NOT NULL,
+    UNIQUE (tenant_id, id),
+    UNIQUE (tenant_id, code),
+    FOREIGN KEY (tenant_id, packing_lot_id) REFERENCES packing_lots (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS packing_inputs (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    packing_lot_id   INTEGER,
+    packing_lot_code TEXT,
+    harvest_lot_id   INTEGER,
+    harvest_lot_code TEXT,
+    allocated_weight_kg REAL,
+    linked_at     TEXT,
+    data          TEXT NOT NULL DEFAULT '{}',
+    created_at    TEXT NOT NULL,
+    updated_at    TEXT NOT NULL,
+    UNIQUE (tenant_id, id),
+    UNIQUE (tenant_id, packing_lot_id, harvest_lot_id),
+    FOREIGN KEY (tenant_id, packing_lot_id) REFERENCES packing_lots (tenant_id, id),
+    FOREIGN KEY (tenant_id, harvest_lot_id) REFERENCES lots (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS traceability_records (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    packaging_unit_id   INTEGER,
+    packaging_unit_code TEXT,
+    traceability_code   TEXT,
+    product_name  TEXT,
+    product_image_url TEXT,
+    business_unit_name    TEXT,
+    business_unit_address TEXT,
+    production_event_time TEXT,
+    brand_trademark_serial TEXT,
+    expiration_date   TEXT,
+    data_carrier_type TEXT,
+    data_retention_until TEXT,
+    sync_status   TEXT NOT NULL DEFAULT 'PENDING_SYNC',
+    data          TEXT NOT NULL DEFAULT '{}',
+    created_at    TEXT NOT NULL,
+    updated_at    TEXT NOT NULL,
+    UNIQUE (tenant_id, id),
+    FOREIGN KEY (tenant_id, packaging_unit_id) REFERENCES packaging_units (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS cte_stages (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id     TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    traceability_code TEXT,
+    stage_no      INTEGER,
+    stage_name    TEXT,
+    product_trace_code  TEXT,
+    location_trace_code TEXT,
+    batch_lot_number    TEXT,
+    event_time    TEXT,
+    scheme_code   TEXT,
+    data          TEXT NOT NULL DEFAULT '{}',
+    created_at    TEXT NOT NULL,
+    updated_at    TEXT NOT NULL,
+    UNIQUE (tenant_id, id)
+);

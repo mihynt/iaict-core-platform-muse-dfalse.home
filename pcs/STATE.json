@@ -1,5 +1,5 @@
 {
-  "revision": 21,
+  "revision": 22,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,8 +29,8 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "T-015 TECH_DONE (DEC-009 / D-STD-01): traceability data standard phase 1 live on the D1 beta - PUC identity on zones; actors, spatial units, zone-parcel links, input lots and PHI validation log as new tenant-scoped entities; harvest lots gated by PHI and cycle mass balance, stamped with national traceability codes and retention dates. Suite green in 4 store modes; D1 upgraded in place with beta-pilot data intact; browser-verified.",
-      "next_action": "Owner reviews the phase-1 traceability slice on the beta, then chooses: phase 2 of D-STD-01 (packing chain PHC/SKU + national-portal traceability records, sequenced with T-006 pilot go-live) or T-005 (M3a day-90 IoT go/no-go gate). Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard. Housekeeping available on request: delete the Z-TMP test zone once a delete endpoint exists, and remove the spike Worker/D1 (iaict-d1-spike).",
+      "last_completed_step": "T-016 TECH_DONE (D-STD-01 phase 2): packing chain live on the D1 beta - packing lots at PHC facilities, N-N harvest-input links with the over-allocation guard, SKU packaging units, national traceability records gated by the packing mass-balance rule with auto-built CTE stage chains, plus the new Packing UI view. Suite green in 4 store modes; D1 upgraded in place with beta-pilot data intact; browser-verified.",
+      "next_action": "Owner reviews the packing/traceability slice on the beta. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration, sequenced with T-006 pilot go-live - or T-005 (M3a day-90 IoT go/no-go gate). Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard. Housekeeping available on request: delete the Z-TMP test zone once a delete endpoint exists; remove the spike Worker/D1 (iaict-d1-spike).",
       "blockers": []
     },
     "decisions": [
@@ -151,6 +151,12 @@
         "name": "Traceability data standard - phase 1 (PUC identity, actors & parcels, PHI + mass-balance gates, traceability codes)",
         "status": "TECH_DONE",
         "evidence": "Live on the beta 2026-11-03 (Worker 871beb1e, D1 upgraded in place, browser-verified). See T-015 evidence."
+      },
+      {
+        "id": "F-007",
+        "name": "Traceability data standard - phase 2 (packing chain PHC/SKU, national traceability records, CTE stages)",
+        "status": "TECH_DONE",
+        "evidence": "Live on the beta 2026-11-03 (Worker 146e24f2, D1 upgraded in place, browser-verified). See T-016 evidence."
       }
     ],
     "flows": [],
@@ -310,9 +316,16 @@
         "status": "TECH_DONE",
         "classification": "PUBLIC",
         "evidence": "Owner directive 2026-11-03 with the research dossier (SHA-256 3afb2be6...cfeb1) recorded as delta D-STD-01 in pcs/SRS_CHANGES.md; full 33-table mapping in docs/DATA_MODEL.md (10 tables adopted in phase 1, remainder mapped to phase 2). Implemented: zones gain the PUC block (puc_code, puc_status, sector_category, market_scope, primary_species, scientific_name, issue_date, issuing_authority, post_inspect_due_date); new tenant-scoped kinds actors (ENT_ACTOR_HOUSEHOLD subset), spatial_units (ENT_SPATIAL_UNIT subset), zone_parcel_links (REL_ZONE_SPATIAL_UNIT, unique per tenant+zone+parcel), input_lots (ENT_INPUT_INVENTORY subset), phi_validations (LOG_PHI_VALIDATION); crop plans gain parcel link + variety + seed origin; field events gain input-lot link and computed safe_harvest_date = occurred date + PHI days; harvest lots gain farmer/parcel links + weigh slip, are rejected 400 PHI_VIOLATION when harvested before the plan's latest safe date (every attempt logged to phi_validations) and 400 MASS_BALANCE_EXCEEDED above the plan's target_yield_kg ceiling, and are stamped with traceability_code (plan | zone PUC-or-code | lot | harvest date, TT 02/2024) and data_retention_until (+12 months, TT 17/2021). Suite green in all four store modes: memory 37 passed + 1 skipped, D1-over-sqlite3-shim 37 + 1 skipped, psycopg 38, pg8000 38 (7 new tests in backend/tests/test_m3_traceability.py). D1 in-place upgrade path verified separately against a pre-T-015 schema copy (old data intact, new tables/columns appear, writes work) and then on production: deployed Worker version 871beb1e (2026-11-03), /health storage 'd1', remote D1 inspection shows all 5 new tables in database iaict-core, beta-pilot data intact (2 zones, 1 user, 1 plan, plus 1 lot the Owner created via the UI the same morning), new endpoints /api/v1/actors and /api/v1/phi-validations return 200 with empty lists. Mandatory browser test 2026-11-03 12:54-12:55 +07: sign-in via Pilot Admin card, dashboard 2/1/1/1 with no warnings, zones page 2 cards, lot create form contains the new farmer/parcel/weigh-slip fields, zone create form contains the PUC field, reload clean. UI: zone form/cards show PUC + primary species; lot form gained farmer code, parcel code, weigh slip; lot cards show farmer, weigh slip and traceability code. Phase 2 (packing chain PHC/SKU, national-portal traceability records + CTE stages, transport, recall, market approvals/GACC warnings, certifications, monitoring logs, livestock/fishery specializations) is mapped in docs/DATA_MODEL.md and not yet built."
+      },
+      {
+        "id": "T-016",
+        "title": "Traceability data standard phase 2 (D-STD-01): packing chain (PHC lots, N-N input links, SKU units), national traceability records + CTE stages, packing mass-balance gate",
+        "status": "TECH_DONE",
+        "classification": "PUBLIC",
+        "evidence": "Prepared locally on the Owner's instruction ('lam san') after the rev-21 checkpoint landed (GitHub 982e915c), then deployed in the same window once the Owner supplied the deploy token. Implemented: packing_lots (facility -> actors, PHC code, output weight, yield norm, storage type, packed_at, expiry), packing_inputs (N-N harvest->packing link, unique per tenant+packing+harvest; over-allocation guard rejects 400 HARVEST_LOT_OVER_ALLOCATED beyond the harvest lot's quantity), packaging_units (level, GTIN, SSCC, spec, count), traceability_records (the 10 mandatory TT 02/2024 fields, sync_status PENDING_SYNC; issuance runs the packing mass-balance gate - output above inputs x yield norm is rejected 400 PACKING_MASS_BALANCE_EXCEEDED - then completes the record from the chain, stamps traceability_code GTIN|PHC|packing lot|event time and data_retention_until: expiry +12 months, frozen/processed +24 months from packing), cte_stages (auto-built: one harvest stage per input lot located at the source zone PUC, plus the packing stage; further stages appendable via API). Suite green in all four store modes: memory 42 + 1 skipped, D1-over-sqlite3-shim 42 + 1 skipped, psycopg 43, pg8000 43 (5 new tests in backend/tests/test_m4_packing.py, including the dossier's pomelo case: 2 x 5,000 kg inputs packing to 8,200 kg passes at norm 0.85, 9,000 kg is blocked). D1 phase-2 in-place upgrade verified against a phase-1 database copy (data intact), then on production: deployed Worker version 146e24f2 (2026-11-03), remote D1 inspection shows all 5 phase-2 tables in iaict-core, beta-pilot data intact (2 zones, 1 user, 1 plan, 1 lot), endpoints /api/v1/packing-lots and /api/v1/traceability-records return 200 empty lists. UI: new 'Dong goi' (Packing) view - packing-lot list + create form, per-lot 'Cap ma truy xuat' flow (link input -> create SKU -> issue record), traceability-record list with sync status and retention date; reachable from the sidebar and the Khac quick-access cards. Mandatory browser test 2026-11-03 16:08-16:09 +07: sign-in via Pilot Admin card, dashboard 2/1/1/1 no warnings, packing view loads with both empty states, create form contains the PHC/yield-norm fields, reload clean. Not in scope yet: the national-portal push itself (records wait as PENDING_SYNC), transport/recall/market-approval entities (phase 3 in docs/DATA_MODEL.md)."
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T05:55:59Z"
+  "updated_at": "2026-11-03T09:09:44Z"
 }

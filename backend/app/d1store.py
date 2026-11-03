@@ -26,7 +26,9 @@ _SCHEMA = pathlib.Path(__file__).with_name("schema_d1.sql").read_text(encoding="
 _DDL = [stmt.strip() for stmt in _SCHEMA.split(";\n") if stmt.strip()]
 
 _TABLES_CHILD_FIRST = [
-    "audit_log", "lot_relations", "field_events", "lots", "crop_plans",
+    "audit_log", "packing_inputs", "lot_relations", "field_events", "lots",
+    "crop_plans", "cte_stages", "traceability_records", "packaging_units",
+    "packing_lots",
     "phi_validations", "zone_parcel_links", "input_lots", "spatial_units",
     "actors",
     "mother_plant_status_history", "mother_plants", "zone_boundary_versions",
@@ -35,6 +37,9 @@ _TABLES_CHILD_FIRST = [
 
 _NEW_TABLES = ["actors", "spatial_units", "zone_parcel_links", "input_lots",
                "phi_validations"]
+
+_PHASE2_TABLES = ["packing_lots", "packaging_units", "packing_inputs",
+                  "traceability_records", "cte_stages"]
 
 # D-STD-01 in-place upgrade for databases created before the traceability
 # standard landed: new tables come from schema_d1.sql; new columns on the
@@ -109,24 +114,32 @@ class D1Store:
         ).first())
         if row is None:
             await self._db.batch([self._db.prepare(stmt) for stmt in _DDL])
-        else:
+            self._schema_ready = True
+            return
+
+        async def _table_exists(name: str) -> bool:
             probe = _plain(await self._db.prepare(
-                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'actors'"
-            ).first())
-            if probe is None:
-                stmts = []
-                for stmt in _DDL:
-                    upper = stmt.upper()
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?"
+            ).bind(name).first())
+            return probe is not None
+
+        def _create_stmts(names: list[str]) -> list[str]:
+            return [stmt for stmt in _DDL
                     if any(f"CREATE TABLE IF NOT EXISTS {name} " in stmt or
                            f"CREATE TABLE IF NOT EXISTS {name}(" in stmt
-                           for name in _NEW_TABLES):
-                        stmts.append(stmt)
-                    elif upper.startswith("CREATE TABLE"):
-                        continue
-                for table, cols in _UPGRADE_COLUMNS.items():
-                    for col, ctype in cols:
-                        stmts.append(f"ALTER TABLE {table} ADD COLUMN {col} {ctype}")
-                await self._db.batch([self._db.prepare(stmt) for stmt in stmts])
+                           for name in names)]
+
+        if not await _table_exists("actors"):
+            # D-STD-01 phase-1 upgrade: new tables + ALTER-added columns.
+            stmts = _create_stmts(_NEW_TABLES)
+            for table, cols in _UPGRADE_COLUMNS.items():
+                for col, ctype in cols:
+                    stmts.append(f"ALTER TABLE {table} ADD COLUMN {col} {ctype}")
+            await self._db.batch([self._db.prepare(stmt) for stmt in stmts])
+        if not await _table_exists("packing_lots"):
+            # D-STD-01 phase-2 upgrade: packing chain (new tables only).
+            stmts = _create_stmts(_PHASE2_TABLES)
+            await self._db.batch([self._db.prepare(stmt) for stmt in stmts])
         self._schema_ready = True
 
     async def _first(self, sql: str, params: tuple = ()):

@@ -103,11 +103,11 @@ SRS scope of a milestone.
 | REL_ZONE_MARKET_APPROVAL, LOG_FOREIGN_WARNING, LOG_ZONE_STATUS_HISTORY, REL_ENTITY_CERTIFICATION | Phase 2 — market approvals, warnings, code status history, certifications |
 | LOG_PRE_HARVEST_SUPERVISION, LOG_MONITORING_DECLARATION, LOG_WATER_QUALITY_TEST, LOG_RESIDUE_TEST_DETAIL, LOG_LIVESTOCK_DECL_ITEM | Phase 2 — supervision & monitoring logs |
 | ENT_LIVESTOCK_UNIT | Phase 2 — livestock sector (pilot is crop-first) |
-| ENT_PACKING_PROCESSING, ENT_PACKING_INPUT_LINK, ENT_PACKAGING_UNIT_SKU | Phase 2 — packing chain (lands with the warehouse/pilot slice) |
-| ENT_TRANSPORT_TRIP | Phase 2 |
-| SYS_TRACEABILITY_RECORD, LOG_CTE_SUPPLY_CHAIN_STAGE | Phase 2 — national-portal records; phase 1 already stamps the code on each lot |
-| SYS_RECALL_COMPLIANCE | Phase 2 |
-| VW_PRODUCTION_ZONE_METRICS, VW_CYCLE_MASS_BALANCE, VW_PACKING_MASS_BALANCE | Phase 1 partial — the cycle mass-balance rule is enforced at lot creation (below); reporting views land with phase 2 |
+| ENT_PACKING_PROCESSING, ENT_PACKING_INPUT_LINK, ENT_PACKAGING_UNIT_SKU | **Phase 2 (prepared in T-016, pending deploy)** — `packing_lots` (facility → `actors`, PHC code, output weight, yield norm, storage type), `packing_inputs` (N-N link, `UNIQUE (tenant, packing lot, harvest lot)`), `packaging_units` (level, GTIN, SSCC, spec, count) |
+| ENT_TRANSPORT_TRIP | Phase 3 |
+| SYS_TRACEABILITY_RECORD, LOG_CTE_SUPPLY_CHAIN_STAGE | **Phase 2 (prepared in T-016, pending deploy)** — `traceability_records` (the 10 mandatory TT 02/2024 fields, sync status) + `cte_stages` (auto-built harvest + packing stages; further stages appendable) |
+| SYS_RECALL_COMPLIANCE | Phase 3 |
+| VW_PRODUCTION_ZONE_METRICS, VW_CYCLE_MASS_BALANCE, VW_PACKING_MASS_BALANCE | Phase 1 partial — the cycle mass-balance rule is enforced at lot creation (below); the packing mass-balance rule is enforced at traceability-record issuance (phase 2); reporting views land later |
 
 ### Phase-1 enforcement rules (application layer, all backends)
 
@@ -132,6 +132,22 @@ SRS scope of a milestone.
 API surface additions: `POST/GET /api/v1/actors`, `/spatial-units`,
 `/zone-parcel-links` (create/list), `/input-lots`, `GET /phi-validations`,
 under the same tenancy/role rules as the other production objects.
+
+Phase-2 additions (T-016, prepared 2026-11-03, pending deploy):
+`POST/GET /api/v1/packing-lots`, `/packing-inputs` (create/list),
+`/packaging-units`, `/traceability-records`, `/cte-stages`. Rules:
+a harvest lot cannot be allocated to packing beyond its harvested
+quantity (`400 HARVEST_LOT_OVER_ALLOCATED`); issuing a traceability
+record runs the packing mass-balance gate — packed output must not
+exceed linked inputs × yield norm (`400 PACKING_MASS_BALANCE_EXCEEDED`,
+the VW_PACKING_MASS_BALANCE rule) — then completes the record from the
+chain (product, facility name/address, event time), stamps its
+traceability code (GTIN ∥ PHC ∥ packing lot ∥ event time) and retention
+date (expiry + 12 months; frozen/processed + 24 months from packing),
+and auto-writes the CTE stages (one harvest stage per input lot,
+located at the source zone's PUC, plus the packing stage). Records
+start as `PENDING_SYNC` toward the national portal (TT 02/2024); the
+portal push itself is an integration slice, not part of T-016.
 
 Note on the D1 upgrade path: databases created before phase 1 gain the
 new tables from `schema_d1.sql` and the new columns via `ALTER TABLE`
