@@ -122,3 +122,83 @@ def test_cross_tenant_facility_refused(client):
         "code": "PK-X", "facility_code": "PHC-B", "output_weight_kg": 10})
     assert r.status_code == 400
     assert r.json()["detail"]["code"] == "REF_UNKNOWN"
+
+
+# ---- T-017 regression tests (two-pass review of T-016) -----------------------
+def test_packing_input_requires_both_refs(client):
+    """S1: a dangling link (missing either end) used to be creatable and
+    later crashed traceability issuance with a 500."""
+    _chain(client)
+    r = client.post("/api/v1/packing-inputs", headers=A, json={
+        "packing_lot_code": "PK-1", "allocated_weight_kg": 100})
+    assert r.status_code == 400
+    assert r.json()["detail"]["code"] == "REF_REQUIRED"
+    r = client.post("/api/v1/packing-inputs", headers=A, json={
+        "harvest_lot_code": "LOT-H1", "allocated_weight_kg": 100})
+    assert r.status_code == 400
+    assert r.json()["detail"]["code"] == "REF_REQUIRED"
+
+
+def test_traceability_record_requires_unit(client):
+    """M2: no record may be issued without its packaging unit."""
+    _chain(client)
+    r = client.post("/api/v1/traceability-records", headers=A,
+                    json={"product_name": "Orphan"})
+    assert r.status_code == 400
+    assert r.json()["detail"]["code"] == "TRACEABILITY_UNIT_REQUIRED"
+
+
+def test_gate_not_skippable_without_norm(client):
+    """M1: a packing lot without a yield norm (or output) must block
+    issuance instead of silently skipping the mass-balance gate."""
+    _chain(client)
+    client.post("/api/v1/packing-lots", headers=A, json={
+        "code": "PK-NONORM", "facility_code": "PHC-01",
+        "output_weight_kg": 999999, "packed_at": "2026-10-15T08:00:00"})
+    client.post("/api/v1/packaging-units", headers=A, json={
+        "code": "SKU-NN", "packing_lot_code": "PK-NONORM", "gtin_code": "111"})
+    r = client.post("/api/v1/traceability-records", headers=A,
+                    json={"packaging_unit_code": "SKU-NN"})
+    assert r.status_code == 400
+    assert r.json()["detail"]["code"] == "PACKING_DATA_INCOMPLETE"
+
+
+def test_duplicate_traceability_code_rejected(client):
+    """M3: re-issuing for the same unit must not duplicate the code or
+    the CTE chain."""
+    _chain(client)
+    _link(client, "LOT-H1", 5000)
+    _link(client, "LOT-H2", 5000)
+    client.post("/api/v1/packaging-units", headers=A, json={
+        "code": "SKU-DUP", "packing_lot_code": "PK-1", "gtin_code": "777"})
+    first = client.post("/api/v1/traceability-records", headers=A,
+                        json={"packaging_unit_code": "SKU-DUP"})
+    assert first.status_code == 201, first.text
+    second = client.post("/api/v1/traceability-records", headers=A,
+                         json={"packaging_unit_code": "SKU-DUP"})
+    assert second.status_code == 409
+    assert second.json()["detail"]["code"] == "TRACEABILITY_CODE_EXISTS"
+    records = client.get("/api/v1/traceability-records", headers=A).json()["items"]
+    assert len(records) == 1
+    stages = client.get("/api/v1/cte-stages", headers=A).json()["items"]
+    assert len(stages) == 3  # 2 harvest + 1 packing, not doubled
+
+
+def test_fresh_retention_anchors_to_harvest(client):
+    """M5 (fresh case): without an expiry date, retention is the latest
+    input harvest date + 12 months, not the packing date + 12."""
+    _chain(client)
+    client.post("/api/v1/packing-lots", headers=A, json={
+        "code": "PK-FRESH", "facility_code": "PHC-01", "phc_code": "VN-PHC-66-019",
+        "product_name": "Fresh pomelo", "output_weight_kg": 4000,
+        "yield_norm_ratio": 0.85, "storage_type": "FRESH_AMBIENT",
+        "packed_at": "2026-11-01T08:00:00"})
+    _link(client, "LOT-H1", 5000, packing="PK-FRESH")  # harvested 2026-10-14
+    client.post("/api/v1/packaging-units", headers=A, json={
+        "code": "SKU-FRESH", "packing_lot_code": "PK-FRESH", "gtin_code": "888"})
+    r = client.post("/api/v1/traceability-records", headers=A, json={
+        "packaging_unit_code": "SKU-FRESH",
+        "product_image_url": "https://example.org/pomelo.jpg"})
+    assert r.status_code == 201, r.text
+    assert r.json()["data_retention_until"] == "2027-10-14"
+    assert r.json()["product_image_url"] == "https://example.org/pomelo.jpg"

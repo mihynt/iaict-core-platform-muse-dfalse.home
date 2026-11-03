@@ -442,3 +442,8 @@ CREATE TABLE IF NOT EXISTS cte_stages (
     updated_at    TEXT NOT NULL,
     UNIQUE (tenant_id, id)
 );
+
+-- T-017/M3: traceability codes are unique per tenant (dossier: UNIQUE NOT NULL).
+CREATE UNIQUE INDEX IF NOT EXISTS ux_traceability_records_code
+    ON traceability_records (tenant_id, traceability_code)
+    WHERE traceability_code IS NOT NULL;

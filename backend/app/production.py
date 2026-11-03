@@ -270,11 +270,19 @@ async def _prepare_lot(tenant: str, fields: dict) -> None:
 
 
 async def _prepare_packing_input(tenant: str, fields: dict) -> None:
-    """A harvest lot cannot be allocated to packing beyond the quantity
-    it actually holds (ENT_PACKING_INPUT_LINK rule, D-STD-01 phase 2)."""
+    """A packing-input link must name BOTH ends (T-017/S1: a dangling link
+    used to be creatable and later crashed traceability issuance), and a
+    harvest lot cannot be allocated to packing beyond the quantity it
+    actually holds (ENT_PACKING_INPUT_LINK rule, D-STD-01 phase 2)."""
+    if not fields.get("packing_lot_code") or not fields.get("harvest_lot_code"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "REF_REQUIRED",
+                    "message": "A packing input link requires both "
+                               "packing_lot_code and harvest_lot_code"})
     code = fields.get("harvest_lot_code")
     allocated = fields.get("allocated_weight_kg")
-    if not code or allocated is None:
+    if allocated is None:
         return
     harvest = await store.get_record_by_code(tenant, "lots", code)
     if harvest is None or harvest.get("quantity") is None:
@@ -314,20 +322,42 @@ async def _prepare_traceability_record(tenant: str, fields: dict) -> None:
     then the record is completed from the packing chain and stamped with
     its code and retention date."""
     unit, plot, facility = await _packing_context(tenant, fields)
+    if not fields.get("packaging_unit_code"):
+        # T-017/M2: a national record is meaningless without its packaging
+        # unit (dossier: packaging_unit_id FK NOT NULL, code NOT NULL).
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "TRACEABILITY_UNIT_REQUIRED",
+                    "message": "packaging_unit_code is required to issue a "
+                               "traceability record"})
+    if unit is not None and plot is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "PACKING_CHAIN_INCOMPLETE",
+                    "message": f"Packaging unit {unit['code']} is not linked "
+                               "to a packing lot"})
     if plot is None:
-        return
+        return  # unknown unit code: the generic REF_UNKNOWN check reports it
     output = plot.get("output_weight_kg")
     norm = plot.get("yield_norm_ratio")
-    if output is not None and norm is not None:
-        inputs = sum(i.get("allocated_weight_kg") or 0
-                     for i in await store.list_records(tenant, "packing_inputs")
-                     if i.get("packing_lot_code") == plot["code"])
-        if inputs * norm + 1e-9 < output:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail={"code": "PACKING_MASS_BALANCE_EXCEEDED",
-                        "message": f"Packed output {output} kg exceeds "
-                                   f"{inputs} kg inputs x yield norm {norm}"})
+    if output is None or norm is None:
+        # T-017/M1: the mass-balance gate must not be skippable by leaving
+        # the norm (NOT NULL in the dossier) or the output undeclared.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "PACKING_DATA_INCOMPLETE",
+                    "message": f"Packing lot {plot['code']} must declare "
+                               "output_weight_kg and yield_norm_ratio before "
+                               "a traceability record can be issued"})
+    inputs = sum(i.get("allocated_weight_kg") or 0
+                 for i in await store.list_records(tenant, "packing_inputs")
+                 if i.get("packing_lot_code") == plot["code"])
+    if inputs * norm + 1e-9 < output:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "PACKING_MASS_BALANCE_EXCEEDED",
+                    "message": f"Packed output {output} kg exceeds "
+                               f"{inputs} kg inputs x yield norm {norm}"})
     fields.setdefault("product_name", plot.get("product_name"))
     if fields.get("expiration_date") is None and plot.get("expiry_date"):
         fields["expiration_date"] = plot["expiry_date"]
@@ -342,14 +372,39 @@ async def _prepare_traceability_record(tenant: str, fields: dict) -> None:
         fields["traceability_code"] = "|".join([
             (unit or {}).get("gtin_code") or (unit or {}).get("code") or "",
             location, plot["code"], str(event_time)])
+    # T-017/M3: traceability codes are unique per tenant (dossier: UNIQUE).
+    existing = await store.list_records(tenant, "traceability_records")
+    if any(r.get("traceability_code") == fields["traceability_code"]
+           for r in existing):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": "TRACEABILITY_CODE_EXISTS",
+                    "message": f"Traceability code {fields['traceability_code']} "
+                               "was already issued"})
     if not fields.get("data_retention_until"):
         expiry = _iso_date(fields.get("expiration_date"))
         packed = _iso_date(fields.get("production_event_time"))
         if expiry is not None:
             fields["data_retention_until"] = _add_months(expiry, 12).isoformat()
-        elif packed is not None:
-            months = 24 if plot.get("storage_type") == "FROZEN_PROCESSED" else 12
-            fields["data_retention_until"] = _add_months(packed, months).isoformat()
+        elif plot.get("storage_type") == "FROZEN_PROCESSED" and packed is not None:
+            fields["data_retention_until"] = _add_months(packed, 24).isoformat()
+        else:
+            # T-017/M5 (fresh case): the dossier anchors retention for
+            # produce without an expiry date to the HARVEST date (+12
+            # months) — the latest harvest among the packing inputs —
+            # not to the packing date.
+            harvest_dates = []
+            for link in await store.list_records(tenant, "packing_inputs"):
+                if link.get("packing_lot_code") != plot["code"]:
+                    continue
+                harvest = await store.get_record_by_code(
+                    tenant, "lots", link.get("harvest_lot_code") or "")
+                day = _iso_date((harvest or {}).get("harvest_date"))
+                if day is not None:
+                    harvest_dates.append(day)
+            anchor = max(harvest_dates) if harvest_dates else packed
+            if anchor is not None:
+                fields["data_retention_until"] = _add_months(anchor, 12).isoformat()
 
 
 async def _emit_cte_stages(tenant: str, record: dict) -> None:
@@ -358,10 +413,16 @@ async def _emit_cte_stages(tenant: str, record: dict) -> None:
     unit, plot, _facility = await _packing_context(tenant, record)
     if unit is None or plot is None:
         return
-    code = record["traceability_code"]
+    code = record.get("traceability_code")
+    if not code:
+        return
     inputs = [i for i in await store.list_records(tenant, "packing_inputs")
               if i.get("packing_lot_code") == plot["code"]]
     for link in inputs:
+        # T-017/S1: tolerate legacy links without a harvest end instead of
+        # crashing after the record has already been created.
+        if not link.get("harvest_lot_code"):
+            continue
         harvest = await store.get_record_by_code(tenant, "lots",
                                                  link["harvest_lot_code"])
         if harvest is None:

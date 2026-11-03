@@ -149,6 +149,20 @@ located at the source zone's PUC, plus the packing stage). Records
 start as `PENDING_SYNC` toward the national portal (TT 02/2024); the
 portal push itself is an integration slice, not part of T-016.
 
+T-017 hardening (2026-11-03, from the two-pass review of T-016):
+packing-input links must name both ends (`400 REF_REQUIRED` — a
+dangling link previously crashed issuance with a 500 after the record
+was written); issuance requires a packaging unit
+(`TRACEABILITY_UNIT_REQUIRED`) linked to a packing lot
+(`PACKING_CHAIN_INCOMPLETE`) that declares output weight and yield
+norm (`PACKING_DATA_INCOMPLETE` — the mass-balance gate can no longer
+be skipped); traceability codes are unique per tenant (application
+check `409 TRACEABILITY_CODE_EXISTS` + partial unique index
+`ux_traceability_records_code`); fresh-produce retention now anchors
+to the latest input harvest date + 12 months per the dossier's
+fallback case (2). The issue form collects the product image URL
+(mandatory field 2 of TT 02/2024) and warns on records missing it.
+
 Note on the D1 upgrade path: databases created before phase 1 gain the
 new tables from `schema_d1.sql` and the new columns via `ALTER TABLE`
 (plain columns — SQLite cannot add FKs by ALTER; reference resolution is

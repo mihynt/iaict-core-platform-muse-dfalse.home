@@ -140,7 +140,20 @@ class D1Store:
             # D-STD-01 phase-2 upgrade: packing chain (new tables only).
             stmts = _create_stmts(_PHASE2_TABLES)
             await self._db.batch([self._db.prepare(stmt) for stmt in stmts])
+        # T-017/M3 backstop: unique traceability code per tenant. The
+        # statement goes through the raw binding, NOT self._run (which
+        # itself awaits _ensure_schema — that recursion burned the
+        # Workers CPU budget and took the beta's write paths down with
+        # 1102/500s on 2026-11-03 until this fix). Guarded: a legacy
+        # duplicate must not take the whole API down.
         self._schema_ready = True
+        try:
+            await self._db.prepare(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ux_traceability_records_code"
+                " ON traceability_records (tenant_id, traceability_code)"
+                " WHERE traceability_code IS NOT NULL").run()
+        except Exception:
+            pass
 
     async def _first(self, sql: str, params: tuple = ()):
         await self._ensure_schema()

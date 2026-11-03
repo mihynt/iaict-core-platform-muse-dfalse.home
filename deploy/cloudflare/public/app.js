@@ -555,6 +555,7 @@ VIEWS.packing = async () => {
         <div class="meta">
           ${r.business_unit_name ? `<span>🏢 ${esc(r.business_unit_name)}</span>` : ""}
           <span>${r.sync_status === "SYNCED_SUCCESS" ? "✅ Đã đồng bộ cổng quốc gia" : "⏳ Chờ đồng bộ cổng quốc gia"}</span>
+          ${r.product_image_url ? "" : "<span>⚠️ Thiếu ảnh sản phẩm</span>"}
           ${r.data_retention_until ? `<span>🗄️ Lưu trữ tới ${fmtDate(r.data_retention_until)}</span>` : ""}
         </div></div></div>`).join("")}</div>`
         : emptyState("🔎", "Chưa có bản ghi truy xuất nào", "Cấp mã truy xuất từ một lô đóng gói để sinh bản ghi.")));
@@ -571,8 +572,8 @@ VIEWS.packing = async () => {
       facilityField,
       { k: "phc_code", label: "Mã số cơ sở đóng gói (PHC)", placeholder: "vd: VN-PHC-66-019" },
       { k: "product_name", label: "Tên sản phẩm", placeholder: "vd: Bưởi da xanh loại 1" },
-      { k: "output_weight_kg", label: "Khối lượng thành phẩm (kg)", type: "number", step: "0.01" },
-      { k: "yield_norm_ratio", label: "Định mức thu hồi (0–1)", type: "number", step: "0.01", placeholder: "vd: 0.85" },
+      { k: "output_weight_kg", label: "Khối lượng thành phẩm (kg)", type: "number", step: "0.01", required: true },
+      { k: "yield_norm_ratio", label: "Định mức thu hồi (0–1)", type: "number", step: "0.01", placeholder: "vd: 0.85", required: true },
       { k: "storage_type", label: "Hình thức bảo quản", type: "select", options: [
         { v: "FRESH_AMBIENT", t: "Tươi, nhiệt độ thường" }, { v: "CHILLED_COOL", t: "Mát lạnh" },
         { v: "FROZEN_PROCESSED", t: "Đông lạnh / chế biến" }] },
@@ -585,13 +586,15 @@ VIEWS.packing = async () => {
 async function issueTraceCode(packingCode) {
   const lots = await ensure("lots", "/lots").catch(() => []);
   openSheet(`Cấp mã truy xuất · ${packingCode}`, [
-    { k: "harvest_lot_code", label: "Lô thu hoạch đầu vào", type: "select",
+    { k: "harvest_lot_code", label: "Lô thu hoạch đầu vào", type: "select", required: true,
       options: [{ v: "", t: "— Chọn lô thu hoạch —" }, ...lots.map((l) => ({ v: l.code, t: `${l.code} · ${l.quantity ?? "?"} ${l.unit || "kg"}` }))] },
     { k: "allocated_weight_kg", label: "Khối lượng đưa vào đóng gói (kg)", type: "number", step: "0.01", required: true },
     { k: "gtin_code", label: "Mã GTIN sản phẩm", required: true, placeholder: "vd: 08935049501234" },
+    { k: "product_image_url", label: "URL hình ảnh sản phẩm (trường bắt buộc TT 02/2024)", placeholder: "https://…" },
     { k: "package_spec", label: "Quy cách bao gói", placeholder: "vd: Thùng carton 10 kg" },
     { k: "units_count", label: "Số đơn vị bao gói", type: "number", step: "1" },
   ], async (p) => {
+    if (!p.harvest_lot_code) throw new Error("Hãy chọn lô thu hoạch đầu vào.");
     try {
       await T("/packing-inputs", { method: "POST", body: {
         packing_lot_code: packingCode, harvest_lot_code: p.harvest_lot_code,
@@ -601,7 +604,8 @@ async function issueTraceCode(packingCode) {
     await T("/packaging-units", { method: "POST", body: {
       code: sku, packing_lot_code: packingCode, level: "SHIPPING_CASE_CARTON",
       gtin_code: p.gtin_code, package_spec: p.package_spec, units_count: p.units_count } });
-    await T("/traceability-records", { method: "POST", body: { packaging_unit_code: sku } });
+    await T("/traceability-records", { method: "POST", body: {
+      packaging_unit_code: sku, product_image_url: p.product_image_url } });
     invalidate("packing", "trecords");
   });
 }

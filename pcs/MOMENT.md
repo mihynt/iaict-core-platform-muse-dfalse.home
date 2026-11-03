@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 22 · **Updated:** 2026-11-03T09:09:44Z · **Phase:** DISCOVERY
+- **Revision:** 23 · **Updated:** 2026-11-03T09:52:57Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -31,6 +31,19 @@
 
 ## Latest progress
 
+- **Phase-2 hardening — live (2026-11-03, T-017 TECH_DONE):** the
+  five fix groups from the two-pass review of T-016 are deployed
+  (Worker `75f69cfb`): both-ends-required packing links, an
+  unskippable mass-balance gate, unit-required issuance, unique
+  traceability codes (409 + D1 unique index), product-image capture
+  in the issue form, and harvest-anchored retention for fresh
+  produce. The first T-017 build briefly took the beta's write
+  paths down (a self-recursion in D1 schema setup); live write
+  probes caught it before any checkpoint, it was root-caused,
+  fixed, and covered by a new schema-guard regression test. Suite
+  green in all four store modes (47+2 / 48+1 / 48 / 48); browser
+  test passed. The frozen-retention interpretation remains an
+  open Owner decision.
 - **Traceability standard phase 2 — live (2026-11-03, D-STD-01 /
   T-016 TECH_DONE):** the packing chain lands on the beta: packing
   lots at PHC facilities, N-N harvest-input links with an
@@ -245,7 +258,8 @@
 
 ## Next action
 
-Owner reviews the packing/traceability slice on the beta, then
-chooses: D-STD-01 phase 3 (reference catalogues, market approvals,
-monitoring logs, transport + recall) and the national-portal sync
-integration, with T-006 — or T-005 (M3a day-90 IoT gate).
+Owner reviews the hardened packing/traceability slice and decides
+the frozen-retention interpretation, then chooses: D-STD-01 phase 3
+(reference catalogues, market approvals, monitoring logs, transport
++ recall) and the national-portal sync integration, with T-006 — or
+T-005 (M3a day-90 IoT gate).
