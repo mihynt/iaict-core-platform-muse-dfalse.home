@@ -1,5 +1,5 @@
 {
-  "revision": 42,
+  "revision": 43,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "T-030 DEPLOYED LIVE (Worker 1ae828e8): per-table analysis delivered, consent field live, SWR persistent cache live. Pending Owner decisions: cron keep-warm (entry change) vs always-warm host; Q-TX-01..03; phase 3 vs T-005.",
+      "last_completed_step": "DEC-013 recorded: fields follow the 33 dossier tables provisionally (Owner ruling 2026-11-04). Pending Owner decisions unchanged: cron keep-warm vs always-warm host; Q-TX-01..03; phase 3 vs T-005.",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -108,6 +108,12 @@
         "decision": "In SRS Appendix F, tables follow the Owner-supplied dossier as the root: the dossier's own table numbers and names are reproduced without grouping or renaming, every consolidated rule cites its source dossier table, and overlaps with pre-existing SRS requirements are cross-referenced in place (the pre-existing requirement governs; a TX code records only the dossier's addition). Applied in SRS v2.1.1 (delta D-STD-04).",
         "rationale": "Owner directive 2026-11-03 after catching that TX-01/TX-03 duplicated ZON-09/CMP-10 and FLD-16/FLD-17: 'Cac bang lay theo file toi gui (lam goc)'. Implements DEC-011's foundation designation at document level.",
         "status": "ACTIVE"
+      },
+      {
+        "id": "DEC-013",
+        "date": "2026-11-04",
+        "title": "Field baseline: the 33 dossier tables, provisionally",
+        "detail": "Owner ruling 2026-11-04 04:55 +07: 'Cac truong tam thoi lay theo 33 bang' — for the time being, the platform's field set follows the 33-table traceability dossier as extracted and analysed in T-030. This ratifies DEC-011/DEC-012 in operational terms: any new build (phase-3 tables, the SYS pack for Bang 32/33, portal sync) takes its fields from the dossier tables field-by-field; platform deviations remain recorded deltas, never silent. 'Provisionally' = until IAICT locks INT-01..06 / Q-TX-01..03, which may amend the baseline through the SRS delta process."
       }
     ],
     "features": [
@@ -496,5 +502,5 @@
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T21:53:21Z"
+  "updated_at": "2026-11-03T21:55:50Z"
 }
