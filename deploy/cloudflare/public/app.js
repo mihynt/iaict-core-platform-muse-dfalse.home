@@ -306,7 +306,11 @@ const DETAIL_LABELS = {
   stage_name: "Tên công đoạn", applied_scheme_id: "Tiêu chuẩn áp dụng",
   scheme_code: "Mã tiêu chuẩn / chứng nhận", event_time: "Thời điểm sự kiện",
   product_trace_code: "Mã truy xuất sản phẩm", location_trace_code: "Mã truy xuất địa điểm",
-  batch_lot_number: "Số lô", quantity_received: "Số lượng nhập",
+  batch_lot_number: "Số lô", quantity_received: "Số lượng nhập", dosage_concentration: "Liều lượng / nồng độ",
+  total_quantity_applied: "Tổng lượng đã dùng", crop_animal_growth_stage: "Giai đoạn sinh trưởng",
+  target_pest_disease_reason: "Đối tượng / lý do xử lý", gs1_role_ai: "Mã vai trò GS1",
+  is_group_leader: "Là tổ trưởng", ics_training_completed: "Đã tập huấn ICS",
+  initial_declared_area_ha: "Diện tích khai báo ban đầu (ha)", validated_at: "Thời điểm kiểm tra",
 };
 
 const DETAIL_VALUE_MAPS = {
@@ -332,10 +336,10 @@ function fmtDetailVal(k2, v) {
 // field in a fixed order, empty ones as "-", so nothing is hidden just
 // because it has no value yet (Owner review 2026-11-03).
 const DETAIL_SPECS = {
-  zones: ["code", "name", "status", "puc_code", "puc_status", "vsic_code", "sector_category", "market_scope", "primary_species", "scientific_name", "crop_group", "area_ha", "province", "district", "ward", "address", "season", "water_source", "managing_entity", "issue_date", "issuing_authority", "post_inspect_due_date", "dist_to_residential_m", "dist_to_sensitive_zone_m", "bee_site_min_dist_km"],
+  zones: ["code", "name", "status", "puc_code", "puc_status", "vsic_code", "sector_category", "market_scope", "primary_species", "scientific_name", "crop_group", "area_ha", "initial_declared_area_ha", "province", "district", "ward", "address", "season", "water_source", "managing_entity", "issue_date", "issuing_authority", "post_inspect_due_date", "valid_from", "valid_to", "dist_to_residential_m", "dist_to_sensitive_zone_m", "bee_site_min_dist_km"],
   mother_plants: ["code", "species", "variety", "scientific_name", "cultivar_code", "zone_code", "planting_year", "origin", "owner_manager", "recognition_no", "valid_to", "status"],
-  actors: ["code", "name", "actor_type", "gln_code", "parent_code", "province_code", "district_code", "commune_code", "address", "phone", "email", "valid_from", "valid_to", "status"],
-  spatial_units: ["code", "name", "unit_type", "operator_code", "national_land_parcel_id", "map_sheet_number", "parcel_number", "area_m2", "land_tenure_doc_type", "land_cert_serial", "land_legal_owner_name", "status"],
+  actors: ["code", "name", "actor_type", "gln_code", "gs1_role_ai", "parent_code", "province_code", "district_code", "commune_code", "address", "phone", "email", "is_group_leader", "ics_training_completed", "valid_from", "valid_to", "status"],
+  spatial_units: ["code", "name", "unit_type", "operator_code", "province_code", "commune_code", "national_land_parcel_id", "map_sheet_number", "parcel_number", "area_m2", "land_tenure_doc_type", "land_cert_serial", "land_legal_owner_name", "valid_from", "valid_to", "status"],
   zone_parcel_links: ["zone_code", "parcel_code", "registered_area_m2", "membership_status", "joined_date", "left_date", "status"],
   input_lots: ["code", "name", "category", "brand_name", "substance_code", "vn_registration_number", "batch_no", "purchase_invoice_no", "qcvn_scheme_id", "supplier_code", "purchase_date", "quantity", "unit", "phi_days", "expiry_date", "status"],
   crop_plans: ["code", "name", "crop_name", "zone_code", "plant_code", "parcel_code", "variety_name", "seed_origin", "seed_origin_doc", "planting_density", "start_date", "end_date", "target_yield_kg", "status"],
@@ -343,6 +347,9 @@ const DETAIL_SPECS = {
   packing_lots: ["code", "facility_code", "phc_code", "product_name", "output_weight_kg", "yield_norm_ratio", "storage_type", "packed_at", "expiry_date", "status"],
   traceability_records: ["traceability_code", "product_name", "product_image_url", "business_name", "business_address", "production_event_time", "brand_or_serial", "expiration_date", "packaging_unit_code", "data_carrier_type", "sync_status", "synced_at", "data_retention_until", "status"],
   phi_validations: ["lot_code", "plan_code", "validation_outcome", "max_safe_harvest_date", "actual_harvest_date", "last_treatment_ref"],
+  field_events: ["event_type", "plan_code", "zone_code", "occurred_at", "input_lot_code", "phi_days", "safe_harvest_date", "dosage_concentration", "total_quantity_applied", "application_method", "crop_animal_growth_stage", "target_pest_disease_reason", "fruit_bagging_count", "device", "notes", "actor"],
+  packaging_units: ["code", "packing_lot_code", "level", "gtin_code", "sscc_code", "package_spec", "units_count", "status"],
+  cte_stages: ["stage_no", "stage_name", "traceability_code", "product_trace_code", "location_trace_code", "batch_lot_number", "event_time", "scheme_code"],
 };
 
 function openDetail(title, rec, kind) {
@@ -720,7 +727,7 @@ VIEWS.plans = async () => {
         <button class="btn btn-primary btn-sm" id="addEvent">+ Ghi nhật ký</button></div>
       ${events.length ? `<div class="list">${events.slice().reverse().map((e) => {
         const t = EVENT_TYPES.find((x) => x.v === e.event_type);
-        return `<div class="card"><div class="thumb sky">${t ? t.t.split(" ")[0] : "📌"}</div><div class="body">
+        return `<div class="card" data-card="${e.id}"><div class="thumb sky">${t ? t.t.split(" ")[0] : "📌"}</div><div class="body">
           <div class="title">${esc(t ? t.t : e.event_type || "Sự kiện")}</div>
           <div class="sub">${esc(e.notes || "")}</div>
           <div class="meta">
@@ -730,6 +737,7 @@ VIEWS.plans = async () => {
             ${e.actor ? `<span>👤 ${esc(e.actor)}</span>` : ""}
           </div></div></div>`; }).join("")}</div>`
       : emptyState("📝", "Chưa có nhật ký nào", "Ghi lại tưới, bón, kiểm tra… để truy vết về sau.")}`);
+    wireCardDetails(el, events, (e) => `Nhật ký · ${e.event_type || ""}`, "field_events");
     $("#addEvent").onclick = async () => {
       const [zones, inputs] = await Promise.all([
         ensure("zones", "/zones").catch(() => []),
@@ -746,7 +754,11 @@ VIEWS.plans = async () => {
           addNew: quickInputLot,
           refreshOptions: async () => optOf(await ensure("inputs", "/input-lots"), "— Không ghi vật tư —", fmtInputOpt) },
         { k: "phi_days", label: "Số ngày cách ly PHI (để trống = lấy theo lô vật tư)", type: "number", step: "1" },
+        { k: "dosage_concentration", label: "Liều lượng / nồng độ", placeholder: "vd: 0.5 lít/ha, 2g/lít…" },
+        { k: "total_quantity_applied", label: "Tổng lượng đã dùng", placeholder: "vd: 3.5 lít" },
         { k: "application_method", label: "Phương pháp áp dụng", placeholder: "vd: Phun áp lực, Tưới nhỏ giọt…" },
+        { k: "crop_animal_growth_stage", label: "Giai đoạn sinh trưởng", placeholder: "vd: Ra hoa, Nuôi trái…" },
+        { k: "target_pest_disease_reason", label: "Đối tượng / lý do xử lý", placeholder: "vd: Rệp sáp, thán thư…" },
         { k: "fruit_bagging_count", label: "Số trái đã bao (nếu có)", type: "number", step: "1" },
         { k: "occurred_at", label: "Thời gian thực hiện", type: "datetime-local" },
         { k: "notes", label: "Ghi chú", type: "textarea", placeholder: "Mô tả công việc, vật tư đã dùng…" },

@@ -1,5 +1,5 @@
 {
-  "revision": 36,
+  "revision": 37,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "T-027 built and verified locally; deploy to beta pending the Owner's Cloudflare token in-session, then the live browser test.",
+      "last_completed_step": "T-027 + T-028 built and verified locally (field audit vs the root dossier done, minutes filed); deploy to beta pending the Owner's Cloudflare token in-session, then the live browser test.",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -267,12 +267,23 @@
     ],
     "tasks": [
       {
+        "id": "T-028",
+        "title": "Field-completeness audit vs the root dossier (Owner research-first rule, 2026-11-03 22:29)",
+        "status": "TECH_DONE",
+        "priority": "P1",
+        "phase": "M2",
+        "evidence": "Extracted every field name from the pinned root dossier DOCX (SHA 3afb2be6...) per table and compared concept-by-concept with the platform schema + detail specs. Minutes: ~/workspace/your_files/iaict-full-audit/doi-chieu-truong-du-lieu-ho-so-chuan-03-11-2026.md. Bang 17 and Bang 29 fully covered (all diffs are name synonyms). Bang 18 had 4 REAL gaps - dosage_concentration, total_quantity_applied, crop_animal_growth_stage, target_pest_disease_reason - now added to the diary form, RecordIn declarations and the field-events detail spec; event cards open details. Detail specs extended (actors gs1_role_ai/is_group_leader/ics_training_completed; zones valid_from/valid_to/initial_declared_area_ha; spatial_units province/commune/validity) and created for field_events, packaging_units, cte_stages. All remaining diffs classified with dispositions: phase-3 sector specializations (timber/fisheries/livestock), Q-TX-03 PII encryption, GIS geometry, PUC administrative intake workflow - nothing silently missing. Suite 62+2; build OK. Deploys together with T-027 (token pending).",
+        "blockers": [
+          "Beta deploy + live browser test need the Owner's Cloudflare API token pasted in-session"
+        ]
+      },
+      {
         "id": "T-027",
         "title": "Review pack 2 (Owner 2026-11-03 22:09): complete detail sheets + screen-load latency",
         "status": "TECH_DONE",
         "priority": "P1",
         "phase": "M2",
-        "evidence": "Detail sheets now render the COMPLETE ordered field list per kind (DETAIL_SPECS for 11 kinds; empty fields shown as '-'; extras appended; coded values translated: actor/unit/storage types, PHI outcomes, sync states). Traceability-record and zone-parcel-link cards also open details. Latency: measured live TTFB 0.4-4.8s variance on identical tiny payloads = free-tier Python Worker cold isolates; mitigations shipped: ensure() 60s freshness window, prefetchAll() warms all 14 list caches right after the dashboard loads, keep-warm /health ping every 4 min while the app is open, skeleton only when a view has no cached data, users/audit screens read through the cache (audit invalidated on every successful save; users reload button fixed to invalidate - it previously relied on always-fresh fetches). Suites 62+2 (memory); build + dry-run OK. NOT yet deployed: awaiting the Owner's Cloudflare token in-session; post-deploy browser test still owed.",
+        "evidence": "Detail sheets now render the COMPLETE ordered field list per kind (DETAIL_SPECS for 11 kinds; empty fields shown as '-'; extras appended; coded values translated: actor/unit/storage types, PHI outcomes, sync states). Traceability-record and zone-parcel-link cards also open details. Latency: measured live TTFB 0.4-4.8s variance on identical tiny payloads = free-tier Python Worker cold isolates; mitigations shipped: ensure() 60s freshness window, prefetchAll() warms all 14 list caches right after the dashboard loads, keep-warm /health ping every 4 min while the app is open, skeleton only when a view has no cached data, users/audit screens read through the cache (audit invalidated on every successful save; users reload button fixed to invalidate - it previously relied on always-fresh fetches). Suites 62+2 (memory); build + dry-run OK. NOT yet deployed: awaiting the Owner's Cloudflare token in-session; post-deploy browser test still owed. Field completeness of its detail specs was subsequently audited and completed in T-028.",
         "blockers": [
           "Beta deploy + live browser test need the Owner's Cloudflare API token pasted in-session"
         ]
@@ -457,5 +468,5 @@
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T15:13:35Z"
+  "updated_at": "2026-11-03T15:32:02Z"
 }

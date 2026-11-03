@@ -74,6 +74,12 @@ class RecordIn(BaseModel):
     # ACT — actors / households (D-STD-01)
     actor_type: str | None = None
     is_group_leader: bool | None = None
+    # Traceability dossier Bang 6/18 descriptive fields (T-028 audit)
+    gs1_role_ai: str | None = None
+    dosage_concentration: str | None = None
+    total_quantity_applied: str | None = None
+    crop_animal_growth_stage: str | None = None
+    target_pest_disease_reason: str | None = None
     ics_training_completed: bool | None = None
     valid_from: date | None = None
     valid_to: date | None = None
