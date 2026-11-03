@@ -256,3 +256,11 @@ a{color:var(--brand)}
   @keyframes sheetIn{from{transform:translateX(60px); opacity:.5} to{transform:none; opacity:1}}
   .toasts{left:auto; width:380px; bottom:24px}
 }
+
+/* T-026: tap-to-detail cards, detail list, inline-create button */
+.card[data-card] { cursor: pointer; }
+.dlist { display: grid; gap: 0; margin-bottom: 14px; }
+.drow { display: flex; justify-content: space-between; gap: 16px; padding: 8px 2px; border-bottom: 1px solid var(--line, #e7e2d5); font-size: 14px; }
+.drow span { color: var(--mut, #7a7462); }
+.drow b { text-align: right; font-weight: 600; word-break: break-word; }
+.add-new { margin-top: 6px; }

@@ -23,7 +23,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .config import settings
 from .deps import require_role
-from .store import CODED_KINDS, RefUnknown, User, store
+from .store import CODED_KINDS, RECORD_REFS, RefUnknown, User, store
 from .tenancy import require_tenant
 
 router = APIRouter(tags=["production"])
@@ -872,3 +872,84 @@ async def update_packaging_unit(code: str, body: RecordIn,
                                 tenant: str = Depends(require_tenant),
                                 actor: User = Depends(require_role("OPERATOR"))) -> dict:
     return await _update(tenant, actor, "packaging_units", "PKU", code, body)
+
+
+# ---- Deletes (T-026) -------------------------------------------------------
+# Master-data kinds can be deleted by a TENANT_ADMIN when nothing else
+# references them; a referenced record is refused with 409 RECORD_IN_USE
+# (checked in the API layer so every store behaves identically, and the
+# composite FKs back it up on the SQL stores). Evidence-like kinds stay
+# append-only: no DELETE route exists for them.
+
+async def _delete(tenant: str, actor: User, kind: str, prefix: str,
+                  code: str) -> dict:
+    existing = await store.get_record_by_code(tenant, kind, code)
+    if existing is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail={"code": "NOT_FOUND",
+                                    "message": "Object not found"})
+    for other_kind, refs in RECORD_REFS.items():
+        for ref_field, target_kind in refs.items():
+            if target_kind != kind:
+                continue
+            for record in await store.list_records(tenant, other_kind):
+                if record.get(ref_field) == code and \
+                        not (other_kind == kind and record.get("code") == code):
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail={"code": "RECORD_IN_USE",
+                                "message": f"Still referenced by {other_kind} "
+                                           f"record {record.get('code') or record.get('id')} "
+                                           f"via {ref_field}"})
+    deleted = await store.delete_record(tenant, kind, code)
+    if deleted is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail={"code": "NOT_FOUND",
+                                    "message": "Object not found"})
+    await store.record_audit(scope="tenant", tenant_id=tenant,
+                             actor=actor.username,
+                             action=f"{prefix}_DELETE",
+                             target=code, outcome="OK")
+    return {"code": code, "deleted": True}
+
+
+@router.delete("/zones/{code}")
+async def delete_zone(code: str, tenant: str = Depends(require_tenant),
+                      actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
+    return await _delete(tenant, actor, "zones", "ZON", code)
+
+
+@router.delete("/mother-plants/{code}")
+async def delete_mother_plant(code: str, tenant: str = Depends(require_tenant),
+                              actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
+    return await _delete(tenant, actor, "mother_plants", "MPL", code)
+
+
+@router.delete("/actors/{code}")
+async def delete_actor(code: str, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
+    return await _delete(tenant, actor, "actors", "ACT", code)
+
+
+@router.delete("/spatial-units/{code}")
+async def delete_spatial_unit(code: str, tenant: str = Depends(require_tenant),
+                              actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
+    return await _delete(tenant, actor, "spatial_units", "SPU", code)
+
+
+@router.delete("/input-lots/{code}")
+async def delete_input_lot(code: str, tenant: str = Depends(require_tenant),
+                           actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
+    return await _delete(tenant, actor, "input_lots", "INP", code)
+
+
+@router.delete("/packing-lots/{code}")
+async def delete_packing_lot(code: str, tenant: str = Depends(require_tenant),
+                             actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
+    return await _delete(tenant, actor, "packing_lots", "PKL", code)
+
+
+@router.delete("/packaging-units/{code}")
+async def delete_packaging_unit(code: str, tenant: str = Depends(require_tenant),
+                                actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
+    return await _delete(tenant, actor, "packaging_units", "PKU", code)

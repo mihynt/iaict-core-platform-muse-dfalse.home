@@ -35,6 +35,7 @@ const ERR_VI = {
   PLATFORM_DISABLED: "Quản trị platform chưa được bật (chưa đặt khóa).",
   PLATFORM_KEY_INVALID: "Khóa platform không đúng.",
   USER_EXISTS: "Tên người dùng đã tồn tại trong tenant.",
+  RECORD_IN_USE: "Đang được dữ liệu khác tham chiếu nên chưa xoá được — hãy xoá hoặc sửa các bản ghi liên quan trước.",
 };
 
 class ApiError extends Error {
@@ -137,6 +138,7 @@ function openSheet(title, fields, onSubmit) {
   $("#sheetTitle").textContent = title;
   const form = $("#sheetForm");
   form.innerHTML = fields.map((f) => {
+    if (f.type === "note") return `<p class="sub" style="margin:2px 2px 12px">${esc(f.label)}</p>`;
     const req = f.required ? ' <span class="req">*</span>' : "";
     let control;
     if (f.type === "select") {
@@ -149,11 +151,35 @@ function openSheet(title, fields, onSubmit) {
         value="${esc(f.def ?? "")}" placeholder="${esc(f.placeholder || "")}" ${f.required ? "required" : ""}
         ${f.type === "text" ? 'autocapitalize="off"' : ""}>`;
     }
-    return `<div class="field"><label>${esc(f.label)}${req}</label>${control}</div>`;
+    const addBtn = f.addNew ? `<button type="button" class="btn btn-ghost btn-sm add-new" data-addnew="${f.k}">＋ Thêm mới</button>` : "";
+    return `<div class="field"><label>${esc(f.label)}${req}</label>${control}${addBtn}</div>`;
   }).join("") + `<div class="form-actions">
       <button type="button" class="btn btn-ghost" id="sheetCancel">Hủy</button>
       <button type="submit" class="btn btn-primary">Lưu lại</button></div>`;
   sheetSubmit = { fields, onSubmit };
+  // WordPress-style inline create: a "+ Thêm mới" button beside a reference
+  // picker opens a quick-create sheet; on success the parent form reopens
+  // with the picker's options refreshed and the new record pre-selected,
+  // keeping everything the user had already typed (T-026).
+  form.querySelectorAll("[data-addnew]").forEach((btn) => {
+    btn.onclick = () => {
+      const f = fields.find((x) => x.k === btn.dataset.addnew);
+      if (!f || !f.addNew) return;
+      const snapshot = {};
+      for (const pf of fields) {
+        const inp = form.querySelector(`[name="${pf.k}"]`);
+        if (inp) snapshot[pf.k] = inp.value;
+      }
+      const parent = { title, fields, onSubmit };
+      f.addNew(async (newCode) => {
+        for (const pf of parent.fields) {
+          if (pf.refreshOptions) { try { pf.options = await pf.refreshOptions(); } catch { /* keep */ } }
+          pf.def = pf.k === f.k ? newCode : snapshot[pf.k];
+        }
+        openSheet(parent.title, parent.fields, parent.onSubmit);
+      });
+    };
+  });
   $("#sheetBackdrop").hidden = false;
   $("#sheet").hidden = false;
   $("#sheetCancel").onclick = closeSheet;
@@ -166,6 +192,137 @@ function closeSheet() {
   sheetSubmit = null;
 }
 $("#sheetClose").addEventListener("click", closeSheet);
+
+/* ---------------- T-026 helpers: detail view, delete, quick-create --------- */
+const optOf = (list, emptyLabel, fmt) => [{ v: "", t: emptyLabel }, ...list.map(fmt)];
+const fmtZoneOpt = (z) => ({ v: z.code, t: `${z.code} · ${z.name || ""}` });
+const fmtActorOpt = (a) => ({ v: a.code, t: `${a.code} · ${a.name || ""}` });
+const fmtPlantOpt = (pl) => ({ v: pl.code, t: `${pl.code} · ${pl.species || ""}` });
+const fmtParcelOpt = (u) => ({ v: u.code, t: `${u.code} · ${u.name || ""}` });
+const fmtInputOpt = (i) => ({ v: i.code, t: `${i.code} · ${i.name || i.substance_code || ""}${i.phi_days != null ? ` · cách ly ${i.phi_days} ngày` : ""}` });
+const ACTOR_TYPES = [
+  { v: "HOUSEHOLD", t: "Nông hộ" }, { v: "COMPANY", t: "Doanh nghiệp" },
+  { v: "COOPERATIVE", t: "Hợp tác xã" }, { v: "FACILITY", t: "Cơ sở đóng gói/chế biến" },
+  { v: "OTHER", t: "Khác" }];
+
+function quickZone(done) {
+  openSheet("Thêm vùng mới", [
+    { k: "code", label: "Mã vùng", required: true, placeholder: "vd: Z-03" },
+    { k: "name", label: "Tên vùng" },
+    { k: "area_ha", label: "Diện tích (ha)", type: "number", step: "0.01" },
+    { k: "puc_code", label: "Mã số vùng trồng (PUC)" },
+  ], async (p) => { const r = await T("/zones", { method: "POST", body: p }); invalidate("zones"); toast("Đã thêm vùng " + r.code); done(r.code); });
+}
+function quickPlant(done) {
+  openSheet("Thêm cây đầu dòng mới", [
+    { k: "code", label: "Mã cây", required: true, placeholder: "vd: MPL-002" },
+    { k: "species", label: "Loài cây", required: true },
+    { k: "variety", label: "Giống" },
+  ], async (p) => { const r = await T("/mother-plants", { method: "POST", body: p }); invalidate("plants"); toast("Đã thêm cây " + r.code); done(r.code); });
+}
+function quickActor(done) {
+  openSheet("Thêm chủ thể mới", [
+    { k: "code", label: "Mã chủ thể", required: true, placeholder: "vd: H05" },
+    { k: "name", label: "Tên chủ thể", required: true },
+    { k: "actor_type", label: "Loại chủ thể", type: "select", options: ACTOR_TYPES },
+    { k: "phone", label: "Số điện thoại" },
+  ], async (p) => { const r = await T("/actors", { method: "POST", body: p }); invalidate("actors"); toast("Đã thêm chủ thể " + r.code); done(r.code); });
+}
+function quickInputLot(done) {
+  openSheet("Thêm lô vật tư mới", [
+    { k: "code", label: "Mã lô vật tư", required: true, placeholder: "vd: VT-001" },
+    { k: "product_name", label: "Tên sản phẩm", required: true },
+    { k: "phi_days", label: "Số ngày cách ly (PHI)", type: "number", step: "1" },
+    { k: "expiry_date", label: "Hạn dùng", type: "date" },
+  ], async (p) => { const r = await T("/input-lots", { method: "POST", body: p }); invalidate("inputs"); toast("Đã thêm lô vật tư " + r.code); done(r.code); });
+}
+function quickParcel(done) {
+  openSheet("Thêm thửa đất mới", [
+    { k: "code", label: "Mã thửa", required: true, placeholder: "vd: T42" },
+    { k: "name", label: "Tên thửa" },
+    { k: "unit_type", label: "Loại thửa", type: "select", options: [
+      { v: "PARCEL", t: "Thửa ruộng" }, { v: "GREENHOUSE", t: "Nhà kính" },
+      { v: "POND", t: "Ao nuôi" }, { v: "PEN", t: "Chuồng trại" }, { v: "OTHER", t: "Khác" }] },
+    { k: "area_m2", label: "Diện tích (m²)", type: "number", step: "0.01" },
+  ], async (p) => { const r = await T("/spatial-units", { method: "POST", body: p }); invalidate("parcels"); toast("Đã thêm thửa " + r.code); done(r.code); });
+}
+
+const DETAIL_LABELS = {
+  code: "Mã", name: "Tên", status: "Trạng thái", season: "Mùa vụ", province: "Tỉnh/TP",
+  district: "Quận/Huyện", ward: "Xã/Phường", area_ha: "Diện tích (ha)", area_m2: "Diện tích (m²)",
+  puc_code: "Mã số vùng trồng (PUC)", puc_status: "Trạng thái mã vùng", vsic_code: "Mã ngành VSIC",
+  sector_category: "Ngành", market_scope: "Thị trường", primary_species: "Đối tượng SX chính",
+  scientific_name: "Tên khoa học", issue_date: "Ngày cấp mã", issuing_authority: "Cơ quan cấp",
+  post_inspect_due_date: "Hạn hậu kiểm", dist_to_residential_m: "Cách khu dân cư (m)",
+  dist_to_sensitive_zone_m: "Cách vùng nhạy cảm (m)", bee_site_min_dist_km: "Cách điểm nuôi ong tối thiểu (km)",
+  species: "Loài", variety: "Giống", cultivar_code: "Mã giống", origin: "Nguồn gốc",
+  recognition_no: "Số quyết định công nhận", valid_to: "Công nhận đến", valid_from: "Hiệu lực từ",
+  zone_code: "Vùng", plant_code: "Cây đầu dòng", plan_code: "Kế hoạch", parcel_code: "Thửa đất",
+  crop_name: "Cây trồng", start_date: "Ngày bắt đầu", end_date: "Ngày kết thúc",
+  target_yield_kg: "Sản lượng mục tiêu (kg)", planting_density: "Mật độ trồng", seed_origin: "Nguồn giống",
+  seed_origin_doc: "Hồ sơ nguồn gốc giống", variety_name: "Tên giống", actor_type: "Loại chủ thể",
+  gln_code: "Mã GLN", parent_code: "Chủ thể cấp trên", phone: "Số điện thoại", email: "Email",
+  address: "Địa chỉ", province_code: "Mã tỉnh", district_code: "Mã huyện", commune_code: "Mã xã",
+  unit_type: "Loại thửa", operator_code: "Chủ thể vận hành", joined_date: "Ngày tham gia vùng",
+  product_name: "Tên sản phẩm", brand_name: "Thương hiệu", registration_no: "Số đăng ký",
+  active_ingredient: "Hoạt chất", supplier_code: "Nhà cung cấp", quantity_received: "Số lượng nhập",
+  unit: "Đơn vị", purchase_invoice_no: "Số hóa đơn mua", qcvn_scheme_id: "Mã quy chuẩn (QCVN)",
+  purchase_date: "Ngày mua", expiry_date: "Hạn dùng", phi_days: "Ngày cách ly (PHI)",
+  harvest_date: "Ngày thu hoạch", farmer_code: "Nông hộ", weigh_slip_number: "Số phiếu cân",
+  quantity: "Sản lượng", quality_grade: "Phân loại chất lượng", harvested_by: "Người thu hoạch",
+  traceability_code: "Mã truy xuất", data_retention_until: "Lưu dữ liệu đến",
+  facility_code: "Cơ sở đóng gói", phc_code: "Mã cơ sở đóng gói (PHC)", output_weight_kg: "Sản lượng thành phẩm (kg)",
+  yield_norm_ratio: "Định mức thu hồi", storage_type: "Loại bảo quản", packed_at: "Thời điểm đóng gói",
+  event_type: "Loại sự kiện", occurred_at: "Thời điểm", input_lot_code: "Lô vật tư đã dùng",
+  safe_harvest_date: "Thu hoạch an toàn từ", application_method: "Phương pháp áp dụng",
+  fruit_bagging_count: "Số trái đã bao", max_safe_harvest_date: "Ngày thu hoạch an toàn",
+  actual_harvest_date: "Ngày thu hoạch thực tế", validation_outcome: "Kết luận",
+  last_treatment_ref: "Lần xử lý quyết định", sync_status: "Trạng thái đồng bộ", synced_at: "Đồng bộ lúc",
+  created_at: "Tạo lúc", updated_at: "Cập nhật lúc",
+};
+
+function fmtDetailVal(k2, v) {
+  if (typeof v === "boolean") return v ? "Có" : "Không";
+  if (typeof v === "object") return JSON.stringify(v);
+  if (/_at$/.test(k2)) return String(v).replace("T", " ").slice(0, 16);
+  if (/_date$/.test(k2) || ["valid_from", "valid_to", "data_retention_until"].includes(k2)) return fmtDate(v);
+  if (typeof v === "number") return fmtNum(v);
+  return String(v);
+}
+
+function openDetail(title, rec) {
+  $("#sheetTitle").textContent = title;
+  const rows = Object.entries(rec)
+    .filter(([k2, v]) => !["id", "tenant_id", "data"].includes(k2) && v != null && v !== "")
+    .map(([k2, v]) => `<div class="drow"><span>${esc(DETAIL_LABELS[k2] || k2)}</span><b>${esc(fmtDetailVal(k2, v))}</b></div>`).join("");
+  $("#sheetForm").innerHTML = `<div class="dlist">${rows || '<p class="sub">Không có thêm thông tin.</p>'}</div>
+    <div class="form-actions"><button type="button" class="btn btn-primary" id="sheetCancel">Đóng</button></div>`;
+  sheetSubmit = null;
+  $("#sheetBackdrop").hidden = false;
+  $("#sheet").hidden = false;
+  $("#sheetCancel").onclick = closeSheet;
+}
+
+function wireCardDetails(container, items, titleOf) {
+  container.querySelectorAll("[data-card]").forEach((card) => {
+    card.addEventListener("click", (ev) => {
+      if (ev.target.closest("button, a")) return;
+      const rec = items.find((x) => String(x.code ?? x.id) === card.dataset.card);
+      if (rec) openDetail(titleOf(rec), rec);
+    });
+  });
+}
+
+function confirmDelete(label, path, kinds) {
+  openSheet(`Xoá ${label}?`, [
+    { k: "__note", type: "note", label: "Bản ghi sẽ bị xoá khỏi danh mục và thao tác được ghi vào nhật ký kiểm toán. Nếu bản ghi đang được dữ liệu khác tham chiếu, hệ thống sẽ từ chối xoá." },
+  ], async () => {
+    await T(path, { method: "DELETE" });
+    (kinds || []).forEach(invalidate);
+    toast("Đã xoá " + label);
+    navigate(state.view);
+  });
+}
 $("#sheetBackdrop").addEventListener("click", closeSheet);
 $("#sheetForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -202,6 +359,7 @@ const NAV = [
   { id: "packing", ic: "🏭", label: "Đóng gói" },
   { id: "inputs", ic: "🧪", label: "Vật tư" },
   { id: "parcels", ic: "🧩", label: "Thửa đất" },
+  { id: "actors", ic: "🧑‍🌾", label: "Chủ thể" },
   { id: "philogs", ic: "🛡️", label: "Kiểm tra PHI" },
   { id: "users", ic: "👥", label: "Người dùng" },
   { id: "tenants", ic: "🏢", label: "Tenant" },
@@ -218,7 +376,7 @@ function paintNav() {
     const n = NAV.find((x) => x.id === id);
     return `<button type="button" data-nav="${id}" class="${state.view === id ? "active" : ""}">
       <span class="ic">${n.ic}</span>${n.label}</button>`;
-  }).join("") + `<button type="button" data-nav="more" class="${["more", "settings", "tenants", "packing", "inputs", "parcels", "philogs"].includes(state.view) ? "active" : ""}">
+  }).join("") + `<button type="button" data-nav="more" class="${["more", "settings", "tenants", "packing", "inputs", "parcels", "actors", "philogs"].includes(state.view) ? "active" : ""}">
       <span class="ic">☰</span>Khác</button>`;
   document.querySelectorAll("[data-nav]").forEach((b) =>
     b.addEventListener("click", () => navigate(b.dataset.nav)));
@@ -322,7 +480,7 @@ VIEWS.zones = async () => {
     const items = await ensure("zones", "/zones");
     el.querySelectorAll(".skel").forEach((s) => s.remove());
     el.insertAdjacentHTML("beforeend", items.length ? `<div class="list">${items.map((z) => `
-      <div class="card"><div class="thumb">🗺️</div><div class="body">
+      <div class="card" data-card="${esc(z.code)}"><div class="thumb">🗺️</div><div class="body">
         <div class="title">${esc(z.name || z.code)} ${chipFor(z.status)}</div>
         <div class="sub">Mã vùng: <b>${esc(z.code)}</b>${z.crop_group ? ` · Nhóm cây: ${esc(z.crop_group)}` : ""}</div>
         <div class="meta">
@@ -333,7 +491,7 @@ VIEWS.zones = async () => {
           ${z.water_source ? `<span>💧 ${esc(z.water_source)}</span>` : ""}
           ${z.address ? `<span>📍 ${esc(z.address)}</span>` : ""}
         </div>
-        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-zone="${esc(z.code)}">✏️ Sửa</button></div>
+        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-zone="${esc(z.code)}">✏️ Sửa</button> <button class="btn btn-ghost btn-sm" data-del-zone="${esc(z.code)}">🗑️ Xoá</button></div>
         </div></div>`).join("")}</div>`
       : emptyState("🗺️", "Chưa có vùng nào", "Bấm nút + để tạo vùng nguyên liệu đầu tiên."));
     el.querySelectorAll("[data-edit-zone]").forEach((b) => b.onclick = () => {
@@ -344,6 +502,8 @@ VIEWS.zones = async () => {
         { k: "area_ha", label: "Diện tích (ha)", type: "number", step: "0.01", def: z.area_ha ?? "" },
         { k: "puc_code", label: "Mã số vùng trồng (PUC)", def: z.puc_code || "" },
         { k: "puc_status", label: "Trạng thái mã số vùng trồng", def: z.puc_status || "" },
+        { k: "issue_date", label: "Ngày cấp mã vùng trồng", type: "date", def: z.issue_date || "" },
+        { k: "post_inspect_due_date", label: "Hạn hậu kiểm mã vùng trồng", type: "date", def: z.post_inspect_due_date || "" },
         { k: "vsic_code", label: "Mã ngành VSIC", def: z.vsic_code || "" },
         { k: "primary_species", label: "Cây trồng chính", def: z.primary_species || "" },
         { k: "crop_group", label: "Nhóm cây", def: z.crop_group || "" },
@@ -353,12 +513,17 @@ VIEWS.zones = async () => {
         { k: "managing_entity", label: "Chủ thể quản lý", def: z.managing_entity || "" },
       ], async (p) => { await T(`/zones/${encodeURIComponent(z.code)}`, { method: "PATCH", body: p }); invalidate("zones"); });
     });
+    wireCardDetails(el, items, (z) => `Vùng ${z.code}`);
+    el.querySelectorAll("[data-del-zone]").forEach((b) => b.onclick = () =>
+      confirmDelete(`vùng ${b.dataset.delZone}`, `/zones/${encodeURIComponent(b.dataset.delZone)}`, ["zones"]));
   } catch (err) { el.innerHTML = banner(err); }
   fab("Tạo vùng", async () => openSheet("Tạo vùng nguyên liệu", [
     { k: "code", label: "Mã vùng", required: true, placeholder: "vd: Z-01" },
     { k: "name", label: "Tên vùng", required: true, placeholder: "vd: Khu A – Đà Lạt" },
     { k: "area_ha", label: "Diện tích (ha)", type: "number", step: "0.01", placeholder: "vd: 10.5" },
     { k: "puc_code", label: "Mã số vùng trồng (PUC)", placeholder: "vd: VN-66-650-24370-94-21" },
+    { k: "issue_date", label: "Ngày cấp mã vùng trồng", type: "date" },
+    { k: "post_inspect_due_date", label: "Hạn hậu kiểm mã vùng trồng", type: "date" },
     { k: "primary_species", label: "Cây trồng chính", placeholder: "vd: Bưởi da xanh" },
     { k: "crop_group", label: "Nhóm cây", placeholder: "vd: Rau củ, Sầu riêng…" },
     { k: "season", label: "Mùa vụ", placeholder: "vd: Đông Xuân 2026" },
@@ -378,7 +543,7 @@ VIEWS.plants = async () => {
     const items = await ensure("plants", "/mother-plants");
     el.querySelectorAll(".skel").forEach((s) => s.remove());
     el.insertAdjacentHTML("beforeend", items.length ? `<div class="list">${items.map((p) => `
-      <div class="card"><div class="thumb">🌳</div><div class="body">
+      <div class="card" data-card="${esc(p.code)}"><div class="thumb">🌳</div><div class="body">
         <div class="title">${esc(p.species || p.code)} ${chipFor(p.status)}</div>
         <div class="sub">Mã cây: <b>${esc(p.code)}</b>${p.variety ? ` · Giống: ${esc(p.variety)}` : ""}</div>
         <div class="meta">
@@ -387,7 +552,7 @@ VIEWS.plants = async () => {
           ${p.valid_to ? `<span>📜 Công nhận đến ${fmtDate(p.valid_to)}</span>` : ""}
           ${p.owner_manager ? `<span>👤 ${esc(p.owner_manager)}</span>` : ""}
         </div>
-        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-plant="${esc(p.code)}">✏️ Sửa</button></div>
+        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-plant="${esc(p.code)}">✏️ Sửa</button> <button class="btn btn-ghost btn-sm" data-del-plant="${esc(p.code)}">🗑️ Xoá</button></div>
         </div></div>`).join("")}</div>`
       : emptyState("🌳", "Chưa có cây đầu dòng nào", "Bấm nút + để cấp mã cho cây/cụm cây đầu dòng."));
     el.querySelectorAll("[data-edit-plant]").forEach((b) => b.onclick = async () => {
@@ -399,12 +564,18 @@ VIEWS.plants = async () => {
         { k: "variety", label: "Giống", def: pl.variety || "" },
         { k: "scientific_name", label: "Tên khoa học", def: pl.scientific_name || "" },
         { k: "zone_code", label: "Thuộc vùng", type: "select", def: pl.zone_code || "",
-          options: [{ v: "", t: "— Không gắn vùng —" }, ...zones.map((z) => ({ v: z.code, t: `${z.code} · ${z.name || ""}` }))] },
+          options: [{ v: "", t: "— Không gắn vùng —" }, ...zones.map(fmtZoneOpt)],
+          addNew: quickZone,
+          refreshOptions: async () => optOf(await ensure("zones", "/zones"), "— Không gắn vùng —", fmtZoneOpt) },
         { k: "planting_year", label: "Năm trồng", type: "number", def: pl.planting_year ?? "" },
+        { k: "valid_to", label: "Công nhận đến", type: "date", def: pl.valid_to || "" },
         { k: "origin", label: "Nguồn gốc", def: pl.origin || "" },
         { k: "owner_manager", label: "Chủ sở hữu / người quản lý", def: pl.owner_manager || "" },
       ], async (p) => { await T(`/mother-plants/${encodeURIComponent(pl.code)}`, { method: "PATCH", body: p }); invalidate("plants"); });
     });
+    wireCardDetails(el, items, (pl) => `Cây ${pl.code}`);
+    el.querySelectorAll("[data-del-plant]").forEach((b) => b.onclick = () =>
+      confirmDelete(`cây ${b.dataset.delPlant}`, `/mother-plants/${encodeURIComponent(b.dataset.delPlant)}`, ["plants"]));
   } catch (err) { el.innerHTML = banner(err); }
   fab("Thêm cây đầu dòng", async () => {
     const zones = await ensure("zones", "/zones").catch(() => []);
@@ -414,7 +585,10 @@ VIEWS.plants = async () => {
       { k: "variety", label: "Giống", placeholder: "vd: Ri6, Monthong…" },
       { k: "scientific_name", label: "Tên khoa học", placeholder: "vd: Durio zibethinus" },
       { k: "zone_code", label: "Thuộc vùng", type: "select",
-        options: [{ v: "", t: "— Không gắn vùng —" }, ...zones.map((z) => ({ v: z.code, t: `${z.code} · ${z.name || ""}` }))] },
+        options: [{ v: "", t: "— Không gắn vùng —" }, ...zones.map(fmtZoneOpt)],
+        addNew: quickZone,
+        refreshOptions: async () => optOf(await ensure("zones", "/zones"), "— Không gắn vùng —", fmtZoneOpt) },
+      { k: "valid_to", label: "Công nhận đến", type: "date" },
       { k: "planting_year", label: "Năm trồng", type: "number", placeholder: "vd: 2019" },
       { k: "origin", label: "Nguồn gốc", placeholder: "Vườn ươm / xuất xứ" },
       { k: "owner_manager", label: "Chủ sở hữu / người quản lý" },
@@ -483,7 +657,9 @@ VIEWS.plans = async () => {
         { k: "zone_code", label: "Vùng", type: "select",
           options: [{ v: "", t: "— Không gắn vùng —" }, ...zones.map((z) => ({ v: z.code, t: `${z.code} · ${z.name || ""}` }))] },
         { k: "input_lot_code", label: "Lô vật tư đã dùng", type: "select",
-          options: [{ v: "", t: "— Không ghi vật tư —" }, ...inputs.map((i) => ({ v: i.code, t: `${i.code} · ${i.name || i.substance_code || ""}${i.phi_days != null ? ` · cách ly ${i.phi_days} ngày` : ""}` }))] },
+          options: [{ v: "", t: "— Không ghi vật tư —" }, ...inputs.map(fmtInputOpt)],
+          addNew: quickInputLot,
+          refreshOptions: async () => optOf(await ensure("inputs", "/input-lots"), "— Không ghi vật tư —", fmtInputOpt) },
         { k: "phi_days", label: "Số ngày cách ly PHI (để trống = lấy theo lô vật tư)", type: "number", step: "1" },
         { k: "application_method", label: "Phương pháp áp dụng", placeholder: "vd: Phun áp lực, Tưới nhỏ giọt…" },
         { k: "fruit_bagging_count", label: "Số trái đã bao (nếu có)", type: "number", step: "1" },
@@ -507,9 +683,13 @@ VIEWS.plans = async () => {
       { k: "name", label: "Tên kế hoạch", placeholder: "vd: Vụ rau Đông Xuân" },
       { k: "crop_name", label: "Cây trồng", placeholder: "vd: Xà lách, Cà chua…" },
       { k: "zone_code", label: "Vùng canh tác", type: "select",
-        options: [{ v: "", t: "— Chọn vùng —" }, ...zones.map((z) => ({ v: z.code, t: `${z.code} · ${z.name || ""}` }))] },
+        options: [{ v: "", t: "— Chọn vùng —" }, ...zones.map(fmtZoneOpt)],
+        addNew: quickZone,
+        refreshOptions: async () => optOf(await ensure("zones", "/zones"), "— Chọn vùng —", fmtZoneOpt) },
       { k: "plant_code", label: "Cây đầu dòng liên quan", type: "select",
-        options: [{ v: "", t: "— Không gắn cây —" }, ...plants.map((p) => ({ v: p.code, t: `${p.code} · ${p.species || ""}` }))] },
+        options: [{ v: "", t: "— Không gắn cây —" }, ...plants.map(fmtPlantOpt)],
+        addNew: quickPlant,
+        refreshOptions: async () => optOf(await ensure("plants", "/mother-plants"), "— Không gắn cây —", fmtPlantOpt) },
       { k: "start_date", label: "Ngày bắt đầu", type: "date" },
       { k: "end_date", label: "Ngày kết thúc dự kiến", type: "date" },
       { k: "target_yield_kg", label: "Mục tiêu sản lượng (kg)", type: "number", step: "0.1" },
@@ -531,7 +711,7 @@ VIEWS.lots = async () => {
     const items = await ensure("lots", "/lots");
     el.querySelectorAll(".skel").forEach((s) => s.remove());
     el.insertAdjacentHTML("beforeend", items.length ? `<div class="list">${items.map((l) => `
-      <div class="card"><div class="thumb amber">📦</div><div class="body">
+      <div class="card" data-card="${esc(l.code)}"><div class="thumb amber">📦</div><div class="body">
         <div class="title">${esc(l.code)} ${chipFor(l.status)} ${l.quality_grade ? `<span class="chip amber">Loại ${esc(l.quality_grade)}</span>` : ""}</div>
         <div class="sub">${l.quantity != null ? `<b>${fmtNum(l.quantity)} ${esc(l.unit || "kg")}</b>` : ""}${l.harvest_date ? ` · Thu hoạch ${fmtDate(l.harvest_date)}` : ""}</div>
         <div class="meta">
@@ -545,9 +725,11 @@ VIEWS.lots = async () => {
         </div></div></div>`).join("")}</div>`
       : emptyState("📦", "Chưa có lô thu hoạch nào", "Bấm nút + để tạo lô từ vùng/kế hoạch đã thu hoạch."));
   } catch (err) { el.innerHTML = banner(err); }
+  wireCardDetails(el, items, (l) => `Lô thu hoạch ${l.code}`);
   fab("Tạo lô thu hoạch", async () => {
-    const [zones, plans] = await Promise.all([
+    const [zones, plans, actors, parcels] = await Promise.all([
       ensure("zones", "/zones").catch(() => []), ensure("plans", "/crop-plans").catch(() => []),
+      ensure("actors", "/actors").catch(() => []), ensure("parcels", "/spatial-units").catch(() => []),
     ]);
     openSheet("Tạo lô thu hoạch", [
       { k: "code", label: "Mã lô", required: true, placeholder: "vd: LOT-001" },
@@ -556,8 +738,14 @@ VIEWS.lots = async () => {
       { k: "plan_code", label: "Kế hoạch mùa vụ", type: "select",
         options: [{ v: "", t: "— Không gắn kế hoạch —" }, ...plans.map((p) => ({ v: p.code, t: `${p.code} · ${p.name || p.crop_name || ""}` }))] },
       { k: "harvest_date", label: "Ngày thu hoạch", type: "date" },
-      { k: "farmer_code", label: "Mã nông hộ thu hoạch", placeholder: "vd: H05 (đã tạo ở mục Chủ thể)" },
-      { k: "parcel_code", label: "Mã thửa đất", placeholder: "vd: T42" },
+      { k: "farmer_code", label: "Nông hộ thu hoạch", type: "select",
+        options: [{ v: "", t: "— Chọn nông hộ —" }, ...actors.map(fmtActorOpt)],
+        addNew: quickActor,
+        refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Chọn nông hộ —", fmtActorOpt) },
+      { k: "parcel_code", label: "Thửa đất", type: "select",
+        options: [{ v: "", t: "— Chọn thửa —" }, ...parcels.map(fmtParcelOpt)],
+        addNew: quickParcel,
+        refreshOptions: async () => optOf(await ensure("parcels", "/spatial-units"), "— Chọn thửa —", fmtParcelOpt) },
       { k: "weigh_slip_number", label: "Số phiếu cân", placeholder: "vd: WS-2026-0051" },
       { k: "quantity", label: "Sản lượng", type: "number", step: "0.01" },
       { k: "unit", label: "Đơn vị", type: "select", options: [
@@ -581,7 +769,7 @@ VIEWS.packing = async () => {
     el.querySelectorAll(".skel").forEach((s) => s.remove());
     el.insertAdjacentHTML("beforeend",
       (plots.length ? `<div class="list">${plots.map((p) => `
-      <div class="card"><div class="thumb amber">🏭</div><div class="body">
+      <div class="card" data-card="${esc(p.code)}"><div class="thumb amber">🏭</div><div class="body">
         <div class="title">${esc(p.product_name || p.code)} ${chipFor(p.status)}</div>
         <div class="sub">Lô đóng gói: <b>${esc(p.code)}</b>${p.phc_code ? ` · PHC: ${esc(p.phc_code)}` : ""}</div>
         <div class="meta">
@@ -590,7 +778,8 @@ VIEWS.packing = async () => {
           ${p.packed_at ? `<span>🗓️ ${esc(String(p.packed_at).slice(0, 10))}</span>` : ""}
         </div>
         <div style="margin-top:8px"><button class="btn btn-primary btn-sm" data-issue="${esc(p.code)}">🔎 Cấp mã truy xuất</button>
-        <button class="btn btn-ghost btn-sm" data-edit-packing="${esc(p.code)}">✏️ Sửa</button></div>
+        <button class="btn btn-ghost btn-sm" data-edit-packing="${esc(p.code)}">✏️ Sửa</button>
+        <button class="btn btn-ghost btn-sm" data-del-packing="${esc(p.code)}">🗑️ Xoá</button></div>
       </div></div>`).join("")}</div>`
         : emptyState("🏭", "Chưa có lô đóng gói nào", "Bấm nút + để tạo lô đóng gói từ các lô thu hoạch."))
       + `<div class="section-head" style="margin-top:18px"><h2 style="font-size:15.5px">🔎 Bản ghi truy xuất nguồn gốc</h2></div>`
@@ -610,6 +799,9 @@ VIEWS.packing = async () => {
         </div></div>`).join("")}</div>`
         : emptyState("🔎", "Chưa có bản ghi truy xuất nào", "Cấp mã truy xuất từ một lô đóng gói để sinh bản ghi.")));
     el.querySelectorAll("[data-issue]").forEach((b) => b.onclick = () => issueTraceCode(b.dataset.issue));
+    wireCardDetails(el, plots, (pk) => `Lô đóng gói ${pk.code}`);
+    el.querySelectorAll("[data-del-packing]").forEach((b) => b.onclick = () =>
+      confirmDelete(`lô đóng gói ${b.dataset.delPacking}`, `/packing-lots/${encodeURIComponent(b.dataset.delPacking)}`, ["packing"]));
     el.querySelectorAll("[data-edit-packing]").forEach((b) => b.onclick = () => {
       const pk = plots.find((x) => x.code === b.dataset.editPacking);
       if (!pk) return;
@@ -645,7 +837,9 @@ VIEWS.packing = async () => {
     const actors = await ensure("actors", "/actors").catch(() => []);
     const facilityField = actors.length
       ? { k: "facility_code", label: "Cơ sở đóng gói", type: "select",
-          options: [{ v: "", t: "— Chọn cơ sở —" }, ...actors.map((a) => ({ v: a.code, t: `${a.code} · ${a.name || ""}` }))] }
+          options: [{ v: "", t: "— Chọn cơ sở —" }, ...actors.map(fmtActorOpt)],
+          addNew: quickActor,
+          refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Chọn cơ sở —", fmtActorOpt) }
       : { k: "facility_code", label: "Mã cơ sở đóng gói", placeholder: "vd: PHC-01" };
     openSheet("Tạo lô đóng gói", [
       { k: "code", label: "Mã lô đóng gói", required: true, placeholder: "vd: PK-1" },
@@ -705,7 +899,7 @@ VIEWS.inputs = async () => {
     const items = await ensure("inputs", "/input-lots");
     el.querySelectorAll(".skel").forEach((x) => x.remove());
     el.insertAdjacentHTML("beforeend", items.length ? `<div class="list">${items.map((i) => `
-      <div class="card"><div class="thumb">🧪</div><div class="body">
+      <div class="card" data-card="${esc(i.code)}"><div class="thumb">🧪</div><div class="body">
         <div class="title">${esc(i.name || i.code)}</div>
         <div class="sub">Mã lô vật tư: <b>${esc(i.code)}</b>${i.substance_code ? ` · Hoạt chất: ${esc(i.substance_code)}` : ""}</div>
         <div class="meta">
@@ -715,9 +909,12 @@ VIEWS.inputs = async () => {
           ${i.supplier_code ? `<span>🏢 ${esc(i.supplier_code)}</span>` : ""}
           ${i.expiry_date ? `<span>⏳ HSD ${fmtDate(i.expiry_date)}</span>` : ""}
         </div>
-        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-input="${esc(i.code)}">✏️ Sửa</button></div>
+        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-input="${esc(i.code)}">✏️ Sửa</button> <button class="btn btn-ghost btn-sm" data-del-input="${esc(i.code)}">🗑️ Xoá</button></div>
       </div></div>`).join("")}</div>`
       : emptyState("🧪", "Chưa có lô vật tư nào", "Bấm nút + để nhập lô thuốc/phân/giống đầu tiên — nhật ký đồng ruộng sẽ chọn được từ đây."));
+    wireCardDetails(el, items, (i) => `Lô vật tư ${i.code}`);
+    el.querySelectorAll("[data-del-input]").forEach((b) => b.onclick = () =>
+      confirmDelete(`lô vật tư ${b.dataset.delInput}`, `/input-lots/${encodeURIComponent(b.dataset.delInput)}`, ["inputs"]));
     el.querySelectorAll("[data-edit-input]").forEach((b) => b.onclick = async () => {
       const it = items.find((x) => x.code === b.dataset.editInput);
       if (!it) return;
@@ -730,7 +927,9 @@ VIEWS.inputs = async () => {
         { k: "batch_no", label: "Số lô nhà sản xuất", def: it.batch_no || "" },
         { k: "purchase_invoice_no", label: "Số hóa đơn mua", def: it.purchase_invoice_no || "" },
         { k: "supplier_code", label: "Nhà cung cấp", type: "select", def: it.supplier_code || "",
-          options: [{ v: "", t: "— Không ghi —" }, ...actors.map((a) => ({ v: a.code, t: `${a.code} · ${a.name || ""}` }))] },
+          options: [{ v: "", t: "— Không ghi —" }, ...actors.map(fmtActorOpt)],
+          addNew: quickActor,
+          refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Không ghi —", fmtActorOpt) },
         { k: "quantity", label: "Số lượng nhập", type: "number", step: "0.01", def: it.quantity ?? "" },
         { k: "unit", label: "Đơn vị", def: it.unit || "" },
         { k: "phi_days", label: "Số ngày cách ly PHI (theo nhãn)", type: "number", step: "1", def: it.phi_days ?? "" },
@@ -749,7 +948,9 @@ VIEWS.inputs = async () => {
       { k: "batch_no", label: "Số lô nhà sản xuất" },
       { k: "purchase_invoice_no", label: "Số hóa đơn mua" },
       { k: "supplier_code", label: "Nhà cung cấp", type: "select",
-        options: [{ v: "", t: "— Không ghi —" }, ...actors.map((a) => ({ v: a.code, t: `${a.code} · ${a.name || ""}` }))] },
+        options: [{ v: "", t: "— Không ghi —" }, ...actors.map(fmtActorOpt)],
+        addNew: quickActor,
+        refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Không ghi —", fmtActorOpt) },
       { k: "purchase_date", label: "Ngày nhập", type: "date" },
       { k: "quantity", label: "Số lượng nhập", type: "number", step: "0.01" },
       { k: "unit", label: "Đơn vị", placeholder: "kg / lít / bao…" },
@@ -776,7 +977,7 @@ VIEWS.parcels = async () => {
     el.querySelectorAll(".skel").forEach((x) => x.remove());
     el.insertAdjacentHTML("beforeend",
       (items.length ? `<div class="list">${items.map((u) => `
-      <div class="card"><div class="thumb sky">🧩</div><div class="body">
+      <div class="card" data-card="${esc(u.code)}"><div class="thumb sky">🧩</div><div class="body">
         <div class="title">${esc(u.name || u.national_land_parcel_id || u.code)}</div>
         <div class="sub">Mã thửa: <b>${esc(u.code)}</b>${u.unit_type ? ` · ${esc(u.unit_type)}` : ""}</div>
         <div class="meta">
@@ -785,7 +986,7 @@ VIEWS.parcels = async () => {
           ${u.map_sheet_number ? `<span>🗺️ Tờ bản đồ ${esc(u.map_sheet_number)}</span>` : ""}
           ${u.operator_code ? `<span>👤 ${esc(u.operator_code)}</span>` : ""}
         </div>
-        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-parcel="${esc(u.code)}">✏️ Sửa</button></div>
+        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-parcel="${esc(u.code)}">✏️ Sửa</button> <button class="btn btn-ghost btn-sm" data-del-parcel="${esc(u.code)}">🗑️ Xoá</button></div>
       </div></div>`).join("")}</div>`
         : emptyState("🧩", "Chưa có thửa đất nào", "Bấm nút + để khai thửa/ao/lô rừng đầu tiên."))
       + `<div class="section-head" style="margin-top:18px"><h2 style="font-size:15.5px">🔗 Thửa thuộc vùng</h2>
@@ -798,6 +999,9 @@ VIEWS.parcels = async () => {
           ${l.joined_date ? `<span>🗓️ Từ ${fmtDate(l.joined_date)}</span>` : ""}
         </div></div></div>`).join("")}</div>`
         : emptyState("🔗", "Chưa có liên kết nào", "Liên kết thửa vào vùng để vùng trồng gồm đúng các thửa thành viên.")));
+    wireCardDetails(el, items, (u) => `Thửa ${u.code}`);
+    el.querySelectorAll("[data-del-parcel]").forEach((b) => b.onclick = () =>
+      confirmDelete(`thửa ${b.dataset.delParcel}`, `/spatial-units/${encodeURIComponent(b.dataset.delParcel)}`, ["parcels"]));
     el.querySelectorAll("[data-edit-parcel]").forEach((b) => b.onclick = async () => {
       const u = items.find((x) => x.code === b.dataset.editParcel);
       if (!u) return;
@@ -806,6 +1010,8 @@ VIEWS.parcels = async () => {
         { k: "name", label: "Tên thửa", def: u.name || "" },
         { k: "unit_type", label: "Loại đơn vị", type: "select", def: u.unit_type || "LAND_PARCEL", options: UNIT_TYPES },
         { k: "operator_code", label: "Người/hộ vận hành", type: "select", def: u.operator_code || "",
+          addNew: quickActor,
+          refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Không ghi —", fmtActorOpt),
           options: [{ v: "", t: "— Không ghi —" }, ...actors.map((a) => ({ v: a.code, t: `${a.code} · ${a.name || ""}` }))] },
         { k: "national_land_parcel_id", label: "Mã định danh thửa đất quốc gia", def: u.national_land_parcel_id || "" },
         { k: "map_sheet_number", label: "Số tờ bản đồ", def: u.map_sheet_number || "" },
@@ -823,9 +1029,13 @@ VIEWS.parcels = async () => {
       ]);
       openSheet("Liên kết thửa vào vùng", [
         { k: "zone_code", label: "Vùng", type: "select", required: true,
-          options: [{ v: "", t: "— Chọn vùng —" }, ...zones.map((z) => ({ v: z.code, t: `${z.code} · ${z.name || ""}` }))] },
+          options: [{ v: "", t: "— Chọn vùng —" }, ...zones.map(fmtZoneOpt)],
+          addNew: quickZone,
+          refreshOptions: async () => optOf(await ensure("zones", "/zones"), "— Chọn vùng —", fmtZoneOpt) },
         { k: "parcel_code", label: "Thửa đất", type: "select", required: true,
-          options: [{ v: "", t: "— Chọn thửa —" }, ...parcels.map((u) => ({ v: u.code, t: `${u.code} · ${u.name || u.national_land_parcel_id || ""}` }))] },
+          options: [{ v: "", t: "— Chọn thửa —" }, ...parcels.map(fmtParcelOpt)],
+          addNew: quickParcel,
+          refreshOptions: async () => optOf(await ensure("parcels", "/spatial-units"), "— Chọn thửa —", fmtParcelOpt) },
         { k: "registered_area_m2", label: "Diện tích đăng ký trong vùng (m²)", type: "number", step: "0.01" },
         { k: "joined_date", label: "Ngày tham gia vùng", type: "date" },
       ], async (p) => {
@@ -841,7 +1051,9 @@ VIEWS.parcels = async () => {
       { k: "name", label: "Tên thửa", placeholder: "vd: Thửa ruộng đầu kênh" },
       { k: "unit_type", label: "Loại đơn vị", type: "select", options: UNIT_TYPES },
       { k: "operator_code", label: "Người/hộ vận hành", type: "select",
-        options: [{ v: "", t: "— Không ghi —" }, ...actors.map((a) => ({ v: a.code, t: `${a.code} · ${a.name || ""}` }))] },
+        options: [{ v: "", t: "— Không ghi —" }, ...actors.map(fmtActorOpt)],
+        addNew: quickActor,
+        refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Không ghi —", fmtActorOpt) },
       { k: "national_land_parcel_id", label: "Mã định danh thửa đất quốc gia" },
       { k: "map_sheet_number", label: "Số tờ bản đồ" },
       { k: "parcel_number", label: "Số thửa" },
@@ -863,8 +1075,8 @@ VIEWS.philogs = async () => {
     const items = await ensure("phi", "/phi-validations");
     el.querySelectorAll(".skel").forEach((x) => x.remove());
     el.insertAdjacentHTML("beforeend", items.length ? `<div class="list">${items.map((v) => `
-      <div class="card"><div class="thumb ${v.outcome === "BLOCKED_VIOLATION_PHI" ? "red" : "sky"}">🛡️</div><div class="body">
-        <div class="title">Lô ${esc(v.lot_code || "—")} ${chipFor(v.outcome)}</div>
+      <div class="card" data-card="${v.id}"><div class="thumb ${v.validation_outcome === "BLOCKED_VIOLATION_PHI" ? "red" : "sky"}">🛡️</div><div class="body">
+        <div class="title">Lô ${esc(v.lot_code || "—")} ${chipFor(v.validation_outcome)}</div>
         <div class="sub">Kế hoạch: <b>${esc(v.plan_code || "—")}</b></div>
         <div class="meta">
           ${v.max_safe_harvest_date ? `<span>📅 An toàn từ ${fmtDate(v.max_safe_harvest_date)}</span>` : "<span>📅 Không có lần xử lý nào còn hạn cách ly</span>"}
@@ -873,7 +1085,77 @@ VIEWS.philogs = async () => {
           <span>🕒 ${fmtTs(v.created_at)}</span>
         </div></div></div>`).join("")}</div>`
       : emptyState("🛡️", "Chưa có lượt kiểm tra nào", "Mỗi lần tạo lô thu hoạch, hệ thống tự kiểm tra thời gian cách ly và ghi lại tại đây."));
+    wireCardDetails(el, items, (v) => `Kiểm tra PHI · Lô ${v.lot_code || ""}`);
   } catch (err) { el.innerHTML = banner(err); }
+};
+
+
+/* ---------------- actors (catalogue) ---------------- */
+const ACTOR_TYPE_VI = Object.fromEntries(ACTOR_TYPES.map((t) => [t.v, t.t]));
+VIEWS.actors = async () => {
+  const el = $("#view");
+  el.innerHTML = `<div class="section-head"><h2>🧑‍🌾 Chủ thể</h2>
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>` + skeleton(3);
+  $("#reload").onclick = () => { invalidate("actors"); navigate("actors", true); };
+  try {
+    const items = await ensure("actors", "/actors");
+    el.querySelectorAll(".skel").forEach((x) => x.remove());
+    el.insertAdjacentHTML("beforeend", items.length ? `<div class="list">${items.map((a) => `
+      <div class="card" data-card="${esc(a.code)}"><div class="thumb">${a.actor_type === "FACILITY" ? "🏭" : a.actor_type === "COMPANY" ? "🏢" : "🧑‍🌾"}</div><div class="body">
+        <div class="title">${esc(a.name || a.code)}</div>
+        <div class="sub">Mã chủ thể: <b>${esc(a.code)}</b>${a.actor_type ? ` · ${esc(ACTOR_TYPE_VI[a.actor_type] || a.actor_type)}` : ""}</div>
+        <div class="meta">
+          ${a.gln_code ? `<span>🏷️ GLN ${esc(a.gln_code)}</span>` : ""}
+          ${a.phone ? `<span>📞 ${esc(a.phone)}</span>` : ""}
+          ${a.parent_code ? `<span>🔗 Thuộc ${esc(a.parent_code)}</span>` : ""}
+          ${a.commune_code ? `<span>📍 Xã ${esc(a.commune_code)}</span>` : ""}
+        </div>
+        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-actor="${esc(a.code)}">✏️ Sửa</button> <button class="btn btn-ghost btn-sm" data-del-actor="${esc(a.code)}">🗑️ Xoá</button></div>
+      </div></div>`).join("")}</div>`
+      : emptyState("🧑‍🌾", "Chưa có chủ thể nào", "Bấm nút + để khai nông hộ, cơ sở đóng gói hoặc nhà cung cấp đầu tiên."));
+    wireCardDetails(el, items, (a) => `Chủ thể ${a.code}`);
+    el.querySelectorAll("[data-del-actor]").forEach((b) => b.onclick = () =>
+      confirmDelete(`chủ thể ${b.dataset.delActor}`, `/actors/${encodeURIComponent(b.dataset.delActor)}`, ["actors"]));
+    el.querySelectorAll("[data-edit-actor]").forEach((b) => b.onclick = async () => {
+      const a = items.find((x) => x.code === b.dataset.editActor);
+      if (!a) return;
+      const parents = items.filter((x) => x.code !== a.code);
+      openSheet(`Sửa chủ thể ${a.code}`, [
+        { k: "name", label: "Tên chủ thể", def: a.name || "" },
+        { k: "actor_type", label: "Loại chủ thể", type: "select", def: a.actor_type || "HOUSEHOLD", options: ACTOR_TYPES },
+        { k: "gln_code", label: "Mã GLN", def: a.gln_code || "" },
+        { k: "parent_code", label: "Chủ thể cấp trên", type: "select", def: a.parent_code || "",
+          options: [{ v: "", t: "— Không có —" }, ...parents.map(fmtActorOpt)] },
+        { k: "province_code", label: "Mã tỉnh", def: a.province_code || "" },
+        { k: "district_code", label: "Mã huyện", def: a.district_code || "" },
+        { k: "commune_code", label: "Mã xã", def: a.commune_code || "" },
+        { k: "address", label: "Địa chỉ", def: a.address || "" },
+        { k: "phone", label: "Số điện thoại", def: a.phone || "" },
+        { k: "email", label: "Email", def: a.email || "" },
+        { k: "valid_from", label: "Hiệu lực từ", type: "date", def: a.valid_from ? String(a.valid_from).slice(0, 10) : "" },
+        { k: "valid_to", label: "Hiệu lực đến", type: "date", def: a.valid_to ? String(a.valid_to).slice(0, 10) : "" },
+      ], async (p) => { await T(`/actors/${encodeURIComponent(a.code)}`, { method: "PATCH", body: p }); invalidate("actors"); });
+    });
+  } catch (err) { el.innerHTML = banner(err); }
+  fab("Thêm chủ thể", async () => {
+    const items = await ensure("actors", "/actors").catch(() => []);
+    openSheet("Thêm chủ thể", [
+      { k: "code", label: "Mã chủ thể", required: true, placeholder: "vd: H05, PHC-01" },
+      { k: "name", label: "Tên chủ thể", required: true },
+      { k: "actor_type", label: "Loại chủ thể", type: "select", options: ACTOR_TYPES },
+      { k: "gln_code", label: "Mã GLN" },
+      { k: "parent_code", label: "Chủ thể cấp trên", type: "select",
+        options: [{ v: "", t: "— Không có —" }, ...items.map(fmtActorOpt)] },
+      { k: "province_code", label: "Mã tỉnh" },
+      { k: "district_code", label: "Mã huyện" },
+      { k: "commune_code", label: "Mã xã" },
+      { k: "address", label: "Địa chỉ" },
+      { k: "phone", label: "Số điện thoại" },
+      { k: "email", label: "Email" },
+      { k: "valid_from", label: "Hiệu lực từ", type: "date" },
+      { k: "valid_to", label: "Hiệu lực đến", type: "date" },
+    ], async (p) => { await T("/actors", { method: "POST", body: p }); invalidate("actors"); });
+  });
 };
 
 /* ---------------- users & audit ---------------- */
@@ -1001,7 +1283,7 @@ const MORE_TITLES = {
   dashboard: "Tổng quan", zones: "Vùng nguyên liệu", plants: "Cây đầu dòng",
   plans: "Mùa vụ & nhật ký đồng ruộng", lots: "Lô thu hoạch",
   packing: "Đóng gói & truy xuất", inputs: "Vật tư đầu vào",
-  parcels: "Thửa đất & liên kết vùng", philogs: "Kiểm tra PHI",
+  parcels: "Thửa đất & liên kết vùng", actors: "Chủ thể (nông hộ, cơ sở, nhà cung cấp)", philogs: "Kiểm tra PHI",
   users: "Người dùng & audit", tenants: "Quản trị tenant",
   settings: "Cài đặt kết nối",
 };
@@ -1013,7 +1295,7 @@ const MORE_SUBS = {
   lots: "Lô thu hoạch, phiếu cân, mã truy xuất",
   packing: "Lô đóng gói PHC, cấp mã truy xuất quốc gia, công đoạn CTE",
   inputs: "Lô thuốc/phân/giống và số ngày cách ly PHI",
-  parcels: "Thửa/ao/lô rừng và liên kết thửa vào vùng",
+  parcels: "Thửa/ao/lô rừng và liên kết thửa vào vùng", actors: "Nông hộ, doanh nghiệp, cơ sở đóng gói, nhà cung cấp — dùng cho các ô chọn liên kết.",
   philogs: "Lịch sử chặn/cho thu hoạch theo thời gian cách ly",
   users: "Thành viên trong tenant và nhật ký hệ thống",
   tenants: "Danh sách, tạo mới, khóa/mở tenant (cần khóa platform)",

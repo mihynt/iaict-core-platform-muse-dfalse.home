@@ -1,5 +1,5 @@
 {
-  "revision": 33,
+  "revision": 34,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "T-022..T-025 DEPLOYED LIVE on beta (Worker 0bbaac5b): performance P1, functional pack, phase-review supplements, mobile all-functions menu. Dashboard path bug found by the post-deploy browser test and fixed/redeployed in the same session; recheck passed. Remaining owner-side items: Q-TX-01..03 decisions, phase 3 vs T-005 roadmap, performance P2 if wanted.",
+      "last_completed_step": "T-026 UX completion pack built and verified locally (62+2 both modes); deploy to beta pending the Owner's Cloudflare token in-session, then the live browser test.",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -190,6 +190,13 @@
         "name": "Phase-review supplements (T-024)",
         "status": "TECH_DONE",
         "notes": "Principal fields (zones VSIC/buffers, input-lot invoice/QCVN, field-event application method/bagging, plan density/seed doc), duplicate-link parity, CTE audit, GTIN digits discipline. Deploy pending with T-022/T-023. Deployed live 2026-11-03 (Worker 0bbaac5b)."
+      },
+      {
+        "id": "F-010",
+        "name": "UX completion: delete + detail view + actors catalogue + inline create in pickers",
+        "priority": "P1",
+        "status": "TECH_DONE",
+        "notes": "Owner feedback 2026-11-03: CRUD completeness, inline create like WordPress, date pickers, do not be rigid about the SRS for interaction design. Built in T-026; deploy pending token."
       }
     ],
     "flows": [],
@@ -252,6 +259,17 @@
       }
     ],
     "tasks": [
+      {
+        "id": "T-026",
+        "title": "UX completion pack (Owner feedback 2026-11-03 21:26): full CRUD on master data, Actors catalogue screen, tap-to-view detail, WordPress-style inline create inside reference pickers, remaining date pickers",
+        "status": "TECH_DONE",
+        "priority": "P1",
+        "phase": "M2",
+        "evidence": "DELETE endpoints for the 7 master kinds (TENANT_ADMIN; API-layer reference scan -> 409 RECORD_IN_USE; audit <PREFIX>_DELETE; delete_record in all 4 stores + lazy delegates; tests test_t026_delete.py 3/3). UI: new Actors catalogue view (list/create/edit/delete/detail); tap any card (zones, plants, lots, packing, inputs, parcels, PHI logs, actors) for a read-only detail sheet; delete buttons with confirm sheet on all master cards; '+ Them moi' inline quick-create inside the main reference pickers (zone/plant/actor/input-lot/parcel) — parent form reopens with typed values kept, options refreshed, new record pre-selected; date pickers completed (zone issue/post-inspection dates, plant recognition expiry, actor validity). Also fixed a latent philogs bug (view read v.outcome instead of v.validation_outcome). Suites: memory 62 passed + 2 skipped, D1 62 + 2 skipped; build + wrangler dry-run OK. NOT yet deployed: awaiting the Owner's Cloudflare token in-session (same standing arrangement); post-deploy browser test still owed per the standing rule.",
+        "blockers": [
+          "Beta deploy + live browser test need the Owner's Cloudflare API token pasted in-session"
+        ]
+      },
       {
         "id": "T-001",
         "status": "TECH_DONE",
@@ -423,5 +441,5 @@
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T13:35:56Z"
+  "updated_at": "2026-11-03T14:31:38Z"
 }

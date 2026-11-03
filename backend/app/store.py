@@ -244,6 +244,10 @@ class InMemoryStore:
         record["updated_at"] = utcnow()
         return record
 
+    async def delete_record(self, tenant: str, kind: str, code: str) -> dict | None:
+        bucket = self._bucket(kind, tenant)
+        return bucket["by_code"].pop(code, None)
+
     async def count_records(self, tenant: str, kind: str) -> int:
         bucket = self._bucket(kind, tenant)
         if kind in CODED_KINDS:
@@ -339,6 +343,9 @@ class LazyWorkerStore:
 
     async def count_records(self, tenant, kind):
         return await self._d().count_records(tenant, kind)
+
+    async def delete_record(self, tenant, kind, code):
+        return await self._d().delete_record(tenant, kind, code)
 
     async def get_record_by_code(self, tenant, kind, code):
         return await self._d().get_record_by_code(tenant, kind, code)
@@ -436,6 +443,9 @@ class LazyD1Store:
 
     async def count_records(self, tenant, kind):
         return await self._d().count_records(tenant, kind)
+
+    async def delete_record(self, tenant, kind, code):
+        return await self._d().delete_record(tenant, kind, code)
 
     async def get_record_by_code(self, tenant, kind, code):
         return await self._d().get_record_by_code(tenant, kind, code)

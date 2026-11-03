@@ -244,6 +244,21 @@ class PgStore:
                 (tenant, code))
             return self._row_to_record(cur.fetchone(), kind)
 
+    async def delete_record(self, tenant: str, kind: str, code: str) -> dict | None:
+        table, _ = SPECS[kind]
+        with self._lock, self._conn.cursor() as cur:
+            cur.execute(
+                f"SELECT * FROM {table} WHERE tenant_id = %s AND code = %s",
+                (tenant, code))
+            row = cur.fetchone()
+            if row is None:
+                return None
+            record = self._row_to_record(row, kind)
+            cur.execute(
+                f"DELETE FROM {table} WHERE tenant_id = %s AND code = %s",
+                (tenant, code))
+            return record if cur.rowcount else None
+
     def _row_to_record(self, row: dict, kind: str) -> dict:
         _, columns = SPECS[kind]
         record: dict = {"id": row["id"], "tenant_id": row["tenant_id"]}

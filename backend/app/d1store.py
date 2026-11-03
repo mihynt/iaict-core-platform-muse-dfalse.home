@@ -437,6 +437,19 @@ class D1Store:
                 (tenant, code))
         return self._row_to_record(row, kind)
 
+    async def delete_record(self, tenant: str, kind: str, code: str) -> dict | None:
+        existing = await self.get_record_by_code(tenant, kind, code)
+        if existing is None:
+            return None
+        table, _ = SPECS[kind]
+        meta = await self._run(
+            f"DELETE FROM {table} WHERE tenant_id = ? AND code = ?",
+            (tenant, code))
+        changes = (meta or {}).get("changes")
+        if changes is not None and changes == 0:
+            return None
+        return existing
+
     async def list_records(self, tenant: str, kind: str) -> list[dict]:
         table, _ = SPECS[kind]
         order = "code" if kind in CODED_KINDS else "id"
