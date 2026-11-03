@@ -1,5 +1,5 @@
 {
-  "revision": 37,
+  "revision": 38,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "T-027 + T-028 built and verified locally (field audit vs the root dossier done, minutes filed); deploy to beta pending the Owner's Cloudflare token in-session, then the live browser test.",
+      "last_completed_step": "T-027 + T-028 DEPLOYED LIVE (Worker bf53d3cb): complete detail sheets, latency pack, dossier field audit closures. Open owner decisions unchanged: Q-TX-01..03, phase 3 vs T-005, performance P2 remainder (list limits).",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -203,7 +203,7 @@
         "name": "Complete detail sheets + latency pack (prefetch, freshness window, keep-warm)",
         "priority": "P1",
         "status": "TECH_DONE",
-        "notes": "Owner review 2026-11-03 22:09: detail must show full information; screens still delayed. Built in T-027; deploy pending token."
+        "notes": "Owner review 2026-11-03 22:09: detail must show full information; screens still delayed. Built in T-027; deploy pending token. Deployed live 2026-11-03 (Worker bf53d3cb)."
       }
     ],
     "flows": [],
@@ -272,10 +272,8 @@
         "status": "TECH_DONE",
         "priority": "P1",
         "phase": "M2",
-        "evidence": "Extracted every field name from the pinned root dossier DOCX (SHA 3afb2be6...) per table and compared concept-by-concept with the platform schema + detail specs. Minutes: ~/workspace/your_files/iaict-full-audit/doi-chieu-truong-du-lieu-ho-so-chuan-03-11-2026.md. Bang 17 and Bang 29 fully covered (all diffs are name synonyms). Bang 18 had 4 REAL gaps - dosage_concentration, total_quantity_applied, crop_animal_growth_stage, target_pest_disease_reason - now added to the diary form, RecordIn declarations and the field-events detail spec; event cards open details. Detail specs extended (actors gs1_role_ai/is_group_leader/ics_training_completed; zones valid_from/valid_to/initial_declared_area_ha; spatial_units province/commune/validity) and created for field_events, packaging_units, cte_stages. All remaining diffs classified with dispositions: phase-3 sector specializations (timber/fisheries/livestock), Q-TX-03 PII encryption, GIS geometry, PUC administrative intake workflow - nothing silently missing. Suite 62+2; build OK. Deploys together with T-027 (token pending).",
-        "blockers": [
-          "Beta deploy + live browser test need the Owner's Cloudflare API token pasted in-session"
-        ]
+        "evidence": "Extracted every field name from the pinned root dossier DOCX (SHA 3afb2be6...) per table and compared concept-by-concept with the platform schema + detail specs. Minutes: ~/workspace/your_files/iaict-full-audit/doi-chieu-truong-du-lieu-ho-so-chuan-03-11-2026.md. Bang 17 and Bang 29 fully covered (all diffs are name synonyms). Bang 18 had 4 REAL gaps - dosage_concentration, total_quantity_applied, crop_animal_growth_stage, target_pest_disease_reason - now added to the diary form, RecordIn declarations and the field-events detail spec; event cards open details. Detail specs extended (actors gs1_role_ai/is_group_leader/ics_training_completed; zones valid_from/valid_to/initial_declared_area_ha; spatial_units province/commune/validity) and created for field_events, packaging_units, cte_stages. All remaining diffs classified with dispositions: phase-3 sector specializations (timber/fisheries/livestock), Q-TX-03 PII encryption, GIS geometry, PUC administrative intake workflow - nothing silently missing. Suite 62+2; build OK. Deploys together with T-027 (token pending). DEPLOYED 2026-11-03 22:42-22:45 +07 (Worker bf53d3cb). Production probes: PATCH write OK; actor created with the new gs1_role_ai/is_group_leader fields round-tripped and was deleted cleanly. Browser test: zone detail panel shows 30 rows (28 spec fields + created/updated) with empty fields rendered as '-'; all four checked screens rendered content immediately after the dashboard (no loading skeletons observed - prefetch working); the diary form shows the 4 new Bang-18 fields; event cards open their detail sheet.",
+        "blockers": []
       },
       {
         "id": "T-027",
@@ -283,10 +281,8 @@
         "status": "TECH_DONE",
         "priority": "P1",
         "phase": "M2",
-        "evidence": "Detail sheets now render the COMPLETE ordered field list per kind (DETAIL_SPECS for 11 kinds; empty fields shown as '-'; extras appended; coded values translated: actor/unit/storage types, PHI outcomes, sync states). Traceability-record and zone-parcel-link cards also open details. Latency: measured live TTFB 0.4-4.8s variance on identical tiny payloads = free-tier Python Worker cold isolates; mitigations shipped: ensure() 60s freshness window, prefetchAll() warms all 14 list caches right after the dashboard loads, keep-warm /health ping every 4 min while the app is open, skeleton only when a view has no cached data, users/audit screens read through the cache (audit invalidated on every successful save; users reload button fixed to invalidate - it previously relied on always-fresh fetches). Suites 62+2 (memory); build + dry-run OK. NOT yet deployed: awaiting the Owner's Cloudflare token in-session; post-deploy browser test still owed. Field completeness of its detail specs was subsequently audited and completed in T-028.",
-        "blockers": [
-          "Beta deploy + live browser test need the Owner's Cloudflare API token pasted in-session"
-        ]
+        "evidence": "Detail sheets now render the COMPLETE ordered field list per kind (DETAIL_SPECS for 11 kinds; empty fields shown as '-'; extras appended; coded values translated: actor/unit/storage types, PHI outcomes, sync states). Traceability-record and zone-parcel-link cards also open details. Latency: measured live TTFB 0.4-4.8s variance on identical tiny payloads = free-tier Python Worker cold isolates; mitigations shipped: ensure() 60s freshness window, prefetchAll() warms all 14 list caches right after the dashboard loads, keep-warm /health ping every 4 min while the app is open, skeleton only when a view has no cached data, users/audit screens read through the cache (audit invalidated on every successful save; users reload button fixed to invalidate - it previously relied on always-fresh fetches). Suites 62+2 (memory); build + dry-run OK. NOT yet deployed: awaiting the Owner's Cloudflare token in-session; post-deploy browser test still owed. Field completeness of its detail specs was subsequently audited and completed in T-028. DEPLOYED 2026-11-03 22:42-22:45 +07 (Worker bf53d3cb). Production probes: PATCH write OK; actor created with the new gs1_role_ai/is_group_leader fields round-tripped and was deleted cleanly. Browser test: zone detail panel shows 30 rows (28 spec fields + created/updated) with empty fields rendered as '-'; all four checked screens rendered content immediately after the dashboard (no loading skeletons observed - prefetch working); the diary form shows the 4 new Bang-18 fields; event cards open their detail sheet.",
+        "blockers": []
       },
       {
         "id": "T-026",
@@ -468,5 +464,5 @@
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T15:32:02Z"
+  "updated_at": "2026-11-03T15:44:55Z"
 }
