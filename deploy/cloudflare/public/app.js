@@ -307,7 +307,7 @@ const DETAIL_LABELS = {
   batch_no: "Số lô nhà sản xuất", national_land_parcel_id: "Mã định danh thửa đất quốc gia",
   map_sheet_number: "Số tờ bản đồ", parcel_number: "Số thửa",
   land_tenure_doc_type: "Loại giấy tờ đất", land_cert_serial: "Số giấy chứng nhận",
-  land_legal_owner_name: "Chủ đất theo giấy tờ", cultivar: "Giống",
+  land_legal_owner_name: "Chủ đất theo giấy tờ", owner_consent_doc_url: "Văn bản đồng ý của chủ đất", cultivar: "Giống",
   outcome: "Kết luận", harvest_lot_code: "Lô thu hoạch đầu vào",
   packing_lot_code: "Lô đóng gói", allocated_weight_kg: "Khối lượng phân bổ (kg)",
   gtin_code: "Mã GTIN", sscc_code: "Mã SSCC", package_spec: "Quy cách đóng gói",
@@ -348,7 +348,7 @@ const DETAIL_SPECS = {
   zones: ["code", "name", "status", "puc_code", "puc_status", "vsic_code", "sector_category", "market_scope", "primary_species", "scientific_name", "crop_group", "area_ha", "initial_declared_area_ha", "province", "district", "ward", "address", "season", "water_source", "managing_entity", "owner_actor_code", "issue_date", "issuing_authority", "post_inspect_due_date", "valid_from", "valid_to", "dist_to_residential_m", "dist_to_sensitive_zone_m", "bee_site_min_dist_km"],
   mother_plants: ["code", "species", "variety", "scientific_name", "cultivar_code", "zone_code", "planting_year", "origin", "owner_manager", "recognition_no", "valid_to", "status"],
   actors: ["code", "name", "actor_type", "gln_code", "gs1_role_ai", "parent_code", "province_code", "district_code", "commune_code", "address", "phone", "email", "is_group_leader", "ics_training_completed", "valid_from", "valid_to", "status"],
-  spatial_units: ["code", "name", "unit_type", "operator_code", "province_code", "commune_code", "national_land_parcel_id", "map_sheet_number", "parcel_number", "area_m2", "land_tenure_doc_type", "land_cert_serial", "land_legal_owner_name", "valid_from", "valid_to", "status"],
+  spatial_units: ["code", "name", "unit_type", "operator_code", "province_code", "commune_code", "national_land_parcel_id", "map_sheet_number", "parcel_number", "area_m2", "land_tenure_doc_type", "land_cert_serial", "land_legal_owner_name", "owner_consent_doc_url", "valid_from", "valid_to", "status"],
   zone_parcel_links: ["zone_code", "parcel_code", "registered_area_m2", "membership_status", "joined_date", "left_date", "status"],
   input_lots: ["code", "name", "category", "brand_name", "substance_code", "vn_registration_number", "batch_no", "purchase_invoice_no", "qcvn_scheme_id", "supplier_code", "purchase_date", "quantity", "unit", "phi_days", "expiry_date", "status"],
   crop_plans: ["code", "name", "crop_name", "zone_code", "plant_code", "parcel_code", "variety_name", "seed_origin", "seed_origin_doc", "planting_density", "start_date", "end_date", "target_yield_kg", "status"],
@@ -494,11 +494,42 @@ function chipFor(status) {
     PASSED_SAFE: "", BLOCKED_VIOLATION_PHI: "red", CONDITIONAL_LAB_TEST_REQUIRED: "amber" };
   return `<span class="chip ${map[status] ?? "grey"}">${esc(status || "—")}</span>`;
 }
+// Stale-while-revalidate cache (T-030): lists persist on this device per
+// tenant, so reopening the app renders instantly from the last known data
+// while a background refresh catches up — the free-tier Worker's cold
+// isolates (2-5 s per fresh isolate, measured 2026-11-04) then cost no
+// visible waiting on repeat visits.
+const cacheKey = () => "iaict_cache_v1_" + (store.tenant || "");
+function persistCache() {
+  try { localStorage.setItem(cacheKey(), JSON.stringify(state.cache)); } catch { /* quota */ }
+}
+function loadPersistedCache() {
+  try {
+    const raw = localStorage.getItem(cacheKey());
+    if (raw) state.cache = { ...JSON.parse(raw), ...state.cache };
+  } catch { /* ignore */ }
+}
+function dropPersistedCache() {
+  try { localStorage.removeItem(cacheKey()); } catch { /* ignore */ }
+}
+const sheetOpen = () => { const sh = $("#sheet"); return !!sh && !sh.hidden; };
+const refreshingKinds = {};
+function refreshKind(kind, path) {
+  if (refreshingKinds[kind]) return;
+  refreshingKinds[kind] = true;
+  T(path).then((res) => {
+    state.cache[kind] = { at: Date.now(), data: res.items ?? res };
+    persistCache();
+    if (state.view && !sheetOpen()) navigate(state.view, true);
+  }).catch(() => {}).finally(() => { delete refreshingKinds[kind]; });
+}
 async function ensure(kind, path, maxAgeMs = 60000) {
   const c = state.cache[kind];
   if (c && Date.now() - c.at < maxAgeMs) return c.data;
+  if (c) { refreshKind(kind, path); return c.data; }  // stale: serve + refresh
   const data = (await T(path)).items;
   state.cache[kind] = { at: Date.now(), data };
+  persistCache();
   return data;
 }
 
@@ -519,17 +550,12 @@ function prefetchAll() {
     setInterval(() => { if (!document.hidden && store.tenant) api("/health").catch(() => {}); }, 240000);
   }
 }
-function invalidate(...kinds) { kinds.forEach((k) => delete state.cache[k]); }
+function invalidate(...kinds) { kinds.forEach((k) => delete state.cache[k]); persistCache(); }
 
 /* ---------------- dashboard ---------------- */
 VIEWS.dashboard = async () => {
   const el = $("#view");
-  el.innerHTML = skeleton(4);
-  try {
-    // One summary call (audit T-021, pack P1): counts + recent audit +
-    // service info in a single request instead of health + 4 lists + audit.
-    const dash = await T("/dashboard");
-    prefetchAll();
+  const paint = (dash) => {
     const health = { env: dash.env, storage: dash.storage, version: dash.version };
     state.health = health;
     const failed = [];
@@ -564,7 +590,32 @@ VIEWS.dashboard = async () => {
       : emptyState("🧾", "Chưa có hoạt động nào", "Các thao tác tạo/cập nhật sẽ được ghi lại tại đây.")}`;
     el.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => navigate(b.dataset.go));
     const retry = $("#dashRetry");
-    if (retry) retry.onclick = (e) => { e.preventDefault(); state.cache = {}; navigate("dashboard", true); };
+    if (retry) retry.onclick = (e) => { e.preventDefault(); state.cache = {}; dropPersistedCache(); navigate("dashboard", true); };
+  };
+  const entry = state.cache.dashboard;
+  if (entry) {
+    // Instant render from the persisted snapshot; refresh behind if stale.
+    paint(entry.data);
+    prefetchAll();
+    if (Date.now() - entry.at > 60000 && !refreshingKinds.dashboard) {
+      refreshingKinds.dashboard = true;
+      T("/dashboard").then((fresh) => {
+        state.cache.dashboard = { at: Date.now(), data: fresh };
+        persistCache();
+        if (state.view === "dashboard" && !sheetOpen()) navigate("dashboard", true);
+      }).catch(() => {}).finally(() => { delete refreshingKinds.dashboard; });
+    }
+    return;
+  }
+  el.innerHTML = skeleton(4);
+  try {
+    // One summary call (audit T-021, pack P1): counts + recent audit +
+    // service info in a single request instead of health + 4 lists + audit.
+    const dash = await T("/dashboard");
+    state.cache.dashboard = { at: Date.now(), data: dash };
+    persistCache();
+    paint(dash);
+    prefetchAll();
   } catch (err) {
     el.innerHTML = banner(err) + emptyState("🔌", "Chưa kết nối được dữ liệu",
       "Kiểm tra mã tenant và người dùng trong mục Cài đặt, hoặc nhờ quản trị platform kiểm tra trạng thái tenant.");
@@ -1190,6 +1241,7 @@ VIEWS.parcels = async () => {
         { k: "land_tenure_doc_type", label: "Loại giấy tờ đất", def: u.land_tenure_doc_type || "" },
         { k: "land_cert_serial", label: "Số giấy chứng nhận", def: u.land_cert_serial || "" },
         { k: "land_legal_owner_name", label: "Chủ đất theo giấy tờ", def: u.land_legal_owner_name || "" },
+        { k: "owner_consent_doc_url", label: "Văn bản đồng ý của chủ đất (URL)", def: u.owner_consent_doc_url || "" },
       ], async (p) => { await T(`/spatial-units/${encodeURIComponent(u.code)}`, { method: "PATCH", body: p }); invalidate("parcels"); });
     });
     $("#addLink").onclick = async () => {
@@ -1232,6 +1284,7 @@ VIEWS.parcels = async () => {
       { k: "land_tenure_doc_type", label: "Loại giấy tờ đất", placeholder: "vd: GCN QSDĐ" },
       { k: "land_cert_serial", label: "Số giấy chứng nhận" },
       { k: "land_legal_owner_name", label: "Chủ đất theo giấy tờ" },
+      { k: "owner_consent_doc_url", label: "Văn bản đồng ý của chủ đất (URL)", placeholder: "https://…" },
     ], async (p) => { await T("/spatial-units", { method: "POST", body: p }); invalidate("parcels"); });
   });
 };
@@ -1449,7 +1502,7 @@ VIEWS.settings = () => {
     toast("Đã lưu cài đặt kết nối.");
     navigate("dashboard", true);
   });
-  $("#disconnect").onclick = () => { store.clear(); location.reload(); };
+  $("#disconnect").onclick = () => { dropPersistedCache(); store.clear(); location.reload(); };
 };
 
 /* ---------------- all-functions menu (mobile "Khac" tab) ----------------
@@ -1599,8 +1652,14 @@ $("#setupForm").addEventListener("submit", async (e) => {
 });
 async function boot() {
   paintNav();
-  try { state.health = await api("/health"); $("#envLabel").textContent = state.health.env; } catch { /* offline tolerance */ }
+  loadPersistedCache();
   navigate(store.tenant ? "dashboard" : "settings", true);
+  // Health resolves in the background: it must not gate the first screen
+  // (a cold /health alone measured 2.4-3.0 s on 2026-11-04).
+  api("/health").then((h) => { state.health = h; $("#envLabel").textContent = h.env; }).catch(() => {});
 }
 if (store.tenant) { $("#setup").hidden = true; boot(); }
-else { $("#setup").hidden = false; paintNav(); }
+else {
+  $("#setup").hidden = false; paintNav();
+  fetch("/health").catch(() => {});  // warm-up while the user signs in
+}

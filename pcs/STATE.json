@@ -1,5 +1,5 @@
 {
-  "revision": 40,
+  "revision": 41,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "T-029 DEPLOYED LIVE (Worker 920420f7): entry forms completed for every detail field, zone-owner actor relationship live on production D1. Open owner decisions unchanged: Q-TX-01..03, phase 3 vs T-005.",
+      "last_completed_step": "T-030 built and verified locally (per-table analysis delivered; SWR cache; consent field). Deploy to beta pending the Owner's Cloudflare token in-session, then the live browser test.",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -211,6 +211,13 @@
         "priority": "P1",
         "status": "TECH_DONE",
         "notes": "Owner review 2026-11-03 23:10. Built in T-029; deploy pending token. Deployed live 2026-11-03 (Worker 920420f7)."
+      },
+      {
+        "id": "F-013",
+        "name": "Load speed round 2: persistent SWR cache + non-blocking boot + sign-in warm-up",
+        "priority": "P1",
+        "status": "TECH_DONE",
+        "notes": "Owner report 2026-11-04 (load still slow). Built in T-030; deploy pending token."
       }
     ],
     "flows": [],
@@ -273,6 +280,17 @@
       }
     ],
     "tasks": [
+      {
+        "id": "T-030",
+        "title": "Per-table dossier analysis (33 tables, structured extraction) + load-speed round 2 (SWR persistent cache)",
+        "status": "TECH_DONE",
+        "priority": "P1",
+        "phase": "M2",
+        "evidence": "Owner asked 2026-11-04 04:30 for a careful per-table analysis and reported loading still slow. Full structured extraction of the pinned dossier via python-docx: 33 tables / 376 fields with types/constraints/descriptions, diffed field-by-field and FK-by-FK against schemas/SPECS/RECORD_REFS/RecordIn/forms. Minutes: ~/workspace/your_files/iaict-full-audit/phan-tich-tung-bang-ho-so-chuan-04-11-2026.md. Result: all 14 implemented tables confirmed complete for their scope; every dossier FK inside implemented scope has a platform counterpart (REF-table FKs carried as codes by phase design). ONE real field gap found and fixed: Bang 11 owner_consent_doc_url (RecordIn + parcel forms + detail spec). Standing classified items reconfirmed: Q-TX-03 PII encryption (Bang 6), SYS pack (Bang 32 linked_actor_id/account_status; Bang 33 old/new snapshots + IP/device), Bang 13 status-history log, harvest DATE vs DATETIME note, harmless internal name deltas (registered_area_m2, vn_reg_no). PERFORMANCE, measured live 04:35 +07: static assets 0.3-0.9 s; /health 2.4-3.0 s; /api/v1/dashboard 2.3-5.1 s — the remaining latency is entirely free-tier Python Worker cold isolates. Client-side round 2 shipped: persistent stale-while-revalidate cache per tenant on the device (lists + dashboard snapshot render instantly on reopen, background refresh re-renders), boot no longer blocks on /health, sign-in screen fires a warm-up ping. Suite 65+2 (memory). NOT yet deployed: awaiting the Owner's Cloudflare token in-session. Options for eliminating first-hit cold latency entirely (cron keep-warm entry change / always-warm host) are presented in the minutes for an Owner decision.",
+        "blockers": [
+          "Beta deploy + live browser test need the Owner's Cloudflare API token pasted in-session"
+        ]
+      },
       {
         "id": "T-029",
         "title": "Field & relation consistency (Owner review 2026-11-03 23:10): every displayed field must have an entry path; dossier relationships completed",
@@ -480,5 +498,5 @@
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T16:30:22Z"
+  "updated_at": "2026-11-03T21:35:02Z"
 }

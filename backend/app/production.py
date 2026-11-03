@@ -97,6 +97,7 @@ class RecordIn(BaseModel):
     land_tenure_doc_type: str | None = None
     land_cert_serial: str | None = None
     land_legal_owner_name: str | None = None
+    owner_consent_doc_url: str | None = None
     forest_subzone_code: str | None = None
     forest_compartment_code: str | None = None
     forest_plot_code: str | None = None
