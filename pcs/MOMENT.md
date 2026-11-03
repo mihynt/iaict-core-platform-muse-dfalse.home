@@ -1,6 +1,6 @@
 # MOMENT — IAICT Core Platform
 
-- **Revision:** 27 · **Updated:** 2026-11-03T11:31:49Z · **Phase:** DISCOVERY
+- **Revision:** 28 · **Updated:** 2026-11-03T11:48:07Z · **Phase:** DISCOVERY
 - **Canonical state:** `pcs/STATE.json` (this file is a derived summary)
 - **Repository:** [`mihynt/iaict-core-platform-muse-dfalse.home`](https://github.com/mihynt/iaict-core-platform-muse-dfalse.home) (PUBLIC) — live; initial checkpoint commit `2b354557` verified by read-back
 
@@ -31,6 +31,17 @@
 
 ## Latest progress
 
+- **Full-project audit (2026-11-03, T-021 TECH_DONE):**
+  tables/fields vs the standard (concept-level), backend, UI and
+  measured performance. Sound core (suite 47 green, tenant
+  isolation intact); genuine gaps: `synced_at` missing on
+  traceability records, no last-treatment link on PHI validations,
+  no update/delete endpoints, no list pagination, and 5 API
+  resources with no UI (spatial units, parcel links, input lots,
+  PHI validations, CTE stages). Slow loads are architectural:
+  every request — static assets included — runs the Python
+  Worker (assets served max-age=0), and the dashboard costs 7
+  invocations. Fix plan P1/P2/P3 recorded in the audit minutes.
 - **Five-round review loop over SRS v2.1.1 (2026-11-03, T-020
   TECH_DONE):** dossier-as-root, baseline SRS, implementation,
   internal consistency, fresh-eyes — 4 findings (1 medium:

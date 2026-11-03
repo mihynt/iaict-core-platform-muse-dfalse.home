@@ -1,5 +1,5 @@
 {
-  "revision": 27,
+  "revision": 28,
   "schema": "pcs.solo.v1",
   "state": {
     "architecture_map": {
@@ -29,7 +29,7 @@
     ],
     "current": {
       "active_task": "T-005",
-      "last_completed_step": "Five-round review loop over SRS v2.1.1 completed (T-020 TECH_DONE, delta D-STD-05): 4 findings (1 medium in DATA_MODEL phase labels, 3 minor in the SRS document) all fixed and re-verified; final SRS v2.1.1 hash 16fdbdf8..., 156 pages, TOC verified. Beta unchanged (Worker 75f69cfb).",
+      "last_completed_step": "Full-project audit completed (T-021 TECH_DONE): data layer concept-complete for the implemented scope with a short list of genuine field gaps; backend sound (47 tests green) but create/read-only with no pagination; 5 API resources lack UI; the slow-load root cause is architectural - every request, static assets included, runs the Python Worker (max-age=0 revalidation), and the dashboard fans out to 7 invocations. Prioritized fix plan recorded; awaiting the Owner's choice of work pack. Beta unchanged (Worker 75f69cfb).",
       "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
       "blockers": []
     },
@@ -372,9 +372,16 @@
         "status": "TECH_DONE",
         "evidence": "Loop minutes: bien-ban-vong-lap-ra-soat-5-lan-v2.1.1.md (kept with the SRS files, outside the public repo). Rounds: (1) dossier-as-root - inventory complete, 1 minor fix (F.4 field-numbering note); (2) baseline SRS/SOW - 16/16 cross-references verified, 0 errors; (3) implementation - statuses match schema, DATA_MODEL.md phase labels fixed (5 rows); (4) internal consistency - 2 minor fixes (SOW Appendix F name collision clarified, DEC-012 basis); (5) fresh-eyes + final render - stale V1.0 footer fixed to V2.1.1. Final file: 156 pages, TOC re-verified at all checkpoints, SHA-256 16fdbdf8f79c9e51cd9a511b9237548a8f23618bf2a947feaba83daaa8eb02c9.",
         "notes": "Owner directive 2026-11-03: 'Tao vong lap ra soat 5 lan, sau moi lan co loi thi sua va ra soat lai'. All 4 findings (1 medium, 3 minor) fixed and re-verified; no serious findings; no requirement/threshold/scope changes."
+      },
+      {
+        "id": "T-021",
+        "title": "Full-project audit: tables/fields vs the standard, backend, UI, performance",
+        "status": "TECH_DONE",
+        "evidence": "Minutes: bien-ban-ra-soat-toan-du-an-03-11-2026.md (kept with the audit files, outside the public repo). Data: 16/33 dossier tables implemented + 2/3 view rules; genuine field gaps at concept level: traceability_records lacks synced_at (TX-12 needs it), phi_validations lacks the last-treatment link (Bang 24), actors PII encryption = Q-TX-03, audit lacks old/new snapshots + IP/device, users lack account status/actor link. Backend: suite re-run 47 passed + 2 skipped (memory mode), no TODO/FIXME; NO update/delete endpoints for master data; no list pagination. UI: 5 API resources have no UI (spatial_units, zone_parcel_links, input_lots, phi_validations, cte_stages). Performance (measured live 2026-11-03): payloads tiny (156-1360 B); latency is TTFB-bound - run_worker_first routes even static assets through the Python Worker and app.js is served max-age=0/must-revalidate; the dashboard costs 7 Worker invocations (health + 6 full lists counted client-side); audit list unbounded. Fix plan P1 (assets bypass + /api/v1/dashboard summary endpoint), P2 (per-session view caching, list limits), P3 (GET timeout 20s -> ~8s, optional warm-up ping).",
+        "notes": "Owner directive 2026-11-03: full re-audit from the start of the project, report per part, focus on optimization because loading still feels slow. Fixes await the Owner's pick of a work pack."
       }
     ],
     "version": "0.1.0"
   },
-  "updated_at": "2026-11-03T11:31:49Z"
+  "updated_at": "2026-11-03T11:48:07Z"
 }
