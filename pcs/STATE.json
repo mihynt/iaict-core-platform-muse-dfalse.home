@@ -1,5 +1,5 @@
 {
- "revision": 68,
+ "revision": 69,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-053",
-   "last_completed_step": "T-052 TECH_DONE (V2-1): nen tang Core v2 chay xanh o 3 che do store; guardrail trung lap da bat va chan duoc 2 sot cua v1 ngay lat dau",
-   "next_action": "Xay V2-2 spine loi (T-053) trong du an iaict-core-v2 theo DESIGN.md muc 3.1-3.2.",
+   "active_task": "T-054",
+   "last_completed_step": "T-053 TECH_DONE (V2-2): spine loi canonical 9 kind chay xanh 3 che do store + UI generic + guardrail dat",
+   "next_action": "Xay V2-3 Event Ledger + Current State (T-054) theo DESIGN.md muc 3.3.",
    "blockers": []
   },
   "decisions": [
@@ -858,7 +858,7 @@
    {
     "id": "T-053",
     "title": "V2-2 spine loi: admin_units, producers, sites, spatial_units, production_units, subjects, taxonomy, cycles, recognition_documents (CRUD + form loi)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [
      "GEN-01",
      "GEN-04",
@@ -867,11 +867,27 @@
      "ZON-01",
      "MPL-01"
     ],
-    "evidence": "Chuan bi da khoa truoc khi xay (nghien cuu prompt mau theo yeu cau Owner 2026-11-04): repo v2 co AGENTS.md noi hoa System Prompt mau Phan 4.1 (mandate, mo hinh canonical, co che pack) + bang co lap ngu canh Phan 3 theo lat cat + muc tu kiem 5 diem truoc checkpoint. DESIGN.md bo sung: WorkflowEngine + Health & Biosecurity (HLT) + Standards & Compliance (STD) vao danh sach engines; manifest them workflows + test_vectors (Golden Test Vectors bat buoc); ghi chu anh xa OrganizationUnit = phan cap producers (SOW 5.2 khong co thuc the rieng, khong them bang); ngu phap Rule Engine ghi ro kieu JSON Logic/AST. Script denylist hop nhat ca 2 nguon (them land_parcel, cultivation_log, pesticide, fertilizer, thoi_gian_cach_ly, ao_nuoi, livestock, herd) va mo rong pham vi quet sang backend/app/main.py + UI shell app.js — chay dat. Commit repo v2 5ab7873. Chua bat dau; theo DESIGN.md muc 3.1-3.2 + muc 9 lat V2-2. Core schema canonical viet tay; extension payload validate bang JSON Schema cua pack tu V2-4 (V2-2 chap nhan payload co khai bao truong trong registry loi).",
+    "evidence": "V2-2 spine loi xong (repo v2 ecf391a + cade8c1 don artifact): registry.py canonical viet tay 9 kind (admin_units, producers, sites, spatial_units, production_units, subjects, taxonomy_catalog, production_cycles, recognition_documents) + tools/gen_spec.py sinh records_spec + DDL 2 dialect (co sap xep topo — PG bat loi FK taxonomy o lan chay dau, da sua o generator) + drift test. D1 migration v2 (9 bang, ledger [1,2]); records_api generic: POST/GET/PATCH/DELETE theo dung ky luat v1 (CODE_REQUIRED/EXISTS/IMMUTABLE, REF_UNKNOWN, ENUM_INVALID, RECORD_IN_USE ke ca tham chieu dong holder cua documents, phan trang) + PII cho producers (protect/restore; test chung minh ban ghi audit khong chua legal_id dang ro khi bat khoa) + audit prefix ADM/PRD/SIT/SPU/PUN/SBJ/TAX/CYC/DOC. UI: muc Ho so loi 9 tab + form generic theo registry + dashboard dem spine; jsdom sim18 dat toan luong (tao producer qua form, select tham chieu nap dung, 0 loi JS). Suite: memory 31+2, D1 33, PG 29+4; script trung lap dat (quet ca registry/records_api). Chuan bi da khoa truoc khi xay (nghien cuu prompt mau theo yeu cau Owner 2026-11-04): repo v2 co AGENTS.md noi hoa System Prompt mau Phan 4.1 (mandate, mo hinh canonical, co che pack) + bang co lap ngu canh Phan 3 theo lat cat + muc tu kiem 5 diem truoc checkpoint. DESIGN.md bo sung: WorkflowEngine + Health & Biosecurity (HLT) + Standards & Compliance (STD) vao danh sach engines; manifest them workflows + test_vectors (Golden Test Vectors bat buoc); ghi chu anh xa OrganizationUnit = phan cap producers (SOW 5.2 khong co thuc the rieng, khong them bang); ngu phap Rule Engine ghi ro kieu JSON Logic/AST. Script denylist hop nhat ca 2 nguon (them land_parcel, cultivation_log, pesticide, fertilizer, thoi_gian_cach_ly, ao_nuoi, livestock, herd) va mo rong pham vi quet sang backend/app/main.py + UI shell app.js — chay dat. Commit repo v2 5ab7873. Chua bat dau; theo DESIGN.md muc 3.1-3.2 + muc 9 lat V2-2. Core schema canonical viet tay; extension payload validate bang JSON Schema cua pack tu V2-4 (V2-2 chap nhan payload co khai bao truong trong registry loi).",
+    "blockers": []
+   },
+   {
+    "id": "T-054",
+    "title": "V2-3 Event Ledger + Current State: ghi su kien bat bien, idempotency, correction bang su kien dao, projection + rebuild, cong khong-am",
+    "status": "PLANNED",
+    "srs_refs": [
+     "LFC-04",
+     "LFC-05",
+     "LFC-06",
+     "LFC-07",
+     "LFC-11",
+     "LFC-12",
+     "GEN-04"
+    ],
+    "evidence": "Chua bat dau; theo DESIGN.md muc 3.3 + muc 9 lat V2-3. Ngu canh Core (AGENTS.md muc 4): chi doc SOW 4.13/LFC + 5.2 + DESIGN.",
     "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T04:19:33Z"
+ "updated_at": "2026-11-04T04:33:15Z"
 }
