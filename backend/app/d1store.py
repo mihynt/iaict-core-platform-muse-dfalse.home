@@ -13,14 +13,19 @@ cross-tenant reference rejection proven on PostgreSQL holds here too.
 
 The PostgreSQL backends (pgstore / workerstore) remain the documented
 exit path: swap the backend, keep the API contract.
+
+Since T-044 (T-032 slice 4) the store contract itself lives in
+app.sqlcore.SqlStoreCore; this module keeps only the D1 dialect
+adapter plus D1-specific schema management (fresh-install DDL,
+the phase upgrades and the versioned migration ledger).
 """
 from __future__ import annotations
 
 import json
 import pathlib
 
-from .records_spec import REF_ID_COLUMN, SPECS
-from .store import CODED_KINDS, RECORD_REFS, RefUnknown, Tenant, User, utcnow
+from .sqlcore import SqlStoreCore
+from .store import utcnow
 
 _SCHEMA = pathlib.Path(__file__).with_name("schema_d1.sql").read_text(encoding="utf-8")
 _DDL = [stmt.strip() for stmt in _SCHEMA.split(";\n") if stmt.strip()]
@@ -85,24 +90,6 @@ def _plain(obj):
 def _is_unique_violation(exc: BaseException) -> bool:
     msg = str(exc)
     return "UNIQUE constraint failed" in msg or "SQLITE_CONSTRAINT_UNIQUE" in msg
-
-
-def _conv_out(value, ckind: str):
-    if value is None:
-        return None
-    if ckind == "json" and isinstance(value, str):
-        return json.loads(value)
-    if ckind == "num" and isinstance(value, (int, float)):
-        return float(value)
-    return value
-
-
-def _conv_in(value, ckind: str):
-    if value is None:
-        return None
-    if ckind == "json":
-        return json.dumps(value)
-    return value
 
 
 # T-039 (T-032 slice 3): versioned migrations. Every statement is
@@ -194,13 +181,61 @@ _MIGRATIONS: list[tuple[int, list[str]]] = [
 ]
 
 
-class D1Store:
+
+
+class D1Dialect:
+    """sqlcore dialect over a D1 binding (via the owning store's
+    _first/_all/_run plumbing, which runs _ensure_schema first)."""
+
+    ph = "?"
+
+    def __init__(self, store: "D1Store") -> None:
+        self._store = store
+
+    async def one(self, sql: str, params: tuple = ()):
+        return await self._store._first(sql, params)
+
+    async def all(self, sql: str, params: tuple = ()) -> list[dict]:
+        return await self._store._all(sql, params)
+
+    async def run(self, sql: str, params: tuple = ()) -> int:
+        meta = await self._store._run(sql, params)
+        return meta.get("changes") or 0
+
+    async def insert(self, sql: str, params: tuple = (),
+                     returning: str = "id"):
+        meta = await self._store._run(sql, params)
+        return meta.get("last_row_id")
+
+    @staticmethod
+    def json_in(obj):
+        return json.dumps(obj)
+
+    @staticmethod
+    def is_unique(exc: BaseException) -> bool:
+        return _is_unique_violation(exc)
+
+    async def legacy_columns(self, table: str) -> list:
+        rows = await self.all(f"PRAGMA table_info({table})")
+        system = {"id", "tenant_id", "code", "data", "created_at", "updated_at"}
+        found = []
+        for r in rows:
+            if r.get("notnull") == 1 and r.get("dflt_value") is None \
+                    and r.get("name") not in system:
+                ctype = (r.get("type") or "").upper()
+                neutral = 0 if any(t in ctype for t in
+                                   ("INT", "REAL", "NUM", "DEC")) else ""
+                found.append((r["name"], neutral))
+        return found
+
+
+class D1Store(SqlStoreCore):
     kind = "d1"
 
     def __init__(self, db) -> None:
         self._db = db
         self._schema_ready = False
-        self._legacy_cols: dict[str, list] = {}
+        super().__init__(D1Dialect(self))
 
     # ---- plumbing ------------------------------------------------------
     async def _ensure_schema(self) -> None:
@@ -278,6 +313,7 @@ class D1Store:
                 " (version, applied_at) VALUES (?, ?)"
             ).bind(version, utcnow()).run()
 
+
     async def _first(self, sql: str, params: tuple = ()):
         await self._ensure_schema()
         stmt = self._db.prepare(sql)
@@ -314,367 +350,3 @@ class D1Store:
         except Exception:
             pass  # sqlite_sequence is an implementation detail; ignore if absent
 
-    # ---- audit ---------------------------------------------------------
-    async def record_audit(self, *, scope: str, tenant_id: str | None, actor: str,
-                           action: str, target: str, outcome: str,
-                           old_value: str | None = None,
-                           new_value: str | None = None) -> dict:
-        from . import auditctx
-        ts = utcnow()
-        meta = await self._run(
-            "INSERT INTO audit_log (ts, scope, tenant_id, actor, action, target, outcome,"
-            " old_value, new_value, client_ip, user_agent)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (ts, scope, tenant_id, actor, action, target, outcome,
-             old_value, new_value, auditctx.client_ip(), auditctx.user_agent()),
-        )
-        return {"seq": meta.get("last_row_id"), "ts": ts, "scope": scope,
-                "tenant_id": tenant_id, "actor": actor, "action": action,
-                "target": target, "outcome": outcome, "old_value": old_value,
-                "new_value": new_value, "client_ip": auditctx.client_ip(),
-                "user_agent": auditctx.user_agent()}
-
-    async def list_audit(self) -> list[dict]:
-        return await self._all("SELECT * FROM audit_log ORDER BY seq")
-
-    async def audit_for_tenant(self, tenant_id: str) -> list[dict]:
-        return await self._all(
-            "SELECT * FROM audit_log WHERE tenant_id = ? ORDER BY seq", (tenant_id,)
-        )
-
-    # ---- tenants -------------------------------------------------------
-    async def create_tenant(self, slug: str, name: str) -> Tenant | None:
-        created = utcnow()
-        try:
-            await self._run(
-                "INSERT INTO tenants (slug, name, status, created_at) VALUES (?, ?, 'ACTIVE', ?)",
-                (slug, name, created),
-            )
-        except Exception as exc:
-            if _is_unique_violation(exc):
-                return None
-            raise
-        return Tenant(slug=slug, name=name, created_at=created)
-
-    async def get_tenant(self, slug: str) -> Tenant | None:
-        row = await self._first("SELECT * FROM tenants WHERE slug = ?", (slug,))
-        if row is None:
-            return None
-        return Tenant(slug=row["slug"], name=row["name"], status=row["status"],
-                      created_at=row["created_at"])
-
-    async def list_tenants(self) -> list[Tenant]:
-        rows = await self._all("SELECT * FROM tenants ORDER BY slug")
-        return [Tenant(slug=r["slug"], name=r["name"], status=r["status"],
-                       created_at=r["created_at"]) for r in rows]
-
-    async def set_tenant_status(self, slug: str, status: str) -> Tenant | None:
-        meta = await self._run(
-            "UPDATE tenants SET status = ? WHERE slug = ?", (status, slug)
-        )
-        if not meta.get("changes"):
-            return None
-        return await self.get_tenant(slug)
-
-    # ---- users ---------------------------------------------------------
-    async def create_user(self, tenant: str, username: str, display_name: str,
-                          role: str, linked_actor_code: str | None = None,
-                          jurisdiction_admin_code: str | None = None,
-                          auth_provider_type: str | None = None) -> User | None:
-        created = utcnow()
-        try:
-            await self._run(
-                "INSERT INTO users (tenant_id, username, display_name, role, created_at,"
-                " linked_actor_code, account_status, jurisdiction_admin_code,"
-                " auth_provider_type)"
-                " VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?)",
-                (tenant, username, display_name, role, created,
-                 linked_actor_code, jurisdiction_admin_code, auth_provider_type),
-            )
-        except Exception as exc:
-            if _is_unique_violation(exc):
-                return None
-            raise
-        return User(username=username, display_name=display_name, role=role,
-                    created_at=created, linked_actor_code=linked_actor_code,
-                    jurisdiction_admin_code=jurisdiction_admin_code,
-                    auth_provider_type=auth_provider_type)
-
-    async def update_user(self, tenant: str, username: str, fields: dict) -> User | None:
-        allowed = ("display_name", "role", "linked_actor_code", "account_status",
-                   "jurisdiction_admin_code", "auth_provider_type")
-        sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
-        if await self.get_user(tenant, username) is None:
-            return None
-        if sets:
-            assignments = ", ".join(f"{k} = ?" for k in sets)
-            await self._run(
-                f"UPDATE users SET {assignments} WHERE tenant_id = ? AND username = ?",
-                tuple(sets.values()) + (tenant, username))
-        return await self.get_user(tenant, username)
-
-    async def get_user(self, tenant: str, username: str) -> User | None:
-        row = await self._first(
-            "SELECT * FROM users WHERE tenant_id = ? AND username = ?", (tenant, username)
-        )
-        if row is None:
-            return None
-        return User(username=row["username"], display_name=row["display_name"],
-                    role=row["role"], created_at=row["created_at"],
-                    linked_actor_code=row.get("linked_actor_code"),
-                    account_status=row.get("account_status") or "ACTIVE",
-                    jurisdiction_admin_code=row.get("jurisdiction_admin_code"),
-                    auth_provider_type=row.get("auth_provider_type"))
-
-    async def list_users(self, tenant: str) -> list[User]:
-        rows = await self._all(
-            "SELECT * FROM users WHERE tenant_id = ? ORDER BY username", (tenant,)
-        )
-        return [User(username=r["username"], display_name=r["display_name"],
-                     role=r["role"], created_at=r["created_at"],
-                     linked_actor_code=r.get("linked_actor_code"),
-                     account_status=r.get("account_status") or "ACTIVE",
-                     jurisdiction_admin_code=r.get("jurisdiction_admin_code"),
-                     auth_provider_type=r.get("auth_provider_type")) for r in rows]
-
-    async def tenant_user_count(self, tenant: str) -> int:
-        row = await self._first(
-            "SELECT count(*) AS n FROM users WHERE tenant_id = ?", (tenant,)
-        )
-        return int(row["n"]) if row else 0
-
-    # ---- workspaces ------------------------------------------------------
-    async def create_workspace(self, tenant: str, name: str) -> bool:
-        meta = await self._run(
-            "INSERT INTO workspaces (tenant_id, name, created_at) VALUES (?, ?, ?)"
-            " ON CONFLICT DO NOTHING",
-            (tenant, name, utcnow()),
-        )
-        return meta.get("changes") == 1
-
-    async def list_workspace_names(self, tenant: str) -> list[str]:
-        rows = await self._all(
-            "SELECT name FROM workspaces WHERE tenant_id = ? ORDER BY name", (tenant,)
-        )
-        return [r["name"] for r in rows]
-
-    # ---- production records ---------------------------------------------
-    async def _resolve_ref(self, tenant: str, ref_kind: str, code: str) -> int | None:
-        table = SPECS[ref_kind][0]
-        row = await self._first(
-            f"SELECT id FROM {table} WHERE tenant_id = ? AND code = ?", (tenant, code)
-        )
-        return None if row is None else row["id"]
-
-    async def _legacy_required_columns(self, table: str) -> list:
-        """(column, neutral value) for NOT NULL columns that have no default
-        and are not part of the standard write set — see the guard in
-        create_record. Cached per table for the isolate's lifetime."""
-        if table in self._legacy_cols:
-            return self._legacy_cols[table]
-        rows = await self._all(f"PRAGMA table_info({table})")
-        system = {"id", "tenant_id", "code", "data", "created_at", "updated_at"}
-        found = []
-        for r in rows:
-            if r.get("notnull") == 1 and r.get("dflt_value") is None \
-                    and r.get("name") not in system:
-                ctype = (r.get("type") or "").upper()
-                neutral = 0 if any(t in ctype for t in ("INT", "REAL", "NUM", "DEC")) else ""
-                found.append((r["name"], neutral))
-        self._legacy_cols[table] = found
-        return found
-
-    async def create_record(self, tenant: str, kind: str, fields: dict) -> dict | None:
-        table, columns = SPECS[kind]
-        refs = RECORD_REFS[kind]
-        values: dict[str, object] = {}
-        for ref_field, ref_kind in refs.items():
-            code = fields.get(ref_field)
-            if code is not None:
-                ref_id = await self._resolve_ref(tenant, ref_kind, code)
-                if ref_id is None:
-                    raise RefUnknown(ref_field)
-                values[REF_ID_COLUMN[ref_field]] = ref_id
-                values[ref_field] = code
-        known = set(columns) | set(refs)
-        extra = {k: v for k, v in fields.items() if k not in known and k != "code"}
-        for col, ckind in columns.items():
-            if col in fields:
-                values[col] = _conv_in(fields[col], ckind)
-        now = utcnow()
-        names = ["tenant_id", "data", "created_at"]
-        params = [tenant, json.dumps(extra), now]
-        if kind != "field_events":  # the one table without updated_at (as in PG)
-            names.append("updated_at")
-            params.append(now)
-        names += list(values.keys())
-        params += list(values.values())
-        if kind in CODED_KINDS:
-            names.insert(1, "code")
-            params.insert(1, fields.get("code"))
-        # Legacy-schema guard: a table created by an earlier schema era can
-        # carry NOT NULL columns with no default that the current field model
-        # has retired (production zones.name, cut in T-034, blocked every zone
-        # create with a constraint 500). Reads are SPECS-driven, so such
-        # columns are never surfaced; satisfy the constraint with a neutral
-        # value instead of failing the insert.
-        for col, neutral in await self._legacy_required_columns(table):
-            if col not in names:
-                names.append(col)
-                params.append(neutral)
-        placeholders = ", ".join(["?"] * len(names))
-        try:
-            meta = await self._run(
-                f"INSERT INTO {table} ({', '.join(names)}) VALUES ({placeholders})",
-                tuple(params),
-            )
-        except Exception as exc:
-            if _is_unique_violation(exc):
-                return None
-            raise
-        row = await self._first(
-            f"SELECT * FROM {table} WHERE id = ?", (meta.get("last_row_id"),)
-        )
-        return self._row_to_record(row, kind)
-
-    def _row_to_record(self, row: dict, kind: str) -> dict:
-        _, columns = SPECS[kind]
-        record: dict = {"id": row["id"], "tenant_id": row["tenant_id"]}
-        if kind in CODED_KINDS:
-            record["code"] = row["code"]
-        for col, ckind in columns.items():
-            if row.get(col) is not None:
-                record[col] = _conv_out(row[col], ckind)
-        for ref_field in RECORD_REFS[kind]:
-            if row.get(ref_field) is not None:
-                record[ref_field] = row[ref_field]
-        data = row.get("data")
-        if isinstance(data, str):
-            data = json.loads(data) if data else {}
-        record.update(data or {})
-        record["created_at"] = row["created_at"]
-        if row.get("updated_at") is not None:
-            record["updated_at"] = row["updated_at"]
-        return record
-
-    async def update_record(self, tenant: str, kind: str, code: str,
-                            fields: dict) -> dict | None:
-        table, columns = SPECS[kind]
-        refs = RECORD_REFS[kind]
-        row = await self._first(
-            f"SELECT * FROM {table} WHERE tenant_id = ? AND code = ?",
-            (tenant, code))
-        if row is None:
-            return None
-        values: dict[str, object] = {}
-        for ref_field, ref_kind in refs.items():
-            ref_code = fields.get(ref_field)
-            if ref_code is not None:
-                ref_id = await self._resolve_ref(tenant, ref_kind, ref_code)
-                if ref_id is None:
-                    raise RefUnknown(ref_field)
-                values[REF_ID_COLUMN[ref_field]] = ref_id
-                values[ref_field] = ref_code
-        known = set(columns) | set(refs)
-        extra = {k: v for k, v in fields.items()
-                 if k not in known and k != "code"}
-        if extra:
-            current = row.get("data")
-            data = json.loads(current) if isinstance(current, str) \
-                and current else {}
-            data.update(extra)
-            values["data"] = json.dumps(data)
-        for col, ckind in columns.items():
-            if col in fields:
-                values[col] = _conv_in(fields[col], ckind)
-        if kind != "field_events":
-            values["updated_at"] = utcnow()
-        if values:
-            assignments = ", ".join(f"{k} = ?" for k in values)
-            await self._run(
-                f"UPDATE {table} SET {assignments}"
-                " WHERE tenant_id = ? AND code = ?",
-                tuple(values.values()) + (tenant, code))
-            row = await self._first(
-                f"SELECT * FROM {table} WHERE tenant_id = ? AND code = ?",
-                (tenant, code))
-        return self._row_to_record(row, kind)
-
-    async def update_record_by_id(self, tenant: str, kind: str, record_id: int,
-                            fields: dict) -> dict | None:
-        table, columns = SPECS[kind]
-        refs = RECORD_REFS[kind]
-        row = await self._first(
-            f"SELECT * FROM {table} WHERE tenant_id = ? AND id = ?",
-            (tenant, record_id))
-        if row is None:
-            return None
-        values: dict[str, object] = {}
-        for ref_field, ref_kind in refs.items():
-            ref_code = fields.get(ref_field)
-            if ref_code is not None:
-                ref_id = await self._resolve_ref(tenant, ref_kind, ref_code)
-                if ref_id is None:
-                    raise RefUnknown(ref_field)
-                values[REF_ID_COLUMN[ref_field]] = ref_id
-                values[ref_field] = ref_code
-        known = set(columns) | set(refs)
-        extra = {k: v for k, v in fields.items()
-                 if k not in known and k != "code"}
-        if extra:
-            current = row.get("data")
-            data = json.loads(current) if isinstance(current, str) \
-                and current else {}
-            data.update(extra)
-            values["data"] = json.dumps(data)
-        for col, ckind in columns.items():
-            if col in fields:
-                values[col] = _conv_in(fields[col], ckind)
-        if kind != "field_events":
-            values["updated_at"] = utcnow()
-        if values:
-            assignments = ", ".join(f"{k} = ?" for k in values)
-            await self._run(
-                f"UPDATE {table} SET {assignments}"
-                " WHERE tenant_id = ? AND id = ?",
-                tuple(values.values()) + (tenant, record_id))
-            row = await self._first(
-                f"SELECT * FROM {table} WHERE tenant_id = ? AND id = ?",
-                (tenant, record_id))
-        return self._row_to_record(row, kind)
-
-    async def delete_record(self, tenant: str, kind: str, code: str) -> dict | None:
-        existing = await self.get_record_by_code(tenant, kind, code)
-        if existing is None:
-            return None
-        table, _ = SPECS[kind]
-        meta = await self._run(
-            f"DELETE FROM {table} WHERE tenant_id = ? AND code = ?",
-            (tenant, code))
-        changes = (meta or {}).get("changes")
-        if changes is not None and changes == 0:
-            return None
-        return existing
-
-    async def list_records(self, tenant: str, kind: str) -> list[dict]:
-        table, _ = SPECS[kind]
-        order = "code" if kind in CODED_KINDS else "id"
-        rows = await self._all(
-            f"SELECT * FROM {table} WHERE tenant_id = ? ORDER BY {order}", (tenant,)
-        )
-        return [self._row_to_record(r, kind) for r in rows]
-
-    async def count_records(self, tenant: str, kind: str) -> int:
-        await self._ensure_schema()
-        table, _ = SPECS[kind]
-        row = await self._first(
-            f"SELECT count(*) AS n FROM {table} WHERE tenant_id = ?", (tenant,)
-        )
-        return int(row["n"]) if row else 0
-
-    async def get_record_by_code(self, tenant: str, kind: str, code: str) -> dict | None:
-        table, _ = SPECS[kind]
-        row = await self._first(
-            f"SELECT * FROM {table} WHERE tenant_id = ? AND code = ?", (tenant, code)
-        )
-        return None if row is None else self._row_to_record(row, kind)

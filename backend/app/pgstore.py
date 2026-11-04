@@ -1,35 +1,93 @@
 """PostgreSQL backend for the store boundary (M2, task T-004).
 
-Selected by make_store() when DATABASE_URL is set. Standard SQL against the
-schema in app/schema.sql; psycopg 3 driver. All access is serialized through
-one connection + lock, mirroring the in-memory backend's semantics at this
-scale; pooling is a deployment concern, not a contract change.
+Selected by make_store() when DATABASE_URL is set. Standard SQL against
+the schema in app/schema.sql; psycopg 3 driver. All access is
+serialized through one connection + lock, mirroring the in-memory
+backend's semantics at this scale; pooling is a deployment concern,
+not a contract change.
+
+Since T-044 (T-032 slice 4) the store contract itself lives in
+app.sqlcore.SqlStoreCore; this module is only the psycopg dialect
+adapter (placeholders, Jsonb, RETURNING, unique-violation type).
 """
 from __future__ import annotations
 
 import pathlib
 import threading
-from datetime import date, datetime
-from decimal import Decimal
 
 import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
-from .records_spec import REF_ID_COLUMN, SPECS, conv as _conv
-from .store import CODED_KINDS, RECORD_REFS, RefUnknown, Tenant, User
+from .sqlcore import SqlStoreCore
 
 _SCHEMA = pathlib.Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
 
-class PgStore:
+
+class PgDialect:
+    ph = "%s"
+
+    def __init__(self, conn, lock) -> None:
+        self._conn = conn
+        self._lock = lock
+
+    async def one(self, sql: str, params: tuple = ()) -> dict | None:
+        with self._lock, self._conn.cursor() as cur:
+            cur.execute(sql, params)
+            return cur.fetchone()
+
+    async def all(self, sql: str, params: tuple = ()) -> list[dict]:
+        with self._lock, self._conn.cursor() as cur:
+            cur.execute(sql, params)
+            return cur.fetchall()
+
+    async def run(self, sql: str, params: tuple = ()) -> int:
+        with self._lock, self._conn.cursor() as cur:
+            cur.execute(sql, params)
+            return cur.rowcount
+
+    async def insert(self, sql: str, params: tuple = (),
+                     returning: str = "id") -> int | None:
+        with self._lock, self._conn.cursor() as cur:
+            cur.execute(f"{sql} RETURNING {returning}", params)
+            row = cur.fetchone()
+            return None if row is None else row[returning]
+
+    @staticmethod
+    def json_in(obj):
+        return Jsonb(obj)
+
+    @staticmethod
+    def is_unique(exc: BaseException) -> bool:
+        return isinstance(exc, psycopg.errors.UniqueViolation)
+
+    async def legacy_columns(self, table: str) -> list:
+        rows = await self.all(
+            "SELECT column_name AS name, data_type AS type"
+            " FROM information_schema.columns"
+            " WHERE table_name = %s AND is_nullable = 'NO'"
+            " AND column_default IS NULL",
+            (table,))
+        system = {"id", "tenant_id", "code", "data", "created_at", "updated_at"}
+        found = []
+        for r in rows:
+            if r["name"] not in system:
+                t = (r["type"] or "").upper()
+                neutral = 0 if any(x in t for x in
+                                   ("INT", "REAL", "NUM", "DEC", "DOUBLE")) else ""
+                found.append((r["name"], neutral))
+        return found
+
+
+class PgStore(SqlStoreCore):
     kind = "postgresql"
 
     def __init__(self, dsn: str) -> None:
         self._lock = threading.Lock()
-        self._legacy_cols: dict[str, list] = {}
         self._conn = psycopg.connect(dsn, autocommit=True, row_factory=dict_row)
         with self._lock, self._conn.cursor() as cur:
             cur.execute(_SCHEMA)
+        super().__init__(PgDialect(self._conn, self._lock))
 
     async def reset(self) -> None:
         with self._lock, self._conn.cursor() as cur:
@@ -38,369 +96,3 @@ class PgStore:
                 " mother_plant_status_history, mother_plants, zone_boundary_versions,"
                 " zones, workspaces, users, tenants RESTART IDENTITY CASCADE"
             )
-
-    # ---- audit ---------------------------------------------------------
-    async def record_audit(self, *, scope: str, tenant_id: str | None, actor: str,
-                     action: str, target: str, outcome: str,
-                     old_value: str | None = None,
-                     new_value: str | None = None) -> dict:
-        from . import auditctx
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO audit_log (scope, tenant_id, actor, action, target, outcome,"
-                " old_value, new_value, client_ip, user_agent)"
-                " VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING seq, ts",
-                (scope, tenant_id, actor, action, target, outcome,
-                 old_value, new_value, auditctx.client_ip(), auditctx.user_agent()),
-            )
-            row = cur.fetchone()
-        return {"seq": row["seq"], "ts": row["ts"].isoformat(), "scope": scope,
-                "tenant_id": tenant_id, "actor": actor, "action": action,
-                "target": target, "outcome": outcome, "old_value": old_value,
-                "new_value": new_value, "client_ip": auditctx.client_ip(),
-                "user_agent": auditctx.user_agent()}
-
-    def _audit_rows(self, where: str, params: tuple) -> list[dict]:
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute(f"SELECT * FROM audit_log {where} ORDER BY seq", params)
-            rows = cur.fetchall()
-        return [{**r, "ts": r["ts"].isoformat()} for r in rows]
-
-    async def list_audit(self) -> list[dict]:
-        return self._audit_rows("", ())
-
-    async def audit_for_tenant(self, tenant_id: str) -> list[dict]:
-        return self._audit_rows("WHERE tenant_id = %s", (tenant_id,))
-
-    # ---- tenants -------------------------------------------------------
-    async def create_tenant(self, slug: str, name: str) -> Tenant | None:
-        with self._lock, self._conn.cursor() as cur:
-            try:
-                cur.execute(
-                    "INSERT INTO tenants (slug, name) VALUES (%s, %s) RETURNING created_at",
-                    (slug, name),
-                )
-                created = cur.fetchone()["created_at"]
-            except psycopg.errors.UniqueViolation:
-                return None
-        return Tenant(slug=slug, name=name, created_at=created.isoformat())
-
-    async def get_tenant(self, slug: str) -> Tenant | None:
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute("SELECT * FROM tenants WHERE slug = %s", (slug,))
-            row = cur.fetchone()
-        if row is None:
-            return None
-        return Tenant(slug=row["slug"], name=row["name"], status=row["status"],
-                      created_at=row["created_at"].isoformat())
-
-    async def list_tenants(self) -> list[Tenant]:
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute("SELECT * FROM tenants ORDER BY slug")
-            rows = cur.fetchall()
-        return [Tenant(slug=r["slug"], name=r["name"], status=r["status"],
-                       created_at=r["created_at"].isoformat()) for r in rows]
-
-    async def set_tenant_status(self, slug: str, status: str) -> Tenant | None:
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute(
-                "UPDATE tenants SET status = %s WHERE slug = %s RETURNING *", (status, slug)
-            )
-            row = cur.fetchone()
-        if row is None:
-            return None
-        return Tenant(slug=row["slug"], name=row["name"], status=row["status"],
-                      created_at=row["created_at"].isoformat())
-
-    # ---- users ---------------------------------------------------------
-    async def create_user(self, tenant: str, username: str, display_name: str, role: str,
-                          linked_actor_code: str | None = None,
-                          jurisdiction_admin_code: str | None = None,
-                          auth_provider_type: str | None = None) -> User | None:
-        with self._lock, self._conn.cursor() as cur:
-            try:
-                cur.execute(
-                    "INSERT INTO users (tenant_id, username, display_name, role,"
-                    " linked_actor_code, account_status, jurisdiction_admin_code,"
-                    " auth_provider_type)"
-                    " VALUES (%s, %s, %s, %s, %s, 'ACTIVE', %s, %s) RETURNING created_at",
-                    (tenant, username, display_name, role, linked_actor_code,
-                     jurisdiction_admin_code, auth_provider_type),
-                )
-                created = cur.fetchone()["created_at"]
-            except psycopg.errors.UniqueViolation:
-                return None
-        return User(username=username, display_name=display_name, role=role,
-                    created_at=created.isoformat(),
-                    linked_actor_code=linked_actor_code,
-                    jurisdiction_admin_code=jurisdiction_admin_code,
-                    auth_provider_type=auth_provider_type)
-
-    async def update_user(self, tenant: str, username: str, fields: dict) -> User | None:
-        allowed = ("display_name", "role", "linked_actor_code", "account_status",
-                   "jurisdiction_admin_code", "auth_provider_type")
-        sets = {k: v for k, v in fields.items() if k in allowed and v is not None}
-        if await self.get_user(tenant, username) is None:
-            return None
-        if sets:
-            assignments = ", ".join(f"{k} = %s" for k in sets)
-            with self._lock, self._conn.cursor() as cur:
-                cur.execute(
-                    f"UPDATE users SET {assignments}"
-                    " WHERE tenant_id = %s AND username = %s",
-                    tuple(sets.values()) + (tenant, username))
-        return await self.get_user(tenant, username)
-
-    async def get_user(self, tenant: str, username: str) -> User | None:
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute("SELECT * FROM users WHERE tenant_id = %s AND username = %s",
-                        (tenant, username))
-            row = cur.fetchone()
-        if row is None:
-            return None
-        return User(username=row["username"], display_name=row["display_name"],
-                    role=row["role"], created_at=row["created_at"].isoformat(),
-                    linked_actor_code=row.get("linked_actor_code"),
-                    account_status=row.get("account_status") or "ACTIVE",
-                    jurisdiction_admin_code=row.get("jurisdiction_admin_code"),
-                    auth_provider_type=row.get("auth_provider_type"))
-
-    async def list_users(self, tenant: str) -> list[User]:
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute("SELECT * FROM users WHERE tenant_id = %s ORDER BY username", (tenant,))
-            rows = cur.fetchall()
-        return [User(username=r["username"], display_name=r["display_name"], role=r["role"],
-                     created_at=r["created_at"].isoformat(),
-                     linked_actor_code=r.get("linked_actor_code"),
-                     account_status=r.get("account_status") or "ACTIVE",
-                     jurisdiction_admin_code=r.get("jurisdiction_admin_code"),
-                     auth_provider_type=r.get("auth_provider_type")) for r in rows]
-
-    async def tenant_user_count(self, tenant: str) -> int:
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute("SELECT count(*) AS n FROM users WHERE tenant_id = %s", (tenant,))
-            return cur.fetchone()["n"]
-
-    # ---- workspaces ------------------------------------------------------
-    async def create_workspace(self, tenant: str, name: str) -> bool:
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO workspaces (tenant_id, name) VALUES (%s, %s)"
-                " ON CONFLICT DO NOTHING",
-                (tenant, name),
-            )
-            return cur.rowcount == 1
-
-    async def list_workspace_names(self, tenant: str) -> list[str]:
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute("SELECT name FROM workspaces WHERE tenant_id = %s ORDER BY name",
-                        (tenant,))
-            return [r["name"] for r in cur.fetchall()]
-
-    # ---- production records ---------------------------------------------
-    def _resolve_ref(self, cur, tenant: str, ref_kind: str, code: str) -> int | None:
-        table = SPECS[ref_kind][0]
-        cur.execute(f"SELECT id FROM {table} WHERE tenant_id = %s AND code = %s",
-                    (tenant, code))
-        row = cur.fetchone()
-        return None if row is None else row["id"]
-
-    def _legacy_required_columns(self, cur, table: str) -> list:
-        """(column, neutral value) for NOT NULL columns with no default that
-        sit outside the standard write set — legacy-schema guard, see
-        D1Store.create_record. Cached per table."""
-        if table in self._legacy_cols:
-            return self._legacy_cols[table]
-        cur.execute(
-            "SELECT column_name AS name, data_type AS type FROM information_schema.columns "
-            "WHERE table_name = %s AND is_nullable = 'NO' AND column_default IS NULL",
-            (table,))
-        system = {"id", "tenant_id", "code", "data", "created_at", "updated_at"}
-        found = []
-        for r in cur.fetchall():
-            if r["name"] not in system:
-                t = (r["type"] or "").upper()
-                found.append((r["name"], 0 if any(x in t for x in ("INT", "REAL", "NUM", "DEC", "DOUBLE")) else ""))
-        self._legacy_cols[table] = found
-        return found
-
-    async def create_record(self, tenant: str, kind: str, fields: dict) -> dict | None:
-        table, columns = SPECS[kind]
-        refs = RECORD_REFS[kind]
-        with self._lock, self._conn.cursor() as cur:
-            values: dict[str, object] = {}
-            for ref_field, ref_kind in refs.items():
-                code = fields.get(ref_field)
-                if code is not None:
-                    ref_id = self._resolve_ref(cur, tenant, ref_kind, code)
-                    if ref_id is None:
-                        raise RefUnknown(ref_field)
-                    values[REF_ID_COLUMN[ref_field]] = ref_id
-                    values[ref_field] = code
-            known = set(columns) | set(refs)
-            extra = {k: v for k, v in fields.items() if k not in known and k != "code"}
-            for col, ckind in columns.items():
-                if col in fields:
-                    values[col] = Jsonb(fields[col]) if ckind == "json" else fields[col]
-            names = ["tenant_id", "data", *values.keys()]
-            params = [tenant, Jsonb(extra), *values.values()]
-            for col, neutral in self._legacy_required_columns(cur, table):
-                if col not in names:
-                    names.append(col)
-                    params.append(neutral)
-            if kind in CODED_KINDS:
-                names.insert(1, "code")
-                params.insert(1, fields.get("code"))
-            placeholders = ", ".join(["%s"] * len(names))
-            try:
-                cur.execute(
-                    f"INSERT INTO {table} ({', '.join(names)}) VALUES ({placeholders})"
-                    " RETURNING id",
-                    params,
-                )
-                new_id = cur.fetchone()["id"]
-            except psycopg.errors.UniqueViolation:
-                return None
-            cur.execute(f"SELECT * FROM {table} WHERE id = %s", (new_id,))
-            return self._row_to_record(cur.fetchone(), kind)
-
-    async def update_record(self, tenant: str, kind: str, code: str,
-                            fields: dict) -> dict | None:
-        table, columns = SPECS[kind]
-        refs = RECORD_REFS[kind]
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute(
-                f"SELECT id FROM {table} WHERE tenant_id = %s AND code = %s",
-                (tenant, code))
-            if cur.fetchone() is None:
-                return None
-            values: dict[str, object] = {}
-            for ref_field, ref_kind in refs.items():
-                ref_code = fields.get(ref_field)
-                if ref_code is not None:
-                    ref_id = self._resolve_ref(cur, tenant, ref_kind, ref_code)
-                    if ref_id is None:
-                        raise RefUnknown(ref_field)
-                    values[REF_ID_COLUMN[ref_field]] = ref_id
-                    values[ref_field] = ref_code
-            for col, ckind in columns.items():
-                if col in fields:
-                    values[col] = Jsonb(fields[col]) if ckind == "json" \
-                        else fields[col]
-            known = set(columns) | set(refs)
-            extra = {k: v for k, v in fields.items()
-                     if k not in known and k != "code"}
-            sets = [f"{k} = %s" for k in values]
-            params: list = list(values.values())
-            if extra:
-                sets.append("data = data || %s")
-                params.append(Jsonb(extra))
-            if kind != "field_events":
-                sets.append("updated_at = now()")
-            if sets:
-                cur.execute(
-                    f"UPDATE {table} SET {', '.join(sets)}"
-                    " WHERE tenant_id = %s AND code = %s",
-                    params + [tenant, code])
-            cur.execute(
-                f"SELECT * FROM {table} WHERE tenant_id = %s AND code = %s",
-                (tenant, code))
-            return self._row_to_record(cur.fetchone(), kind)
-
-    async def update_record_by_id(self, tenant: str, kind: str, record_id: int,
-                            fields: dict) -> dict | None:
-        table, columns = SPECS[kind]
-        refs = RECORD_REFS[kind]
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute(
-                f"SELECT id FROM {table} WHERE tenant_id = %s AND id = %s",
-                (tenant, record_id))
-            if cur.fetchone() is None:
-                return None
-            values: dict[str, object] = {}
-            for ref_field, ref_kind in refs.items():
-                ref_code = fields.get(ref_field)
-                if ref_code is not None:
-                    ref_id = self._resolve_ref(cur, tenant, ref_kind, ref_code)
-                    if ref_id is None:
-                        raise RefUnknown(ref_field)
-                    values[REF_ID_COLUMN[ref_field]] = ref_id
-                    values[ref_field] = ref_code
-            for col, ckind in columns.items():
-                if col in fields:
-                    values[col] = Jsonb(fields[col]) if ckind == "json" \
-                        else fields[col]
-            known = set(columns) | set(refs)
-            extra = {k: v for k, v in fields.items()
-                     if k not in known and k != "code"}
-            sets = [f"{k} = %s" for k in values]
-            params: list = list(values.values())
-            if extra:
-                sets.append("data = data || %s")
-                params.append(Jsonb(extra))
-            if kind != "field_events":
-                sets.append("updated_at = now()")
-            if sets:
-                cur.execute(
-                    f"UPDATE {table} SET {', '.join(sets)}"
-                    " WHERE tenant_id = %s AND id = %s",
-                    params + [tenant, record_id])
-            cur.execute(
-                f"SELECT * FROM {table} WHERE tenant_id = %s AND id = %s",
-                (tenant, record_id))
-            return self._row_to_record(cur.fetchone(), kind)
-
-    async def delete_record(self, tenant: str, kind: str, code: str) -> dict | None:
-        table, _ = SPECS[kind]
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute(
-                f"SELECT * FROM {table} WHERE tenant_id = %s AND code = %s",
-                (tenant, code))
-            row = cur.fetchone()
-            if row is None:
-                return None
-            record = self._row_to_record(row, kind)
-            cur.execute(
-                f"DELETE FROM {table} WHERE tenant_id = %s AND code = %s",
-                (tenant, code))
-            return record if cur.rowcount else None
-
-    def _row_to_record(self, row: dict, kind: str) -> dict:
-        _, columns = SPECS[kind]
-        record: dict = {"id": row["id"], "tenant_id": row["tenant_id"]}
-        if kind in CODED_KINDS:
-            record["code"] = row["code"]
-        for col, ckind in columns.items():
-            if row.get(col) is not None:
-                record[col] = _conv(row[col], ckind)
-        for ref_field in RECORD_REFS[kind]:
-            if row.get(ref_field) is not None:
-                record[ref_field] = row[ref_field]
-        record.update(row.get("data") or {})
-        record["created_at"] = row["created_at"].isoformat()
-        if "updated_at" in row and row["updated_at"] is not None:
-            record["updated_at"] = row["updated_at"].isoformat()
-        return record
-
-    async def list_records(self, tenant: str, kind: str) -> list[dict]:
-        table, _ = SPECS[kind]
-        order = "code" if kind in CODED_KINDS else "id"
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute(f"SELECT * FROM {table} WHERE tenant_id = %s ORDER BY {order}",
-                        (tenant,))
-            return [self._row_to_record(r, kind) for r in cur.fetchall()]
-
-    async def count_records(self, tenant: str, kind: str) -> int:
-        table, _ = SPECS[kind]
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute(f"SELECT count(*) AS n FROM {table} WHERE tenant_id = %s",
-                        (tenant,))
-            return int(cur.fetchone()["n"])
-
-    async def get_record_by_code(self, tenant: str, kind: str, code: str) -> dict | None:
-        table, _ = SPECS[kind]
-        with self._lock, self._conn.cursor() as cur:
-            cur.execute(f"SELECT * FROM {table} WHERE tenant_id = %s AND code = %s",
-                        (tenant, code))
-            row = cur.fetchone()
-        return None if row is None else self._row_to_record(row, kind)
