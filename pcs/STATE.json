@@ -1,5 +1,5 @@
 {
- "revision": 94,
+ "revision": 95,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-079",
-   "last_completed_step": "T-078 (AG14) TECH_DONE + DEPLOYED (rev 94): trai nghiem tenant + thong bao + MOP; Worker 9ccc006e.",
-   "next_action": "AG15 (T-079): goi nganh livestock (GEN-12 lan 3) + cong AI gateway mock (du lieu that cho SRS-DEC17).",
+   "active_task": "T-080",
+   "last_completed_step": "T-079 (AG15) TECH_DONE + DEPLOYED (rev 95): Pack 03 + AI gateway mock; Worker 675fc93e.",
+   "next_action": "AG16 (T-080): danh muc 82 bao cao + API cong khai/webhook/xuat ban + dispatcher outbox.",
    "blockers": []
   },
   "decisions": [
@@ -1121,9 +1121,9 @@
    {
     "id": "T-079",
     "title": "AG15 — Pack chan nuoi va AI qualification (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commit 0fc0763. (1) Pack 03 chan nuoi — GEN-12 lan 3: chi manifest + test, 0 dong Core doi cho pack (git status xac nhan; cac thay doi core/engines chi la AI gateway — nua con lai cua AG15); chay tron CF-T04 tren tenant chi kich hoat Pack 03: dan 200 - chet 10 - ban 50 = 140; rule tiem vaccine chan SALE trong thoi gian cach ly (WITHDRAWAL_VIOLATION) va mo sau han; golden vectors cua pack pass qua run_test_vectors. (2) AI gateway mock (AIX-01..10; provider that = SRS-DEC17 chua chon): bang ai_requests/ai_feedback (migration v16); allowlist provider (403 PROVIDER_NOT_ALLOWED), redaction du lieu ca nhan trong input truoc khi log/gui, moi inference luu provider/model/version + response hash + input da redaction; tac vu co hau qua cao khong ton tai trong danh muc (AIX-06); inference de xuat du lieu o trang thai PROPOSED — nguoi xac nhan moi sinh dung 1 su kien OBSERVATION tham chieu inference, tu choi van luu vet; feedback luu rieng khoi pipeline train; quota AI qua AG11 metering; AI hong khong anh huong Core (AIX-09). Suite: memory 99+2, D1 101, PG 97+4; CI GREEN. DEPLOYED Worker 675fc93e; probe live: /ai/status + inference SUMMARIZE ghi log that tren production, migration 16 xac nhan.",
     "blockers": []
    },
    {
@@ -1153,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T10:48:19Z"
+ "updated_at": "2026-11-04T10:58:45Z"
 }
