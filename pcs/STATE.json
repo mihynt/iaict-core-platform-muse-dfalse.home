@@ -1,5 +1,5 @@
 {
- "revision": 76,
+ "revision": 77,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,10 +28,12 @@
    }
   ],
   "current": {
-   "active_task": "T-060",
-   "last_completed_step": "T-062 TECH_DONE (rev 76): ra soat v1 sau dong bang — khong lech lac, khong loi moi; pilot van dung trang thai T-050 tren moi truc kiem chung.",
-   "next_action": "T-060 V2-7 (anh xa du lieu beta-pilot v1 -> v2 + chay song song + quyet dinh chuyen doi) khi Owner ra lenh; hoac ra soat 2 luot V2-5/V2-6 neu Owner yeu cau nhu cac lat truoc.",
-   "blockers": []
+   "active_task": null,
+   "last_completed_step": "T-060 (V2-7) TECH_DONE (rev 77): anh xa du lieu pilot v1 -> v2 hoan tat, doi chieu khop, chay song song dang dien ra (v1 khong bi dung vao; v2 pilot-dalat la ban guong). Cho Owner quyet dinh chuyen doi A/B/C.",
+   "next_action": "Owner quyet dinh chuyen doi pilot: A chuyen han sang v2 / B chay song song tiep / C giu v1 lam pilot chinh thuc.",
+   "blockers": [
+    "Quyet dinh chuyen doi pilot thuoc Owner"
+   ]
   },
   "decisions": [
    {
@@ -951,11 +953,11 @@
    {
     "id": "T-060",
     "title": "V2-7: anh xa du lieu pilot v1 -> v2, chay song song, quyet dinh chuyen doi",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Anh xa chay that tren hai beta: cong cu tools/migrate_pilot_v1_to_v2.py (repo v2, commit 1c88ab6) doc API v1 beta-pilot, ghi API v2 vao tenant MOI pilot-dalat (Pack 01 v1.1.0 da kich hoat; khoa platform tam da xoa, secret list rong). Doi chieu so luong khop tuyet doi: producer PR-DALAT 1; zones 2 -> sites 2 (giu ma Z-01, Z-TMP) + production_units 2; vung co PUC 1 -> recognition_documents 1 (PUC-Z-TMP); mother_plants 2 -> subjects 2 (MPL-001, Uuu); crop_plans 1 -> cycles 1 (PLAN-2026); field_events 1 -> ledger events 1 (ACTIVITY/PRUNING); lots 2 -> trace_lots 2 (Loi, Lol01); users 1. Chay lai script: 12/12 'already', khong trung. Bien doi ghi cong khai: RUNNING -> ACTIVE (giu v1_status), ALIVE -> ACTIVE, species -> species_name; trang thai PUC PENDING_POST_INSPECTION giu trong payload vi enum DOC_STATUS cua loi khong co gia tri nay. Khong anh xa co chu dich: audit 89 dong + 3 checkpoint toan ven o lai v1 (chuoi bam khong the chuyen nha); ban ghi cong khai cho lo Loi (thieu chuoi GTIN/me); 2 truong cua cay Uuu khong co cho trong schema Pack 01 -> giu nguyen van trong so anh xa. Test trinh duyet that tren pilot-dalat dat toan bo. Bao cao + goi quyet dinh chuyen doi: ~/workspace/your_files/iaict-core-v2/bao-cao-anh-xa-v2-7.md. Con cho QUYET DINH Owner: A chuyen han / B song song / C giu v1.",
     "blockers": [
-     "Cho lenh Owner sau khi kiem tra beta v2."
+     "Cho quyet dinh chuyen doi cua Owner (A/B/C trong bao cao V2-7)"
     ]
    },
    {
@@ -977,5 +979,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T06:58:43Z"
+ "updated_at": "2026-11-04T07:05:49Z"
 }
