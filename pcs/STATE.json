@@ -1,5 +1,5 @@
 {
- "revision": 62,
+ "revision": 63,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -29,8 +29,8 @@
   ],
   "current": {
    "active_task": null,
-   "last_completed_step": "T-047 cleanup pack TECH_DONE and live (rev 62, Worker fd482d42).",
-   "next_action": "Remaining big steps: T-006 pilot go-live prep (M5), T-007 (M7). Owner/IAICT decisions still open: INT-01..06, Q-TX-01, Q-TX-02, IoT ownership + day-90 anchor (IoT itself parked ready). Small remainders: users/audit lists unpaginated; the pre-existing PG-mode null-key test.",
+   "last_completed_step": "T-048 SOW conformance review delivered (rev 63).",
+   "next_action": "Owner picks the follow-up: (a) coverage register (requirement-level traceability in STATE), (b) D-10 integrity verifier build, (c) T-006 prep pack, (d) MOB native-vs-web decision. IoT parked; commercial layer remains M7.",
    "blockers": []
   },
   "decisions": [
@@ -760,9 +760,19 @@
     ],
     "evidence": "Owner picked the cleanup pack 2026-11-04. (1) Pagination: all 32 record list routes accept optional limit (1..1000) / offset via a shared dependency; the envelope always carries total/limit/offset; no parameters = historical full-list behaviour; store-level support in InMemory, sqlcore (D1+PG) and WorkerPgStore. (2) GS1 (closes L1): _validate_gtin now enforces GTIN-8/12/13/14 length + mod-10 check digit (GTIN_CHECK_DIGIT_INVALID); the two circulating sample GTINs indeed failed the check digit - test fixtures corrected (08935049501237 / 08935049509998, placeholders 111/777/888 replaced by valid GTIN-13s); production holds no packaging units so no live data migration was needed. (3) Per-SKU gate (closes L4, declaration-conditional): packaging_units gained unit_weight_kg (platform extension - Bang 27 carries weight only inside free-text package_spec; migration v11; collected in the issuance form). When the issuing unit declares units_count x unit_weight_kg, cumulative issued volume for the packing lot may not exceed its declared output (400 PACKING_OUTPUT_EXCEEDED); undeclared units stay under the lot-level gate. Closure addendum appended to the T-016 review minutes. Suites: memory 98 passed + 4 skipped; D1 subset 16 passed; PG both drivers 98 passed + the 1 pre-existing null-key failure (the local PG database had to be recreated once because PG stores have no migration runner - the new column only lands via fresh schema). Production probes: pagination envelope correct; old sample GTIN rejected GTIN_CHECK_DIGIT_INVALID; SKU chain 60 kg issued then +50 kg blocked at 110 > 100; browser round passed incl. the new weight field in the issuance form; all probe data removed, counts back to baseline, ledger v11. Worker fd482d42.",
     "blockers": []
+   },
+   {
+    "id": "T-048",
+    "title": "SOW conformance review of the built core (R30 vs implementation, core-platform lens)",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "SOW R30"
+    ],
+    "evidence": "Minutes: ~/workspace/your_files/iaict-sow-core-review/bien-ban-ra-soat-theo-sow-ban-core-04-11-2026.md. Scope verified by identical extraction of R30 and R21 DOCX: identical defined-ID sets (692), one name diff (MOB-01); R30's only addition is Appendix U (implemented T-040..T-043). D-01..D-64 classified against STATE/code/live: 6 done, 26 partial, 32 not started - of which 27 are M5-M7/process scope, and 5 are in-window gaps: D-08 (Android native, M3), D-10 (integrity verifier JCS/Merkle, M2-M4), D-18 (SBOM, M3a/M3), D-29 (control plane, M3-M7), D-30 (metering spec, M2-M7). Commercial layer D-53..D-64 untouched (M7, T-007). REP 3/82. Findings F1-F5: platform-core services (control plane/metering/integrity) absent while the data core is strong; rule packs are code not configuration and catalogues are empty; MOB native-vs-web substitution needs an explicit Owner decision; requirement-level traceability is not maintained in STATE (srs_refs nearly empty) - a coverage register is the recommended cheap fix; ops evidence pack (D-14/16/17/25/27) is a T-006 prerequisite.",
+    "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T02:47:00Z"
+ "updated_at": "2026-11-04T03:02:00Z"
 }
