@@ -31,6 +31,9 @@ const ERR_VI = {
   CODE_EXISTS: "Mã này đã tồn tại trong tenant.",
   CODE_REQUIRED: "Trường mã là bắt buộc.",
   REF_UNKNOWN: "Đối tượng tham chiếu (vùng/kế hoạch/cây) không tồn tại trong tenant này.",
+  GTIN_INVALID: "Mã GTIN phải là GTIN-8/12/13/14, chỉ gồm chữ số.",
+  GTIN_CHECK_DIGIT_INVALID: "Mã GTIN sai số kiểm tra GS1 — kiểm tra lại mã trên bao bì.",
+  PACKING_OUTPUT_EXCEEDED: "Tổng khối lượng đã cấp mã cho lô đóng gói này vượt sản lượng thành phẩm đã khai.",
   NOT_FOUND: "Không tìm thấy đối tượng.",
   PLATFORM_DISABLED: "Quản trị platform chưa được bật (chưa đặt khóa).",
   PLATFORM_KEY_INVALID: "Khóa platform không đúng.",
@@ -1185,6 +1188,7 @@ async function issueTraceCode(packingCode) {
     { k: "product_image_url", label: "URL hình ảnh sản phẩm (trường bắt buộc TT 02/2024)", placeholder: "https://…" },
     { k: "package_spec", label: "Quy cách bao gói", placeholder: "vd: Thùng carton 10 kg" },
     { k: "units_count", label: "Số đơn vị bao gói", type: "number", step: "1" },
+    { k: "unit_weight_kg", label: "Trọng lượng 1 đơn vị (kg)", type: "number", step: "0.01" },
   ], async (p) => {
     if (!p.harvest_lot_code) throw new Error("Hãy chọn lô thu hoạch đầu vào.");
     try {
@@ -1197,7 +1201,7 @@ async function issueTraceCode(packingCode) {
       code: sku, packing_lot_code: packingCode, level: p.level || "SHIPPING_CASE_CARTON",
       gtin_code: p.gtin_code, sscc_code: p.sscc_code,
       cites_specimen_mark_code: p.cites_specimen_mark_code,
-      package_spec: p.package_spec, units_count: p.units_count } });
+      package_spec: p.package_spec, units_count: p.units_count, unit_weight_kg: p.unit_weight_kg } });
     await T("/traceability-records", { method: "POST", body: {
       packaging_unit_code: sku, product_name: p.product_name, product_image_url: p.product_image_url,
       brand_trademark_serial: p.brand_trademark_serial } });

@@ -18,7 +18,7 @@ the caller's tenant. Field definitions: docs/DATA_MODEL.md.
 """
 from datetime import date, datetime, timedelta
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 import hashlib
 import hmac
 import secrets
@@ -321,6 +321,7 @@ class RecordIn(BaseModel):
     sscc_code: str | None = None
     package_spec: str | None = None
     units_count: int | None = None
+    unit_weight_kg: float | None = None
     product_image_url: str | None = None
     business_unit_name: str | None = None
     business_unit_address: str | None = None
@@ -577,6 +578,33 @@ async def _prepare_traceability_record(tenant: str, fields: dict) -> None:
             detail={"code": "PACKING_MASS_BALANCE_EXCEEDED",
                     "message": f"Packed output {output} kg exceeds "
                                f"{inputs} kg inputs x yield norm {norm}"})
+    # T-047 (review leftover L4): cumulative per-SKU volume gate. When
+    # the issuing unit declares units_count x unit_weight_kg (a platform
+    # extension field - Bang 27 carries the weight only inside the
+    # free-text package_spec), the total volume issued against this
+    # packing lot across all its records may not exceed the lot's
+    # declared output. Units that do not declare a unit weight stay
+    # under the lot-level gate above only.
+    if unit is not None and unit.get("units_count") is not None \
+            and unit.get("unit_weight_kg") is not None:
+        units_by_code = {u["code"]: u for u in
+                         await store.list_records(tenant, "packaging_units")}
+        consumed = 0.0
+        for r in await store.list_records(tenant, "traceability_records"):
+            other = units_by_code.get(r.get("packaging_unit_code") or "")
+            if other is None or other.get("packing_lot_code") != plot["code"]:
+                continue
+            if other.get("units_count") is not None \
+                    and other.get("unit_weight_kg") is not None:
+                consumed += float(other["units_count"]) * float(other["unit_weight_kg"])
+        this_volume = float(unit["units_count"]) * float(unit["unit_weight_kg"])
+        if consumed + this_volume > output + 1e-9:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "PACKING_OUTPUT_EXCEEDED",
+                        "message": f"Issued volume for packing lot {plot['code']} "
+                                   f"would reach {consumed + this_volume} kg, above "
+                                   f"its declared output {output} kg"})
     fields.setdefault("product_name", plot.get("product_name"))
     if fields.get("expiration_date") is None and plot.get("expiry_date"):
         fields["expiration_date"] = plot["expiry_date"]
@@ -680,19 +708,29 @@ async def _emit_cte_stages(tenant: str, record: dict,
 
 
 def _validate_gtin(fields: dict) -> None:
-    """GS1 format discipline (T-024): when a GTIN is declared it must be
-    all digits. Length (8/12/13/14) and check-digit (mod-10) enforcement
-    are deliberately NOT applied yet — placeholder and sample codes
-    already in circulation (including dossier-era examples used in
-    tests and the UI) fail those rules, so hard enforcement would
-    break the pilot; full GS1 validation lands with a data-cleanup
-    decision (review leftover L1)."""
+    """GS1 discipline (T-024 digits-only; T-047 full, closing review
+    leftover L1): a declared GTIN must be a standard GTIN-8/12/13/14
+    with a valid mod-10 check digit. The dossier-era sample codes that
+    used to circulate failed the check digit; their test fixtures were
+    corrected to valid codes in T-047 (production holds no packaging
+    units, so no live data migration was needed)."""
     gtin = fields.get("gtin_code")
-    if gtin is not None and not str(gtin).isdigit():
+    if gtin is None or gtin == "":
+        return
+    g = str(gtin)
+    if not g.isdigit() or len(g) not in (8, 12, 13, 14):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={"code": "GTIN_INVALID",
-                    "message": "gtin_code must contain digits only"})
+                    "message": "gtin_code must be a GTIN-8/12/13/14 (digits only)"})
+    digits = [int(c) for c in g]
+    total = sum(d * (3 if i % 2 == 0 else 1)
+                for i, d in enumerate(reversed(digits[:-1])))
+    if (10 - total % 10) % 10 != digits[-1]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "GTIN_CHECK_DIGIT_INVALID",
+                    "message": "gtin_code fails the GS1 check digit"})
 
 
 def _snap(record: dict | None) -> str | None:
@@ -792,11 +830,23 @@ async def _create(tenant: str, actor: User, kind: str, prefix: str, body: Record
     return pii.restore(record) if kind == "actors" else record
 
 
-async def _list(tenant: str, kind: str) -> dict:
-    items = await store.list_records(tenant, kind)
+def _page_params(limit: int | None = Query(default=None, ge=1, le=1000),
+                 offset: int = Query(default=0, ge=0)) -> tuple:
+    """Optional list pagination (T-047, backlog P2-b). No parameters
+    keeps the historical behaviour (full list); the envelope always
+    carries total/limit/offset so clients can page when they outgrow
+    full lists."""
+    return (limit, offset)
+
+
+async def _list(tenant: str, kind: str, page: tuple = (None, 0)) -> dict:
+    limit, offset = page
+    total = await store.count_records(tenant, kind)
+    items = await store.list_records(tenant, kind, limit=limit, offset=offset)
     if kind == "actors":
         items = [pii.restore(r) for r in items]
-    return {"tenant_id": tenant, "items": items}
+    return {"tenant_id": tenant, "items": items,
+            "total": total, "limit": limit, "offset": offset}
 
 
 async def _get(tenant: str, kind: str, code: str) -> dict:
@@ -843,8 +893,8 @@ async def dashboard(request: Request, tenant: str = Depends(require_tenant)) -> 
 
 
 @router.get("/zones")
-async def list_zones(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "zones")
+async def list_zones(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "zones", page)
 
 
 @router.get("/zones/{code}")
@@ -860,8 +910,8 @@ async def create_mother_plant(body: RecordIn, tenant: str = Depends(require_tena
 
 
 @router.get("/mother-plants")
-async def list_mother_plants(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "mother_plants")
+async def list_mother_plants(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "mother_plants", page)
 
 
 @router.get("/mother-plants/{code}")
@@ -877,8 +927,8 @@ async def create_crop_plan(body: RecordIn, tenant: str = Depends(require_tenant)
 
 
 @router.get("/crop-plans")
-async def list_crop_plans(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "crop_plans")
+async def list_crop_plans(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "crop_plans", page)
 
 
 @router.get("/crop-plans/{code}")
@@ -893,8 +943,8 @@ async def create_field_event(body: RecordIn, tenant: str = Depends(require_tenan
 
 
 @router.get("/field-events")
-async def list_field_events(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "field_events")
+async def list_field_events(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "field_events", page)
 
 
 # ---- LOT -------------------------------------------------------------------
@@ -905,8 +955,8 @@ async def create_lot(body: RecordIn, tenant: str = Depends(require_tenant),
 
 
 @router.get("/lots")
-async def list_lots(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "lots")
+async def list_lots(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "lots", page)
 
 
 @router.get("/lots/{code}")
@@ -922,8 +972,8 @@ async def create_actor(body: RecordIn, tenant: str = Depends(require_tenant),
 
 
 @router.get("/actors")
-async def list_actors(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "actors")
+async def list_actors(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "actors", page)
 
 
 @router.get("/actors/{code}")
@@ -938,8 +988,8 @@ async def create_spatial_unit(body: RecordIn, tenant: str = Depends(require_tena
 
 
 @router.get("/spatial-units")
-async def list_spatial_units(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "spatial_units")
+async def list_spatial_units(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "spatial_units", page)
 
 
 @router.get("/spatial-units/{code}")
@@ -954,8 +1004,8 @@ async def create_zone_parcel_link(body: RecordIn, tenant: str = Depends(require_
 
 
 @router.get("/zone-parcel-links")
-async def list_zone_parcel_links(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "zone_parcel_links")
+async def list_zone_parcel_links(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "zone_parcel_links", page)
 
 
 @router.post("/input-lots", status_code=status.HTTP_201_CREATED)
@@ -965,8 +1015,8 @@ async def create_input_lot(body: RecordIn, tenant: str = Depends(require_tenant)
 
 
 @router.get("/input-lots")
-async def list_input_lots(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "input_lots")
+async def list_input_lots(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "input_lots", page)
 
 
 @router.get("/input-lots/{code}")
@@ -999,8 +1049,8 @@ async def withdraw_zone_parcel_link(link_id: int,
 
 
 @router.get("/phi-validations")
-async def list_phi_validations(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "phi_validations")
+async def list_phi_validations(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "phi_validations", page)
 
 
 # ---- Packing chain & traceability records (D-STD-01, phase 2) ---------------
@@ -1011,8 +1061,8 @@ async def create_packing_lot(body: RecordIn, tenant: str = Depends(require_tenan
 
 
 @router.get("/packing-lots")
-async def list_packing_lots(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "packing_lots")
+async def list_packing_lots(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "packing_lots", page)
 
 
 @router.get("/packing-lots/{code}")
@@ -1027,8 +1077,8 @@ async def create_packing_input(body: RecordIn, tenant: str = Depends(require_ten
 
 
 @router.get("/packing-inputs")
-async def list_packing_inputs(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "packing_inputs")
+async def list_packing_inputs(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "packing_inputs", page)
 
 
 @router.post("/packaging-units", status_code=status.HTTP_201_CREATED)
@@ -1038,8 +1088,8 @@ async def create_packaging_unit(body: RecordIn, tenant: str = Depends(require_te
 
 
 @router.get("/packaging-units")
-async def list_packaging_units(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "packaging_units")
+async def list_packaging_units(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "packaging_units", page)
 
 
 @router.get("/packaging-units/{code}")
@@ -1056,8 +1106,8 @@ async def create_traceability_record(body: RecordIn, tenant: str = Depends(requi
 
 
 @router.get("/traceability-records")
-async def list_traceability_records(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "traceability_records")
+async def list_traceability_records(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "traceability_records", page)
 
 
 @router.post("/cte-stages", status_code=status.HTTP_201_CREATED)
@@ -1067,8 +1117,8 @@ async def create_cte_stage(body: RecordIn, tenant: str = Depends(require_tenant)
 
 
 @router.get("/cte-stages")
-async def list_cte_stages(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "cte_stages")
+async def list_cte_stages(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "cte_stages", page)
 
 
 # ---- REF catalogues (D-STD-01 phase 3, Bang 1-5) ---------------------------
@@ -1080,8 +1130,8 @@ async def create_ref_admin_unit(body: RecordIn, tenant: str = Depends(require_te
 
 
 @router.get("/ref-admin-units")
-async def list_ref_admin_units(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "ref_admin_units")
+async def list_ref_admin_units(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "ref_admin_units", page)
 
 
 @router.get("/ref-admin-units/{code}")
@@ -1095,8 +1145,8 @@ async def create_ref_market_regulation(body: RecordIn, tenant: str = Depends(req
 
 
 @router.get("/ref-market-regulations")
-async def list_ref_market_regulations(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "ref_market_regulations")
+async def list_ref_market_regulations(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "ref_market_regulations", page)
 
 
 @router.get("/ref-market-regulations/{code}")
@@ -1110,8 +1160,8 @@ async def create_ref_active_substance_mrl(body: RecordIn, tenant: str = Depends(
 
 
 @router.get("/ref-active-substance-mrls")
-async def list_ref_active_substance_mrls(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "ref_active_substance_mrls")
+async def list_ref_active_substance_mrls(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "ref_active_substance_mrls", page)
 
 
 @router.get("/ref-active-substance-mrls/{code}")
@@ -1125,8 +1175,8 @@ async def create_ref_certification_scheme(body: RecordIn, tenant: str = Depends(
 
 
 @router.get("/ref-certification-schemes")
-async def list_ref_certification_schemes(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "ref_certification_schemes")
+async def list_ref_certification_schemes(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "ref_certification_schemes", page)
 
 
 @router.get("/ref-certification-schemes/{code}")
@@ -1140,8 +1190,8 @@ async def create_ref_transport_mode(body: RecordIn, tenant: str = Depends(requir
 
 
 @router.get("/ref-transport-modes")
-async def list_ref_transport_modes(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "ref_transport_modes")
+async def list_ref_transport_modes(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "ref_transport_modes", page)
 
 
 @router.get("/ref-transport-modes/{code}")
@@ -1158,8 +1208,8 @@ async def create_zone_market_approval(body: RecordIn, tenant: str = Depends(requ
 
 
 @router.get("/zone-market-approvals")
-async def list_zone_market_approvals(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "zone_market_approvals")
+async def list_zone_market_approvals(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "zone_market_approvals", page)
 
 @router.post("/foreign-warnings", status_code=status.HTTP_201_CREATED)
 async def create_foreign_warning(body: RecordIn, tenant: str = Depends(require_tenant),
@@ -1168,8 +1218,8 @@ async def create_foreign_warning(body: RecordIn, tenant: str = Depends(require_t
 
 
 @router.get("/foreign-warnings")
-async def list_foreign_warnings(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "foreign_warnings")
+async def list_foreign_warnings(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "foreign_warnings", page)
 
 @router.post("/entity-certifications", status_code=status.HTTP_201_CREATED)
 async def create_entity_certification(body: RecordIn, tenant: str = Depends(require_tenant),
@@ -1178,8 +1228,8 @@ async def create_entity_certification(body: RecordIn, tenant: str = Depends(requ
 
 
 @router.get("/entity-certifications")
-async def list_entity_certifications(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "entity_certifications")
+async def list_entity_certifications(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "entity_certifications", page)
 
 
 # ---- GD3 monitoring group (Bang 14, 16, 19-22) ------------------------------
@@ -1191,8 +1241,8 @@ async def create_livestock_unit(body: RecordIn, tenant: str = Depends(require_te
 
 
 @router.get("/livestock-units")
-async def list_livestock_units(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "livestock_units")
+async def list_livestock_units(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "livestock_units", page)
 
 @router.post("/pre-harvest-supervisions", status_code=status.HTTP_201_CREATED)
 async def create_pre_harvest_supervision(body: RecordIn, tenant: str = Depends(require_tenant),
@@ -1201,8 +1251,8 @@ async def create_pre_harvest_supervision(body: RecordIn, tenant: str = Depends(r
 
 
 @router.get("/pre-harvest-supervisions")
-async def list_pre_harvest_supervisions(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "pre_harvest_supervisions")
+async def list_pre_harvest_supervisions(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "pre_harvest_supervisions", page)
 
 @router.post("/monitoring-declarations", status_code=status.HTTP_201_CREATED)
 async def create_monitoring_declaration(body: RecordIn, tenant: str = Depends(require_tenant),
@@ -1211,8 +1261,8 @@ async def create_monitoring_declaration(body: RecordIn, tenant: str = Depends(re
 
 
 @router.get("/monitoring-declarations")
-async def list_monitoring_declarations(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "monitoring_declarations")
+async def list_monitoring_declarations(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "monitoring_declarations", page)
 
 @router.post("/water-quality-tests", status_code=status.HTTP_201_CREATED)
 async def create_water_quality_test(body: RecordIn, tenant: str = Depends(require_tenant),
@@ -1221,8 +1271,8 @@ async def create_water_quality_test(body: RecordIn, tenant: str = Depends(requir
 
 
 @router.get("/water-quality-tests")
-async def list_water_quality_tests(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "water_quality_tests")
+async def list_water_quality_tests(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "water_quality_tests", page)
 
 @router.post("/residue-test-details", status_code=status.HTTP_201_CREATED)
 async def create_residue_test_detail(body: RecordIn, tenant: str = Depends(require_tenant),
@@ -1231,8 +1281,8 @@ async def create_residue_test_detail(body: RecordIn, tenant: str = Depends(requi
 
 
 @router.get("/residue-test-details")
-async def list_residue_test_details(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "residue_test_details")
+async def list_residue_test_details(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "residue_test_details", page)
 
 @router.post("/livestock-decl-items", status_code=status.HTTP_201_CREATED)
 async def create_livestock_decl_item(body: RecordIn, tenant: str = Depends(require_tenant),
@@ -1241,8 +1291,8 @@ async def create_livestock_decl_item(body: RecordIn, tenant: str = Depends(requi
 
 
 @router.get("/livestock-decl-items")
-async def list_livestock_decl_items(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "livestock_decl_items")
+async def list_livestock_decl_items(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "livestock_decl_items", page)
 
 
 @router.patch("/livestock-units/{rec_id}")
@@ -1261,8 +1311,8 @@ async def create_transport_trip(body: RecordIn, tenant: str = Depends(require_te
 
 
 @router.get("/transport-trips")
-async def list_transport_trips(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "transport_trips")
+async def list_transport_trips(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "transport_trips", page)
 
 
 @router.patch("/transport-trips/{rec_id}")
@@ -1279,8 +1329,8 @@ async def create_recall_case(body: RecordIn, tenant: str = Depends(require_tenan
 
 
 @router.get("/recall-cases")
-async def list_recall_cases(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "recall_cases")
+async def list_recall_cases(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "recall_cases", page)
 
 
 @router.patch("/recall-cases/{rec_id}")
@@ -1411,8 +1461,9 @@ async def create_iot_device(body: RecordIn, tenant: str = Depends(require_tenant
 
 
 @router.get("/iot-devices")
-async def list_iot_devices(tenant: str = Depends(require_tenant)) -> dict:
-    out = await _list(tenant, "iot_devices")
+async def list_iot_devices(tenant: str = Depends(require_tenant),
+                           page: tuple = Depends(_page_params)) -> dict:
+    out = await _list(tenant, "iot_devices", page)
     out["items"] = [{k: v for k, v in item.items() if k != "key_hash"}
                     for item in out["items"]]
     return out
@@ -1586,8 +1637,8 @@ async def update_zone(code: str, body: RecordIn,
 
 
 @router.get("/zone-status-history")
-async def list_zone_status_history(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "zone_status_history")
+async def list_zone_status_history(tenant: str = Depends(require_tenant), page: tuple = Depends(_page_params)) -> dict:
+    return await _list(tenant, "zone_status_history", page)
 
 
 @router.patch("/mother-plants/{code}")

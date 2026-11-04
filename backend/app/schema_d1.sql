@@ -400,6 +400,7 @@ CREATE TABLE IF NOT EXISTS packaging_units (
     sscc_code     TEXT,
     package_spec  TEXT,
     units_count   INTEGER,
+    unit_weight_kg  REAL,
     data          TEXT NOT NULL DEFAULT '{}',
     created_at    TEXT NOT NULL,
     updated_at    TEXT NOT NULL,

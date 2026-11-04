@@ -86,6 +86,7 @@ window.IAICT_META = {
   "units_count": "Số đơn vị",
   "packing_lot_code": "Lô thành phẩm vận chuyển",
   "cites_specimen_mark_code": "Mã nhãn đánh dấu mẫu vật CITES (nếu có)",
+  "unit_weight_kg": "Trọng lượng 1 đơn vị (kg)",
   "allocated_weight_kg": "Khối lượng phân bổ (kg)",
   "harvest_lot_code": "Lô thu hoạch vận chuyển trực tiếp",
   "phc_code": "Mã cơ sở đóng gói (PHC)",
@@ -405,7 +406,8 @@ window.IAICT_META = {
    "sscc_code",
    "cites_specimen_mark_code",
    "package_spec",
-   "units_count"
+   "units_count",
+   "unit_weight_kg"
   ],
   "packing_lots": [
    "code",

@@ -236,11 +236,18 @@ class InMemoryStore:
                 bucket["events"].append(record)
             return record
 
-    async def list_records(self, tenant: str, kind: str) -> list[dict]:
+    async def list_records(self, tenant: str, kind: str,
+                           limit: int | None = None, offset: int = 0) -> list[dict]:
         bucket = self._bucket(kind, tenant)
         if kind in CODED_KINDS:
-            return [bucket["by_code"][k] for k in sorted(bucket["by_code"])]
-        return sorted(bucket["events"], key=lambda r: r["id"])
+            records = [bucket["by_code"][k] for k in sorted(bucket["by_code"])]
+        else:
+            records = sorted(bucket["events"], key=lambda r: r["id"])
+        if offset:
+            records = records[offset:]
+        if limit is not None:
+            records = records[:limit]
+        return records
 
     async def get_record_by_code(self, tenant: str, kind: str, code: str) -> dict | None:
         return self._bucket(kind, tenant)["by_code"].get(code)

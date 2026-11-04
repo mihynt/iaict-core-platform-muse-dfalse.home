@@ -421,6 +421,7 @@ CREATE TABLE IF NOT EXISTS packaging_units (
     sscc_code     TEXT,
     package_spec  TEXT,
     units_count   INTEGER,
+    unit_weight_kg  DOUBLE PRECISION,
     data          JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),

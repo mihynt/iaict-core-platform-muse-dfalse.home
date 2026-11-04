@@ -201,6 +201,7 @@
   "packing_lot_code": 7,
   "sscc_code": 3,
   "status": 9,
+  "unit_weight_kg": 10,
   "units_count": 5
  },
  "packing_inputs": {

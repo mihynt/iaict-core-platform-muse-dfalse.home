@@ -140,6 +140,7 @@ message PackagingUnit {
   string code = 6;  // Mã
   string packing_lot_code = 7;  // Lô đóng gói
   string cites_specimen_mark_code = 8;  // Mã nhãn đánh dấu mẫu vật CITES (nếu có)
+  double unit_weight_kg = 10;  // Trọng lượng 1 đơn vị (kg)
   reserved 9;
 }
 

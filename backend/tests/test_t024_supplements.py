@@ -70,7 +70,7 @@ def test_cte_stages_are_audited(client):
                       "allocated_weight_kg": 500})
     r = client.post("/api/v1/packaging-units", headers=A,
                     json={"code": "SKU-1", "packing_lot_code": "PK-1",
-                          "gtin_code": "08935049501234", "units_count": 10})
+                          "gtin_code": "08935049501237", "units_count": 10})
     assert r.status_code == 201, r.text
     r = client.post("/api/v1/traceability-records", headers=A,
                     json={"packaging_unit_code": "SKU-1"})
@@ -89,7 +89,7 @@ def test_gtin_format_validation(client):
     assert r.json()["detail"]["code"] == "GTIN_INVALID"
     r = client.post("/api/v1/packaging-units", headers=A,
                     json={"code": "SKU-OK", "packing_lot_code": "PK-1",
-                          "gtin_code": "08935049501234"})
+                          "gtin_code": "08935049501237"})
     assert r.status_code == 201, r.text
 
 

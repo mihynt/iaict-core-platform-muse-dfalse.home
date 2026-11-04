@@ -71,7 +71,7 @@ def test_traceability_record_and_cte_chain(client):
     _link(client, "LOT-H2", 5000)
     r = client.post("/api/v1/packaging-units", headers=A, json={
         "code": "SKU-1", "packing_lot_code": "PK-1",
-        "level": "SHIPPING_CASE_CARTON", "gtin_code": "08935049501234",
+        "level": "SHIPPING_CASE_CARTON", "gtin_code": "08935049501237",
         "package_spec": "Thung carton 10 kg", "units_count": 820})
     assert r.status_code == 201, r.text
     r = client.post("/api/v1/traceability-records", headers=A,
@@ -79,7 +79,7 @@ def test_traceability_record_and_cte_chain(client):
     assert r.status_code == 201, r.text
     rec = r.json()
     assert rec["traceability_code"].startswith(
-        "08935049501234|VN-PHC-66-019|PK-1|2026-10-15")
+        "08935049501237|VN-PHC-66-019|PK-1|2026-10-15")
     assert rec["product_name"] == "Buoi da xanh loai 1"
     assert rec["business_unit_name"] == "Co so dong goi Kim Thanh"
     assert rec["data_retention_until"] == "2027-12-15"
@@ -105,7 +105,7 @@ def test_packing_mass_balance_gate(client):
     _link(client, "LOT-H2", 5000, packing="PK-BAD")
     client.post("/api/v1/packaging-units", headers=A, json={
         "code": "SKU-BAD", "packing_lot_code": "PK-BAD",
-        "gtin_code": "08935049509999", "units_count": 900})
+        "gtin_code": "08935049509998", "units_count": 900})
     r = client.post("/api/v1/traceability-records", headers=A,
                     json={"packaging_unit_code": "SKU-BAD"})
     assert r.status_code == 400, r.text
@@ -156,7 +156,7 @@ def test_gate_not_skippable_without_norm(client):
         "code": "PK-NONORM", "facility_code": "PHC-01",
         "output_weight_kg": 999999, "packed_at": "2026-10-15T08:00:00"})
     client.post("/api/v1/packaging-units", headers=A, json={
-        "code": "SKU-NN", "packing_lot_code": "PK-NONORM", "gtin_code": "111"})
+        "code": "SKU-NN", "packing_lot_code": "PK-NONORM", "gtin_code": "8935000000014"})
     r = client.post("/api/v1/traceability-records", headers=A,
                     json={"packaging_unit_code": "SKU-NN"})
     assert r.status_code == 400
@@ -170,7 +170,7 @@ def test_duplicate_traceability_code_rejected(client):
     _link(client, "LOT-H1", 5000)
     _link(client, "LOT-H2", 5000)
     client.post("/api/v1/packaging-units", headers=A, json={
-        "code": "SKU-DUP", "packing_lot_code": "PK-1", "gtin_code": "777"})
+        "code": "SKU-DUP", "packing_lot_code": "PK-1", "gtin_code": "8935000000021"})
     first = client.post("/api/v1/traceability-records", headers=A,
                         json={"packaging_unit_code": "SKU-DUP"})
     assert first.status_code == 201, first.text
@@ -195,7 +195,7 @@ def test_fresh_retention_anchors_to_harvest(client):
         "packed_at": "2026-11-01T08:00:00"})
     _link(client, "LOT-H1", 5000, packing="PK-FRESH")  # harvested 2026-10-14
     client.post("/api/v1/packaging-units", headers=A, json={
-        "code": "SKU-FRESH", "packing_lot_code": "PK-FRESH", "gtin_code": "888"})
+        "code": "SKU-FRESH", "packing_lot_code": "PK-FRESH", "gtin_code": "8935000000038"})
     r = client.post("/api/v1/traceability-records", headers=A, json={
         "packaging_unit_code": "SKU-FRESH",
         "product_image_url": "https://example.org/pomelo.jpg"})

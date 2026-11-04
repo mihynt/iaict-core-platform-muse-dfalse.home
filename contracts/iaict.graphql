@@ -140,6 +140,7 @@ type PackagingUnit {
   code: String
   packing_lot_code: String
   cites_specimen_mark_code: String
+  unit_weight_kg: Float
 }
 
 type PackingInput {

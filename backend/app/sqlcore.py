@@ -382,12 +382,17 @@ class SqlStoreCore:
             return None
         return existing
 
-    async def list_records(self, tenant: str, kind: str) -> list[dict]:
+    async def list_records(self, tenant: str, kind: str,
+                           limit: int | None = None, offset: int = 0) -> list[dict]:
         table, _ = SPECS[kind]
         order = "code" if kind in CODED_KINDS else "id"
-        rows = await self.d.all(
-            f"SELECT * FROM {table} WHERE tenant_id = {self.d.ph} ORDER BY {order}",
-            (tenant,))
+        sql = (f"SELECT * FROM {table} WHERE tenant_id = {self.d.ph}"
+               f" ORDER BY {order}")
+        params: tuple = (tenant,)
+        if limit is not None:
+            sql += f" LIMIT {self.d.ph} OFFSET {self.d.ph}"
+            params = (tenant, limit, offset)
+        rows = await self.d.all(sql, params)
         return [self._row_to_record(r, kind) for r in rows]
 
     async def count_records(self, tenant: str, kind: str) -> int:

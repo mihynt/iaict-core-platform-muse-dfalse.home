@@ -186,6 +186,10 @@ _MIGRATIONS: list[tuple[int, list[str]]] = [
         # T-046: per-device IoT keys - only the hash is stored.
         "ALTER TABLE iot_devices ADD COLUMN key_hash TEXT",
     ]),
+    (11, [
+        # T-047: per-SKU gate input (platform extension field).
+        "ALTER TABLE packaging_units ADD COLUMN unit_weight_kg REAL",
+    ]),
 ]
 
 

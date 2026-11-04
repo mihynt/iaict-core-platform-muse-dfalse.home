@@ -594,13 +594,14 @@ class WorkerPgStore:
             record["updated_at"] = row["updated_at"].isoformat()
         return record
 
-    async def list_records(self, tenant: str, kind: str) -> list[dict]:
+    async def list_records(self, tenant: str, kind: str,
+                           limit: int | None = None, offset: int = 0) -> list[dict]:
         table, _ = SPECS[kind]
         order = "code" if kind in CODED_KINDS else "id"
 
         def work(cur):
-            cur.execute(f"SELECT * FROM {table} WHERE tenant_id = %s ORDER BY {order}",
-                        (tenant,))
+            cur.execute(f"SELECT * FROM {table} WHERE tenant_id = %s ORDER BY {order}" + (f" LIMIT %s OFFSET %s" if limit is not None else ""),
+                        (tenant, limit, offset) if limit is not None else (tenant,))
             return [self._row_to_record(r, kind) for r in self._rows(cur)]
 
         with self._lock:
