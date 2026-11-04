@@ -1,5 +1,5 @@
 {
- "revision": 83,
+ "revision": 84,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -29,8 +29,8 @@
   ],
   "current": {
    "active_task": "T-068",
-   "last_completed_step": "T-067 (AG03) TECH_DONE (rev 83): dia gioi co phien ban + as-of, quan he chu the, import dry-run/commit.",
-   "next_action": "AG04 (T-068): transactional outbox + truy van trang thai as-of cho Ledger. Deploy gop AG01-AG03 cho token moi.",
+   "last_completed_step": "Deploy gom AG01-AG03 len beta v2 (rev 84): Worker 8ec07016, D1 migration 1-7, probe ghi + test trinh duyet dat.",
+   "next_action": "AG04 (T-068): transactional outbox + truy van trang thai as-of cho Ledger.",
    "blockers": []
   },
   "decisions": [
@@ -1017,7 +1017,7 @@
     "title": "AG02 — Identity tenant va policy (grant/scope, four-eyes) (SRS R3)",
     "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "Repo v2 commit 063361f. Grants/scope engine: bang access_grants (migration v6) + scoping.py (mo rong PRODUCER->sites->units->subjects/cycles; nguoi co grant thi chi thay/ghi trong pham vi, TENANT_ADMIN khong bi scope, thu hoi/het han co hieu luc ngay o request ke tiep; ban ghi ngoai pham vi tra 404 de khong lo ton tai) ap vao records_api (list/get/create/update) + ledger (events/state). Four-eyes: bang pending_approvals; USER_REVOKE/GRANT_REVOKE chi thuc thi khi admin THU HAI duyet (tu duyet -> 403 FOUR_EYES_SELF_APPROVAL); thuc thi loi (LAST_ADMIN) -> FAILED kem ly do, khong gia thanh cong. API /grants + /approvals + audit GRANT_CREATE/REVOKE, APPROVAL_*. Test: test_access.py 5 ca (TC-02 tron vong grant->scope->revoke; WRITE grant; validate; four-eyes revoke user + reject path) — suite: memory 73+2, D1 75, PG 71+4; CI gate GREEN; trung lap PASS. UI: 2 panel Uy quyen + Phe duyet trong man Nguoi dung (jsdom sim23 PASS). CHUA deploy len beta: token Cloudflare phien 13:20 da het hieu luc (auth error 10000) — cho Owner gui token moi thi deploy gom.",
+    "evidence": "Repo v2 commit 063361f. Grants/scope engine: bang access_grants (migration v6) + scoping.py (mo rong PRODUCER->sites->units->subjects/cycles; nguoi co grant thi chi thay/ghi trong pham vi, TENANT_ADMIN khong bi scope, thu hoi/het han co hieu luc ngay o request ke tiep; ban ghi ngoai pham vi tra 404 de khong lo ton tai) ap vao records_api (list/get/create/update) + ledger (events/state). Four-eyes: bang pending_approvals; USER_REVOKE/GRANT_REVOKE chi thuc thi khi admin THU HAI duyet (tu duyet -> 403 FOUR_EYES_SELF_APPROVAL); thuc thi loi (LAST_ADMIN) -> FAILED kem ly do, khong gia thanh cong. API /grants + /approvals + audit GRANT_CREATE/REVOKE, APPROVAL_*. Test: test_access.py 5 ca (TC-02 tron vong grant->scope->revoke; WRITE grant; validate; four-eyes revoke user + reject path) — suite: memory 73+2, D1 75, PG 71+4; CI gate GREEN; trung lap PASS. UI: 2 panel Uy quyen + Phe duyet trong man Nguoi dung (jsdom sim23 PASS). CHUA deploy len beta: token Cloudflare phien 13:20 da het hieu luc (auth error 10000) — cho Owner gui token moi thi deploy gom. DEPLOYED 2026-11-04 16:02 ICT (gom AG01-AG03, Worker 8ec07016): D1 production migration 1-7 da xac nhan qua wrangler; probe ghi that: POST producer 201 -> DELETE 200 -> danh sach ve dung baseline; /grants + /approvals 200; test trinh duyet that: 2 panel Uy quyen/Phe duyet hien dung tieu de + nut, form Cap uy quyen mo du truong, so lieu tong quan khop API, khong loi hien thi.",
     "blockers": []
    },
    {
@@ -1153,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T08:56:33Z"
+ "updated_at": "2026-11-04T09:04:36Z"
 }
