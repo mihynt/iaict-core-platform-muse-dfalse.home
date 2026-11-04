@@ -266,5 +266,56 @@ message Zone {
   string application_received_at = 33;  // Thời điểm xã tiếp nhận hồ sơ
   string valid_from = 34;  // Hiệu lực từ
   string valid_to = 35;  // Công nhận đến
+  string jurisdiction_commune_code = 36;  // Đơn vị hành chính quản lý (xã)
   reserved 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 28, 29, 30;
+}
+
+message RefAdminUnit {
+  string code = 1;  // Mã đơn vị hành chính
+  string parent_unit_code = 2;  // Đơn vị cấp trên
+  string admin_level = 3;  // Cấp hành chính
+  string official_name = 4;  // Tên chính thức
+  string puc_prefix_code = 5;  // Mã ghép mã số vùng trồng (PUC)
+  string boundary_polygon_gis = 6;  // Ranh giới GIS (GeoJSON)
+  bool is_active = 7;  // Đang hiệu lực
+}
+
+message RefMarketRegulation {
+  string code = 1;  // Mã thị trường (ISO alpha-2)
+  string market_name = 2;  // Tên thị trường
+  bool requires_bilateral_pre_approval = 3;  // Bắt buộc phê duyệt trước song phương
+  string competent_authority_name = 4;  // Cơ quan thẩm quyền nước nhập khẩu
+  string protocol_reference_doc = 5;  // Nghị định thư / thỏa thuận dẫn chiếu
+  string quarantine_special_rules = 6;  // Quy định kiểm dịch đặc thù
+}
+
+message RefActiveSubstanceMrl {
+  string code = 1;  // Mã quy tắc MRL
+  string substance_code = 2;  // Mã hoạt chất (CAS/CIPAC)
+  string substance_name = 3;  // Tên hoạt chất
+  string substance_category = 4;  // Phân loại hoạt chất
+  string market_code = 5;  // Thị trường áp dụng
+  string commodity_group_code = 6;  // Mã nhóm nông sản
+  string approval_status = 7;  // Trạng thái pháp lý
+  double mrl_threshold_value = 8;  // Ngưỡng MRL tối đa
+  string mrl_measurement_unit = 9;  // Đơn vị đo MRL
+  int64 default_phi_days = 10;  // PHI mặc định (ngày)
+  string legal_circular_ref = 11;  // Văn bản pháp quy dẫn chiếu
+  string effective_from = 12;  // Hiệu lực từ ngày
+  string effective_to = 13;  // Hiệu lực đến ngày
+}
+
+message RefCertificationScheme {
+  string code = 1;  // Mã tiêu chuẩn / quy chuẩn
+  string scheme_name = 2;  // Tên tiêu chuẩn / quy chuẩn
+  string scheme_level = 3;  // Cấp độ tiêu chuẩn
+  string applicable_sector = 4;  // Ngành áp dụng
+  string cb_accreditation_req = 5;  // Yêu cầu với tổ chức chứng nhận
+}
+
+message RefTransportMode {
+  string code = 1;  // Mã phương thức vận tải
+  string mode_name = 2;  // Tên phương thức
+  string vehicle_id_format_rule = 3;  // Quy tắc định danh phương tiện
+  string customs_circular_ref = 4;  // Văn bản hải quan dẫn chiếu
 }

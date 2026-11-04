@@ -98,6 +98,75 @@ def _conv_in(value, ckind: str):
     return value
 
 
+# T-039 (T-032 slice 3): versioned migrations. Every statement is
+# idempotent (IF NOT EXISTS / tolerated duplicate-column), so a migration
+# can run safely against a database that already carries its effect;
+# schema_migrations records what has been applied. New schema changes
+# land BOTH here (as the next version, for existing databases) and in
+# schema_d1.sql (for fresh installs, which are stamped current).
+_MIGRATIONS: list[tuple[int, list[str]]] = [
+    (1, [
+        # T-017/M3: unique traceability code per tenant.
+        "CREATE UNIQUE INDEX IF NOT EXISTS ux_traceability_records_code"
+        " ON traceability_records (tenant_id, traceability_code)"
+        " WHERE traceability_code IS NOT NULL",
+    ]),
+    (2, [
+        # T-031: zone status history (Bang 13).
+        "CREATE TABLE IF NOT EXISTS zone_status_history ("
+        " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        " tenant_id TEXT NOT NULL REFERENCES tenants (slug)"
+        " ON DELETE CASCADE, zone_id INTEGER, zone_code TEXT,"
+        " previous_status TEXT, new_status TEXT,"
+        " trigger_reason_code TEXT, decision_doc_number TEXT,"
+        " remediation_measures TEXT, changed_by TEXT,"
+        " data TEXT NOT NULL DEFAULT '{}',"
+        " created_at TEXT NOT NULL, updated_at TEXT NOT NULL,"
+        " UNIQUE (tenant_id, id),"
+        " FOREIGN KEY (tenant_id, zone_id)"
+        " REFERENCES zones (tenant_id, id))",
+    ]),
+    (3, [
+        # T-023/T-024/T-031 column upgrades.
+        "ALTER TABLE traceability_records ADD COLUMN synced_at TEXT",
+        "ALTER TABLE phi_validations ADD COLUMN last_treatment_ref TEXT",
+        "ALTER TABLE zones ADD COLUMN vsic_code TEXT",
+        "ALTER TABLE zones ADD COLUMN dist_to_residential_m REAL",
+        "ALTER TABLE zones ADD COLUMN dist_to_sensitive_zone_m REAL",
+        "ALTER TABLE zones ADD COLUMN bee_site_min_dist_km REAL",
+        "ALTER TABLE input_lots ADD COLUMN purchase_invoice_no TEXT",
+        "ALTER TABLE input_lots ADD COLUMN qcvn_scheme_id TEXT",
+        "ALTER TABLE field_events ADD COLUMN application_method TEXT",
+        "ALTER TABLE field_events ADD COLUMN fruit_bagging_count INTEGER",
+        "ALTER TABLE crop_plans ADD COLUMN planting_density REAL",
+        "ALTER TABLE crop_plans ADD COLUMN seed_origin_doc TEXT",
+        "ALTER TABLE zones ADD COLUMN owner_actor_id INTEGER",
+        "ALTER TABLE zones ADD COLUMN owner_actor_code TEXT",
+        "ALTER TABLE audit_log ADD COLUMN old_value TEXT",
+        "ALTER TABLE audit_log ADD COLUMN new_value TEXT",
+        "ALTER TABLE audit_log ADD COLUMN client_ip TEXT",
+        "ALTER TABLE audit_log ADD COLUMN user_agent TEXT",
+        "ALTER TABLE users ADD COLUMN linked_actor_code TEXT",
+        "ALTER TABLE users ADD COLUMN account_status TEXT DEFAULT 'ACTIVE'",
+        "ALTER TABLE users ADD COLUMN jurisdiction_admin_code TEXT",
+        "ALTER TABLE users ADD COLUMN auth_provider_type TEXT",
+    ]),
+    (4, [
+        # T-039/GD3: REF catalogue tables (Bang 1-5).
+        "CREATE TABLE IF NOT EXISTS ref_admin_units (\n    id              INTEGER PRIMARY KEY AUTOINCREMENT,\n    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,\n    code            TEXT NOT NULL,\n    parent_unit_id  INTEGER,\n    parent_unit_code TEXT,\n    admin_level     TEXT,\n    official_name   TEXT,\n    puc_prefix_code TEXT,\n    data            TEXT NOT NULL DEFAULT '{}',\n    created_at      TEXT NOT NULL,\n    updated_at      TEXT NOT NULL,\n    UNIQUE (tenant_id, code),\n    UNIQUE (tenant_id, id),\n    FOREIGN KEY (tenant_id, parent_unit_id) REFERENCES ref_admin_units (tenant_id, id)\n)",
+        "CREATE TABLE IF NOT EXISTS ref_market_regulations (\n    id              INTEGER PRIMARY KEY AUTOINCREMENT,\n    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,\n    code            TEXT NOT NULL,\n    market_name     TEXT,\n    competent_authority_name TEXT,\n    protocol_reference_doc   TEXT,\n    quarantine_special_rules TEXT,\n    data            TEXT NOT NULL DEFAULT '{}',\n    created_at      TEXT NOT NULL,\n    updated_at      TEXT NOT NULL,\n    UNIQUE (tenant_id, code),\n    UNIQUE (tenant_id, id)\n)",
+        "CREATE TABLE IF NOT EXISTS ref_active_substance_mrls (\n    id              INTEGER PRIMARY KEY AUTOINCREMENT,\n    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,\n    code            TEXT NOT NULL,\n    substance_code  TEXT,\n    substance_name  TEXT,\n    substance_category TEXT,\n    market_id       INTEGER,\n    market_code     TEXT,\n    commodity_group_code TEXT,\n    approval_status TEXT,\n    mrl_threshold_value REAL,\n    mrl_measurement_unit TEXT,\n    default_phi_days INTEGER,\n    legal_circular_ref TEXT,\n    effective_from  TEXT,\n    effective_to    TEXT,\n    data            TEXT NOT NULL DEFAULT '{}',\n    created_at      TEXT NOT NULL,\n    updated_at      TEXT NOT NULL,\n    UNIQUE (tenant_id, code),\n    UNIQUE (tenant_id, id),\n    FOREIGN KEY (tenant_id, market_id) REFERENCES ref_market_regulations (tenant_id, id)\n)",
+        "CREATE TABLE IF NOT EXISTS ref_certification_schemes (\n    id              INTEGER PRIMARY KEY AUTOINCREMENT,\n    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,\n    code            TEXT NOT NULL,\n    scheme_name     TEXT,\n    scheme_level    TEXT,\n    applicable_sector TEXT,\n    cb_accreditation_req TEXT,\n    data            TEXT NOT NULL DEFAULT '{}',\n    created_at      TEXT NOT NULL,\n    updated_at      TEXT NOT NULL,\n    UNIQUE (tenant_id, code),\n    UNIQUE (tenant_id, id)\n)",
+        "CREATE TABLE IF NOT EXISTS ref_transport_modes (\n    id              INTEGER PRIMARY KEY AUTOINCREMENT,\n    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,\n    code            TEXT NOT NULL,\n    mode_name       TEXT,\n    vehicle_id_format_rule TEXT,\n    customs_circular_ref TEXT,\n    data            TEXT NOT NULL DEFAULT '{}',\n    created_at      TEXT NOT NULL,\n    updated_at      TEXT NOT NULL,\n    UNIQUE (tenant_id, code),\n    UNIQUE (tenant_id, id)\n)",
+    ]),
+    (5, [
+        # T-039/GD3: zone jurisdiction link (Bang 7 via Bang 1).
+        "ALTER TABLE zones ADD COLUMN jurisdiction_admin_unit_id INTEGER",
+        "ALTER TABLE zones ADD COLUMN jurisdiction_commune_code TEXT",
+    ]),
+]
+
+
 class D1Store:
     kind = "d1"
 
@@ -116,6 +185,19 @@ class D1Store:
         if row is None:
             await self._db.batch([self._db.prepare(stmt) for stmt in _DDL])
             self._schema_ready = True
+            # Fresh installs carry the current schema already; stamp the
+            # migration ledger current without re-running statements.
+            await self._db.prepare(
+                "CREATE TABLE IF NOT EXISTS schema_migrations ("
+                " version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)"
+            ).run()
+            await self._db.batch([
+                self._db.prepare(
+                    "INSERT OR REPLACE INTO schema_migrations"
+                    " (version, applied_at) VALUES (?, ?)"
+                ).bind(version, utcnow())
+                for version, _stmts in _MIGRATIONS
+            ])
             return
 
         async def _table_exists(name: str) -> bool:
@@ -141,72 +223,33 @@ class D1Store:
             # D-STD-01 phase-2 upgrade: packing chain (new tables only).
             stmts = _create_stmts(_PHASE2_TABLES)
             await self._db.batch([self._db.prepare(stmt) for stmt in stmts])
-        # T-017/M3 backstop: unique traceability code per tenant. The
-        # statement goes through the raw binding, NOT self._run (which
-        # itself awaits _ensure_schema — that recursion burned the
-        # Workers CPU budget and took the beta's write paths down with
-        # 1102/500s on 2026-11-03 until this fix). Guarded: a legacy
-        # duplicate must not take the whole API down.
+        # T-039: versioned migrations through the raw binding, NOT
+        # self._run (which itself awaits _ensure_schema — that recursion
+        # burned the Workers CPU budget on 2026-11-03, see T-017).
+        # _schema_ready is set first for the same reason.
         self._schema_ready = True
-        try:
+        await self._db.prepare(
+            "CREATE TABLE IF NOT EXISTS schema_migrations ("
+            " version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)"
+        ).run()
+        applied_rows = _plain(await self._db.prepare(
+            "SELECT version FROM schema_migrations").all())
+        applied = {
+            r["version"] for r in
+            (applied_rows["results"] if isinstance(applied_rows, dict) else [])
+        }
+        for version, stmts in _MIGRATIONS:
+            if version in applied:
+                continue
+            for stmt in stmts:
+                try:
+                    await self._db.prepare(stmt).run()
+                except Exception:
+                    pass
             await self._db.prepare(
-                "CREATE UNIQUE INDEX IF NOT EXISTS ux_traceability_records_code"
-                " ON traceability_records (tenant_id, traceability_code)"
-                " WHERE traceability_code IS NOT NULL").run()
-        except Exception:
-            pass
-        # T-031: zone status history table (Bang 13) on pre-existing DBs.
-        try:
-            await self._db.prepare(
-                "CREATE TABLE IF NOT EXISTS zone_status_history ("
-                " id INTEGER PRIMARY KEY AUTOINCREMENT,"
-                " tenant_id TEXT NOT NULL REFERENCES tenants (slug)"
-                " ON DELETE CASCADE, zone_id INTEGER, zone_code TEXT,"
-                " previous_status TEXT, new_status TEXT,"
-                " trigger_reason_code TEXT, decision_doc_number TEXT,"
-                " remediation_measures TEXT, changed_by TEXT,"
-                " data TEXT NOT NULL DEFAULT '{}',"
-                " created_at TEXT NOT NULL, updated_at TEXT NOT NULL,"
-                " UNIQUE (tenant_id, id),"
-                " FOREIGN KEY (tenant_id, zone_id)"
-                " REFERENCES zones (tenant_id, id))").run()
-        except Exception:
-            pass
-        # T-023 column upgrades (audit T-021 field gaps): portal sync
-        # timestamp + PHI last-treatment reference. Raw binding only
-        # (see the M3 note above); duplicate-column errors on already
-        # upgraded databases are expected and ignored.
-        for _stmt in (
-            "ALTER TABLE traceability_records ADD COLUMN synced_at TEXT",
-            "ALTER TABLE phi_validations ADD COLUMN last_treatment_ref TEXT",
-            # T-024 field completion (phase review follow-up, 2026-11-03)
-            "ALTER TABLE zones ADD COLUMN vsic_code TEXT",
-            "ALTER TABLE zones ADD COLUMN dist_to_residential_m REAL",
-            "ALTER TABLE zones ADD COLUMN dist_to_sensitive_zone_m REAL",
-            "ALTER TABLE zones ADD COLUMN bee_site_min_dist_km REAL",
-            "ALTER TABLE input_lots ADD COLUMN purchase_invoice_no TEXT",
-            "ALTER TABLE input_lots ADD COLUMN qcvn_scheme_id TEXT",
-            "ALTER TABLE field_events ADD COLUMN application_method TEXT",
-            "ALTER TABLE field_events ADD COLUMN fruit_bagging_count INTEGER",
-            "ALTER TABLE crop_plans ADD COLUMN planting_density REAL",
-            "ALTER TABLE crop_plans ADD COLUMN seed_origin_doc TEXT",
-            "ALTER TABLE zones ADD COLUMN owner_actor_id INTEGER",
-            "ALTER TABLE zones ADD COLUMN owner_actor_code TEXT",
-            # T-031 SYS pack (Bang 32/33): audit snapshots + client info,
-            # user actor link + account status.
-            "ALTER TABLE audit_log ADD COLUMN old_value TEXT",
-            "ALTER TABLE audit_log ADD COLUMN new_value TEXT",
-            "ALTER TABLE audit_log ADD COLUMN client_ip TEXT",
-            "ALTER TABLE audit_log ADD COLUMN user_agent TEXT",
-            "ALTER TABLE users ADD COLUMN linked_actor_code TEXT",
-            "ALTER TABLE users ADD COLUMN account_status TEXT DEFAULT 'ACTIVE'",
-            "ALTER TABLE users ADD COLUMN jurisdiction_admin_code TEXT",
-            "ALTER TABLE users ADD COLUMN auth_provider_type TEXT",
-        ):
-            try:
-                await self._db.prepare(_stmt).run()
-            except Exception:
-                pass
+                "INSERT OR REPLACE INTO schema_migrations"
+                " (version, applied_at) VALUES (?, ?)"
+            ).bind(version, utcnow()).run()
 
     async def _first(self, sql: str, params: tuple = ()):
         await self._ensure_schema()

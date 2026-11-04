@@ -268,6 +268,62 @@ type Zone {
   application_received_at: String
   valid_from: String
   valid_to: String
+  jurisdiction_commune_code: String
+}
+
+type RefAdminUnit {
+  id: ID
+  code: String
+  parent_unit_code: String
+  admin_level: String
+  official_name: String
+  puc_prefix_code: String
+  boundary_polygon_gis: String
+  is_active: Boolean
+}
+
+type RefMarketRegulation {
+  id: ID
+  code: String
+  market_name: String
+  requires_bilateral_pre_approval: Boolean
+  competent_authority_name: String
+  protocol_reference_doc: String
+  quarantine_special_rules: String
+}
+
+type RefActiveSubstanceMrl {
+  id: ID
+  code: String
+  substance_code: String
+  substance_name: String
+  substance_category: String
+  market_code: String
+  commodity_group_code: String
+  approval_status: String
+  mrl_threshold_value: Float
+  mrl_measurement_unit: String
+  default_phi_days: Int
+  legal_circular_ref: String
+  effective_from: String
+  effective_to: String
+}
+
+type RefCertificationScheme {
+  id: ID
+  code: String
+  scheme_name: String
+  scheme_level: String
+  applicable_sector: String
+  cb_accreditation_req: String
+}
+
+type RefTransportMode {
+  id: ID
+  code: String
+  mode_name: String
+  vehicle_id_format_rule: String
+  customs_circular_ref: String
 }
 
 type Query {
@@ -287,4 +343,9 @@ type Query {
   zone_parcel_links: [ZoneParcelLink!]!
   zone_status_history: [ZoneStatusHistory!]!
   zones: [Zone!]!
+  ref_admin_units: [RefAdminUnit!]!
+  ref_market_regulations: [RefMarketRegulation!]!
+  ref_active_substance_mrls: [RefActiveSubstanceMrl!]!
+  ref_certification_schemes: [RefCertificationScheme!]!
+  ref_transport_modes: [RefTransportMode!]!
 }

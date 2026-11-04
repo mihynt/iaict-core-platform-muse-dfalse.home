@@ -46,3 +46,18 @@ def test_schema_setup_is_bounded():
         assert db.prepares - before <= 1
 
     asyncio.run(run())
+
+
+def test_migration_ledger_stamped_on_fresh_db():
+    """T-039: a fresh D1 database records every migration as applied."""
+    from app.d1store import _MIGRATIONS, D1Store
+    from tests.conftest import _LocalD1
+
+    async def _probe():
+        store = D1Store(_LocalD1())
+        await store._ensure_schema()
+        rows = await store._all("SELECT version FROM schema_migrations")
+        return sorted(r["version"] for r in rows)
+
+    versions = asyncio.run(_probe())
+    assert versions == sorted(v for v, _ in _MIGRATIONS)

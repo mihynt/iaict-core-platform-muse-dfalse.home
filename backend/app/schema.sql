@@ -81,6 +81,8 @@ CREATE TABLE IF NOT EXISTS zones (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     owner_actor_id   BIGINT,
     owner_actor_code TEXT,
+    jurisdiction_admin_unit_id BIGINT,
+    jurisdiction_commune_code TEXT,
     PRIMARY KEY (id),
     UNIQUE (tenant_id, id),
     UNIQUE (tenant_id, code)
@@ -518,4 +520,90 @@ CREATE TABLE IF NOT EXISTS zone_status_history (
     PRIMARY KEY (id),
     UNIQUE (tenant_id, id),
     FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS ref_admin_units (
+    id              BIGSERIAL,
+    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    code            TEXT NOT NULL,
+    parent_unit_id  BIGINT,
+    parent_unit_code TEXT,
+    admin_level     TEXT,
+    official_name   TEXT,
+    puc_prefix_code TEXT,
+    data            JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (tenant_id, code),
+    UNIQUE (tenant_id, id),
+    FOREIGN KEY (tenant_id, parent_unit_id) REFERENCES ref_admin_units (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS ref_market_regulations (
+    id              BIGSERIAL,
+    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    code            TEXT NOT NULL,
+    market_name     TEXT,
+    competent_authority_name TEXT,
+    protocol_reference_doc   TEXT,
+    quarantine_special_rules TEXT,
+    data            JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (tenant_id, code),
+    UNIQUE (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS ref_active_substance_mrls (
+    id              BIGSERIAL,
+    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    code            TEXT NOT NULL,
+    substance_code  TEXT,
+    substance_name  TEXT,
+    substance_category TEXT,
+    market_id       BIGINT,
+    market_code     TEXT,
+    commodity_group_code TEXT,
+    approval_status TEXT,
+    mrl_threshold_value NUMERIC,
+    mrl_measurement_unit TEXT,
+    default_phi_days INTEGER,
+    legal_circular_ref TEXT,
+    effective_from  TEXT,
+    effective_to    TEXT,
+    data            JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (tenant_id, code),
+    UNIQUE (tenant_id, id),
+    FOREIGN KEY (tenant_id, market_id) REFERENCES ref_market_regulations (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS ref_certification_schemes (
+    id              BIGSERIAL,
+    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    code            TEXT NOT NULL,
+    scheme_name     TEXT,
+    scheme_level    TEXT,
+    applicable_sector TEXT,
+    cb_accreditation_req TEXT,
+    data            JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (tenant_id, code),
+    UNIQUE (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS ref_transport_modes (
+    id              BIGSERIAL,
+    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    code            TEXT NOT NULL,
+    mode_name       TEXT,
+    vehicle_id_format_rule TEXT,
+    customs_circular_ref TEXT,
+    data            JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (tenant_id, code),
+    UNIQUE (tenant_id, id)
 );

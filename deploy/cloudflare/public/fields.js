@@ -10,7 +10,7 @@ window.IAICT_META = {
   "address": "Địa chỉ",
   "phone": "Số điện thoại",
   "email": "Email",
-  "code": "Mã",
+  "code": "Mã phương thức vận tải",
   "gs1_role_ai": "Mã vai trò GS1",
   "parent_code": "Chủ thể cấp trên",
   "legal_id": "Số CCCD / MST",
@@ -55,7 +55,7 @@ window.IAICT_META = {
   "crop_animal_growth_stage": "Giai đoạn sinh trưởng",
   "target_pest_disease_reason": "Đối tượng / lý do xử lý",
   "category": "Nhóm vật tư",
-  "substance_code": "Hoạt chất / thành phần",
+  "substance_code": "Mã hoạt chất (CAS/CIPAC)",
   "vn_registration_number": "Số đăng ký lưu hành VN",
   "batch_no": "Số lô nhà sản xuất",
   "purchase_date": "Ngày mua",
@@ -155,6 +155,36 @@ window.IAICT_META = {
   "farm_scale_tier": "Quy mô cơ sở chăn nuôi",
   "submission_channel": "Kênh nộp hồ sơ cấp mã",
   "application_received_at": "Thời điểm xã tiếp nhận hồ sơ",
+  "jurisdiction_commune_code": "Đơn vị hành chính quản lý (xã)",
+  "parent_unit_code": "Đơn vị cấp trên",
+  "admin_level": "Cấp hành chính",
+  "official_name": "Tên chính thức",
+  "puc_prefix_code": "Mã ghép mã số vùng trồng (PUC)",
+  "boundary_polygon_gis": "Ranh giới GIS (GeoJSON)",
+  "is_active": "Đang hiệu lực",
+  "market_name": "Tên thị trường",
+  "requires_bilateral_pre_approval": "Bắt buộc phê duyệt trước song phương",
+  "competent_authority_name": "Cơ quan thẩm quyền nước nhập khẩu",
+  "protocol_reference_doc": "Nghị định thư / thỏa thuận dẫn chiếu",
+  "quarantine_special_rules": "Quy định kiểm dịch đặc thù",
+  "substance_name": "Tên hoạt chất",
+  "substance_category": "Phân loại hoạt chất",
+  "market_code": "Thị trường áp dụng",
+  "commodity_group_code": "Mã nhóm nông sản",
+  "approval_status": "Trạng thái pháp lý",
+  "mrl_threshold_value": "Ngưỡng MRL tối đa",
+  "mrl_measurement_unit": "Đơn vị đo MRL",
+  "default_phi_days": "PHI mặc định (ngày)",
+  "legal_circular_ref": "Văn bản pháp quy dẫn chiếu",
+  "effective_from": "Hiệu lực từ ngày",
+  "effective_to": "Hiệu lực đến ngày",
+  "scheme_name": "Tên tiêu chuẩn / quy chuẩn",
+  "scheme_level": "Cấp độ tiêu chuẩn",
+  "applicable_sector": "Ngành áp dụng",
+  "cb_accreditation_req": "Yêu cầu với tổ chức chứng nhận",
+  "mode_name": "Tên phương thức",
+  "vehicle_id_format_rule": "Quy tắc định danh phương tiện",
+  "customs_circular_ref": "Văn bản hải quan dẫn chiếu",
   "registration_no": "Số đăng ký",
   "active_ingredient": "Hoạt chất",
   "quantity_received": "Số lượng nhập",
@@ -368,6 +398,7 @@ window.IAICT_META = {
    "scientific_name",
    "initial_declared_area_ha",
    "owner_actor_code",
+   "jurisdiction_commune_code",
    "farm_scale_tier",
    "submission_channel",
    "application_received_at",
@@ -379,6 +410,51 @@ window.IAICT_META = {
    "dist_to_residential_m",
    "dist_to_sensitive_zone_m",
    "bee_site_min_dist_km"
+  ],
+  "ref_admin_units": [
+   "code",
+   "parent_unit_code",
+   "admin_level",
+   "official_name",
+   "puc_prefix_code",
+   "boundary_polygon_gis",
+   "is_active"
+  ],
+  "ref_market_regulations": [
+   "code",
+   "market_name",
+   "requires_bilateral_pre_approval",
+   "competent_authority_name",
+   "protocol_reference_doc",
+   "quarantine_special_rules"
+  ],
+  "ref_active_substance_mrls": [
+   "code",
+   "substance_code",
+   "substance_name",
+   "substance_category",
+   "market_code",
+   "commodity_group_code",
+   "approval_status",
+   "mrl_threshold_value",
+   "mrl_measurement_unit",
+   "default_phi_days",
+   "legal_circular_ref",
+   "effective_from",
+   "effective_to"
+  ],
+  "ref_certification_schemes": [
+   "code",
+   "scheme_name",
+   "scheme_level",
+   "applicable_sector",
+   "cb_accreditation_req"
+  ],
+  "ref_transport_modes": [
+   "code",
+   "mode_name",
+   "vehicle_id_format_rule",
+   "customs_circular_ref"
   ]
  },
  "enums": {
@@ -566,6 +642,150 @@ window.IAICT_META = {
    {
     "v": "AQUACULTURE",
     "t": "Thủy sản"
+   }
+  ],
+  "ADMIN_LEVELS": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "PROVINCE_CITY",
+    "t": "Tỉnh / Thành phố trực thuộc TW"
+   },
+   {
+    "v": "DISTRICT_COUNTY",
+    "t": "Quận / Huyện"
+   },
+   {
+    "v": "COMMUNE_WARD",
+    "t": "Xã / Phường"
+   }
+  ],
+  "SUBSTANCE_CATEGORIES": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "PESTICIDE_ACTIVE",
+    "t": "Hoạt chất thuốc BVTV"
+   },
+   {
+    "v": "SOIL_STERILIZER",
+    "t": "Chất khử trùng đất"
+   },
+   {
+    "v": "VETERINARY_ANTIBIOTIC",
+    "t": "Kháng sinh thú y"
+   },
+   {
+    "v": "HEAVY_METAL",
+    "t": "Kim loại nặng"
+   },
+   {
+    "v": "MYCOTOXIN",
+    "t": "Độc tố nấm (mycotoxin)"
+   },
+   {
+    "v": "MICROBIOLOGICAL_PATHOGEN",
+    "t": "Vi sinh vật gây bệnh"
+   }
+  ],
+  "SUBSTANCE_APPROVAL_STATUSES": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "PERMITTED",
+    "t": "Được phép"
+   },
+   {
+    "v": "RESTRICTED_MRL",
+    "t": "Hạn chế theo ngưỡng MRL"
+   },
+   {
+    "v": "STRICTLY_BANNED",
+    "t": "Cấm tuyệt đối"
+   }
+  ],
+  "MRL_UNITS": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "MG_PER_KG",
+    "t": "mg/kg (ppm)"
+   },
+   {
+    "v": "UG_PER_KG",
+    "t": "µg/kg (ppb)"
+   },
+   {
+    "v": "CFU_PER_G",
+    "t": "CFU/g"
+   }
+  ],
+  "SCHEME_LEVELS": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "NATIONAL_STANDARD_TCVN",
+    "t": "Tiêu chuẩn quốc gia (TCVN)"
+   },
+   {
+    "v": "NATIONAL_TECH_REG_QCVN",
+    "t": "Quy chuẩn quốc gia (QCVN)"
+   },
+   {
+    "v": "INTERNATIONAL_STANDARD",
+    "t": "Tiêu chuẩn quốc tế"
+   },
+   {
+    "v": "REGIONAL_ASEAN_STAN",
+    "t": "Tiêu chuẩn khu vực (ASEAN STAN)"
+   },
+   {
+    "v": "BASE_STANDARD_TCCS",
+    "t": "Tiêu chuẩn cơ sở (TCCS)"
+   }
+  ],
+  "SCHEME_SECTORS": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "CROP_FARMING",
+    "t": "Trồng trọt"
+   },
+   {
+    "v": "FORESTRY",
+    "t": "Lâm nghiệp"
+   },
+   {
+    "v": "LIVESTOCK",
+    "t": "Chăn nuôi"
+   },
+   {
+    "v": "AQUACULTURE",
+    "t": "Thủy sản nuôi"
+   },
+   {
+    "v": "WILD_FISHERY",
+    "t": "Khai thác thủy sản"
+   },
+   {
+    "v": "PROCESSING_PACKING",
+    "t": "Chế biến / đóng gói"
+   },
+   {
+    "v": "ALL_SECTORS",
+    "t": "Mọi ngành"
    }
   ]
  }

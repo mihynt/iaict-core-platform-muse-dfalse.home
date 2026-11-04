@@ -264,3 +264,6 @@ a{color:var(--brand)}
 .drow span { color: var(--mut, #7a7462); }
 .drow b { text-align: right; font-weight: 600; word-break: break-word; }
 .add-new { margin-top: 6px; }
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px}
+.chips .chip{cursor:pointer;border:1px solid var(--line,#ddd);background:var(--card,#fff);padding:7px 12px;border-radius:999px;font-size:13px}
+.chips .chip.on{background:var(--green,#14532d);color:#fff;border-color:transparent}

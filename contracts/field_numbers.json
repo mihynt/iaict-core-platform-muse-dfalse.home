@@ -171,6 +171,51 @@
   "plan_code": 2,
   "validation_outcome": 7
  },
+ "ref_active_substance_mrls": {
+  "approval_status": 7,
+  "code": 1,
+  "commodity_group_code": 6,
+  "default_phi_days": 10,
+  "effective_from": 12,
+  "effective_to": 13,
+  "legal_circular_ref": 11,
+  "market_code": 5,
+  "mrl_measurement_unit": 9,
+  "mrl_threshold_value": 8,
+  "substance_category": 4,
+  "substance_code": 2,
+  "substance_name": 3
+ },
+ "ref_admin_units": {
+  "admin_level": 3,
+  "boundary_polygon_gis": 6,
+  "code": 1,
+  "is_active": 7,
+  "official_name": 4,
+  "parent_unit_code": 2,
+  "puc_prefix_code": 5
+ },
+ "ref_certification_schemes": {
+  "applicable_sector": 4,
+  "cb_accreditation_req": 5,
+  "code": 1,
+  "scheme_level": 3,
+  "scheme_name": 2
+ },
+ "ref_market_regulations": {
+  "code": 1,
+  "competent_authority_name": 4,
+  "market_name": 2,
+  "protocol_reference_doc": 5,
+  "quarantine_special_rules": 6,
+  "requires_bilateral_pre_approval": 3
+ },
+ "ref_transport_modes": {
+  "code": 1,
+  "customs_circular_ref": 4,
+  "mode_name": 2,
+  "vehicle_id_format_rule": 3
+ },
  "spatial_units": {
   "aquaculture_water_type": 21,
   "area_m2": 12,
@@ -250,6 +295,7 @@
   "initial_declared_area_ha": 27,
   "issue_date": 19,
   "issuing_authority": 20,
+  "jurisdiction_commune_code": 36,
   "lat": 4,
   "lon": 5,
   "managing_entity": 10,

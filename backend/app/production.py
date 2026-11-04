@@ -49,6 +49,38 @@ class RecordIn(BaseModel):
     code: str | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]{1,63}$")
     name: str | None = None
     status: str | None = None
+    # REF catalogues (GD3, Bang 1-5) + zone jurisdiction link
+    parent_unit_code: str | None = None
+    admin_level: str | None = None
+    official_name: str | None = None
+    puc_prefix_code: str | None = None
+    boundary_polygon_gis: dict | None = None
+    is_active: bool | None = None
+    market_name: str | None = None
+    requires_bilateral_pre_approval: bool | None = None
+    competent_authority_name: str | None = None
+    protocol_reference_doc: str | None = None
+    quarantine_special_rules: str | None = None
+    substance_code: str | None = None
+    substance_name: str | None = None
+    substance_category: str | None = None
+    market_code: str | None = None
+    commodity_group_code: str | None = None
+    approval_status: str | None = None
+    mrl_threshold_value: float | None = None
+    mrl_measurement_unit: str | None = None
+    default_phi_days: int | None = None
+    legal_circular_ref: str | None = None
+    effective_from: str | None = None
+    effective_to: str | None = None
+    scheme_name: str | None = None
+    scheme_level: str | None = None
+    applicable_sector: str | None = None
+    cb_accreditation_req: str | None = None
+    mode_name: str | None = None
+    vehicle_id_format_rule: str | None = None
+    customs_circular_ref: str | None = None
+    jurisdiction_commune_code: str | None = None
     # ZON
     area_ha: float | None = None
     address: str | None = None
@@ -854,6 +886,84 @@ async def list_cte_stages(tenant: str = Depends(require_tenant)) -> dict:
     return await _list(tenant, "cte_stages")
 
 
+# ---- REF catalogues (D-STD-01 phase 3, Bang 1-5) ---------------------------
+
+@router.post("/ref-admin-units", status_code=status.HTTP_201_CREATED)
+async def create_ref_admin_unit(body: RecordIn, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "ref_admin_units", "ADM", body)
+
+
+@router.get("/ref-admin-units")
+async def list_ref_admin_units(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "ref_admin_units")
+
+
+@router.get("/ref-admin-units/{code}")
+async def get_ref_admin_unit(code: str, tenant: str = Depends(require_tenant)) -> dict:
+    return await _get(tenant, "ref_admin_units", code)
+
+@router.post("/ref-market-regulations", status_code=status.HTTP_201_CREATED)
+async def create_ref_market_regulation(body: RecordIn, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "ref_market_regulations", "MKT", body)
+
+
+@router.get("/ref-market-regulations")
+async def list_ref_market_regulations(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "ref_market_regulations")
+
+
+@router.get("/ref-market-regulations/{code}")
+async def get_ref_market_regulation(code: str, tenant: str = Depends(require_tenant)) -> dict:
+    return await _get(tenant, "ref_market_regulations", code)
+
+@router.post("/ref-active-substance-mrls", status_code=status.HTTP_201_CREATED)
+async def create_ref_active_substance_mrl(body: RecordIn, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "ref_active_substance_mrls", "MRL", body)
+
+
+@router.get("/ref-active-substance-mrls")
+async def list_ref_active_substance_mrls(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "ref_active_substance_mrls")
+
+
+@router.get("/ref-active-substance-mrls/{code}")
+async def get_ref_active_substance_mrl(code: str, tenant: str = Depends(require_tenant)) -> dict:
+    return await _get(tenant, "ref_active_substance_mrls", code)
+
+@router.post("/ref-certification-schemes", status_code=status.HTTP_201_CREATED)
+async def create_ref_certification_scheme(body: RecordIn, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "ref_certification_schemes", "SCH", body)
+
+
+@router.get("/ref-certification-schemes")
+async def list_ref_certification_schemes(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "ref_certification_schemes")
+
+
+@router.get("/ref-certification-schemes/{code}")
+async def get_ref_certification_scheme(code: str, tenant: str = Depends(require_tenant)) -> dict:
+    return await _get(tenant, "ref_certification_schemes", code)
+
+@router.post("/ref-transport-modes", status_code=status.HTTP_201_CREATED)
+async def create_ref_transport_mode(body: RecordIn, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "ref_transport_modes", "TRM", body)
+
+
+@router.get("/ref-transport-modes")
+async def list_ref_transport_modes(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "ref_transport_modes")
+
+
+@router.get("/ref-transport-modes/{code}")
+async def get_ref_transport_mode(code: str, tenant: str = Depends(require_tenant)) -> dict:
+    return await _get(tenant, "ref_transport_modes", code)
+
+
 # ---- Updates (T-023) -------------------------------------------------------
 # Master-data kinds can be corrected after creation; evidence-like kinds
 # (field events, harvest lots, packing links, traceability records, CTE
@@ -976,6 +1086,42 @@ async def update_packaging_unit(code: str, body: RecordIn,
     return await _update(tenant, actor, "packaging_units", "PKU", code, body)
 
 
+
+@router.patch("/ref-admin-units/{code}")
+async def update_ref_admin_unit(code: str, body: RecordIn,
+                       tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update(tenant, actor, "ref_admin_units", "ADM", code, body)
+
+
+@router.patch("/ref-market-regulations/{code}")
+async def update_ref_market_regulation(code: str, body: RecordIn,
+                       tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update(tenant, actor, "ref_market_regulations", "MKT", code, body)
+
+
+@router.patch("/ref-active-substance-mrls/{code}")
+async def update_ref_active_substance_mrl(code: str, body: RecordIn,
+                       tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update(tenant, actor, "ref_active_substance_mrls", "MRL", code, body)
+
+
+@router.patch("/ref-certification-schemes/{code}")
+async def update_ref_certification_scheme(code: str, body: RecordIn,
+                       tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update(tenant, actor, "ref_certification_schemes", "SCH", code, body)
+
+
+@router.patch("/ref-transport-modes/{code}")
+async def update_ref_transport_mode(code: str, body: RecordIn,
+                       tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update(tenant, actor, "ref_transport_modes", "TRM", code, body)
+
+
 # ---- Deletes (T-026) -------------------------------------------------------
 # Master-data kinds can be deleted by a TENANT_ADMIN when nothing else
 # references them; a referenced record is refused with 409 RECORD_IN_USE
@@ -1056,3 +1202,33 @@ async def delete_packing_lot(code: str, tenant: str = Depends(require_tenant),
 async def delete_packaging_unit(code: str, tenant: str = Depends(require_tenant),
                                 actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
     return await _delete(tenant, actor, "packaging_units", "PKU", code)
+
+
+@router.delete("/ref-admin-units/{code}")
+async def delete_ref_admin_unit(code: str, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
+    return await _delete(tenant, actor, "ref_admin_units", "ADM", code)
+
+
+@router.delete("/ref-market-regulations/{code}")
+async def delete_ref_market_regulation(code: str, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
+    return await _delete(tenant, actor, "ref_market_regulations", "MKT", code)
+
+
+@router.delete("/ref-active-substance-mrls/{code}")
+async def delete_ref_active_substance_mrl(code: str, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
+    return await _delete(tenant, actor, "ref_active_substance_mrls", "MRL", code)
+
+
+@router.delete("/ref-certification-schemes/{code}")
+async def delete_ref_certification_scheme(code: str, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
+    return await _delete(tenant, actor, "ref_certification_schemes", "SCH", code)
+
+
+@router.delete("/ref-transport-modes/{code}")
+async def delete_ref_transport_mode(code: str, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
+    return await _delete(tenant, actor, "ref_transport_modes", "TRM", code)

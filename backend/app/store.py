@@ -49,31 +49,16 @@ class User:
 # Production record kinds (SRS v2.0 groups ZON/MPL/FLD/LOT): reference fields
 # map to the kind they must resolve to *within the same tenant*. Coded kinds
 # carry a tenant-unique `code`; field_events are append-style (no code).
-RECORD_REFS: dict[str, dict[str, str]] = {
-    "zones": {"owner_actor_code": "actors"},
-    "mother_plants": {"zone_code": "zones"},
-    "actors": {"parent_code": "actors"},
-    "spatial_units": {"operator_code": "actors"},
-    "zone_parcel_links": {"zone_code": "zones", "parcel_code": "spatial_units"},
-    "input_lots": {"supplier_code": "actors"},
-    "crop_plans": {"zone_code": "zones", "plant_code": "mother_plants",
-                    "parcel_code": "spatial_units"},
-    "field_events": {"plan_code": "crop_plans", "zone_code": "zones",
-                     "input_lot_code": "input_lots"},
-    "lots": {"zone_code": "zones", "plan_code": "crop_plans",
-             "farmer_code": "actors", "parcel_code": "spatial_units"},
-    "phi_validations": {},
-    "zone_status_history": {"zone_code": "zones"},
-    "packing_lots": {"facility_code": "actors"},
-    "packing_inputs": {"packing_lot_code": "packing_lots",
-                       "harvest_lot_code": "lots"},
-    "packaging_units": {"packing_lot_code": "packing_lots"},
-    "traceability_records": {"packaging_unit_code": "packaging_units"},
-    "cte_stages": {},
-}
+# RECORD_REFS is generated from the field registry (records_spec.py) —
+# the single source of truth since T-032 slice 2. (A hand-kept copy lived
+# here until T-039/GD3 exposed it as stale; it is imported, not copied.)
+from .records_spec import RECORD_REFS  # noqa: E402,F401
 CODED_KINDS = {"zones", "mother_plants", "crop_plans", "lots",
                "actors", "spatial_units", "input_lots",
-               "packing_lots", "packaging_units"}
+               "packing_lots", "packaging_units",
+               "ref_admin_units", "ref_market_regulations",
+               "ref_active_substance_mrls", "ref_certification_schemes",
+               "ref_transport_modes"}
 
 
 LINK_UNIQUE_FIELDS: dict[str, tuple[str, ...]] = {

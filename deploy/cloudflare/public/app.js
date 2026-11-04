@@ -244,6 +244,7 @@ const ACTOR_TYPES = [
    the quick form is always the full original form - never a stripped copy. */
 async function zoneCreateFields() {
   const actors = await ensure("actors", "/actors").catch(() => []);
+  const adminUnits = await ensure("ref_admin_units", "/ref-admin-units").catch(() => []);
   return [
     { k: "code", label: "Mã vùng", required: true, placeholder: "vd: Z-01" },
     { k: "puc_code", label: "Mã số vùng trồng (PUC)", placeholder: "vd: VN-66-650-24370-94-21" },
@@ -261,6 +262,10 @@ async function zoneCreateFields() {
       options: [{ v: "", t: "— Chưa gắn —" }, ...actors.map(fmtActorOpt)],
       addNew: quickActor,
       refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Chưa gắn —", fmtActorOpt) },
+    { k: "jurisdiction_commune_code", label: "Đơn vị hành chính quản lý (xã)", type: "select",
+      options: [{ v: "", t: "— Chưa gắn —" }, ...adminUnits.map(fmtRefOpt("ref_admin_units"))],
+      addNew: (done, back) => quickRef("ref_admin_units", done, back),
+      refreshOptions: async () => optOf(await ensure("ref_admin_units", "/ref-admin-units"), "— Chưa gắn —", fmtRefOpt("ref_admin_units")) },
     { k: "initial_declared_area_ha", label: "Diện tích khai báo ban đầu (ha)", type: "number", step: "0.01" },
     { k: "dist_to_residential_m", label: "Khoảng cách tới khu dân cư (m)", type: "number", step: "0.1", visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
     { k: "dist_to_sensitive_zone_m", label: "Khoảng cách tới vùng nhạy cảm (m)", type: "number", step: "0.1", visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
@@ -482,6 +487,16 @@ const DETAIL_VALUE_MAPS = {
   sync_status: { PENDING_SYNC: "Chờ đồng bộ cổng quốc gia", SYNCED: "Đã đồng bộ", SYNCED_SUCCESS: "Đã đồng bộ cổng quốc gia" },
   data_carrier_type: { QR_CODE: "Mã QR", BARCODE: "Mã vạch", RFID: "RFID" },
 };
+const _enumMap = (key) => Object.fromEntries((window.IAICT_META.enums[key] || []).filter((o) => o.v).map((o) => [o.v, o.t]));
+Object.assign(DETAIL_VALUE_MAPS, {
+  admin_level: _enumMap("ADMIN_LEVELS"),
+  substance_category: _enumMap("SUBSTANCE_CATEGORIES"),
+  approval_status: _enumMap("SUBSTANCE_APPROVAL_STATUSES"),
+  mrl_measurement_unit: _enumMap("MRL_UNITS"),
+  scheme_level: _enumMap("SCHEME_LEVELS"),
+  applicable_sector: _enumMap("SCHEME_SECTORS"),
+});
+
 function fmtDetailVal(k2, v) {
   if (typeof v === "boolean") return v ? "Có" : "Không";
   const vm = DETAIL_VALUE_MAPS[k2];
@@ -578,6 +593,7 @@ const NAV = [
   { id: "inputs", ic: "🧪", label: "Vật tư" },
   { id: "parcels", ic: "🧩", label: "Thửa đất" },
   { id: "actors", ic: "🧑‍🌾", label: "Chủ thể" },
+  { id: "refs", ic: "📚", label: "Danh mục" },
   { id: "philogs", ic: "🛡️", label: "Kiểm tra PHI" },
   { id: "users", ic: "👥", label: "Người dùng" },
   { id: "tenants", ic: "🏢", label: "Tenant" },
@@ -789,6 +805,7 @@ VIEWS.zones = async () => {
       const z = items.find((x) => x.code === b.dataset.editZone);
       if (!z) return;
       const actors = await ensure("actors", "/actors").catch(() => []);
+      const adminUnits = await ensure("ref_admin_units", "/ref-admin-units").catch(() => []);
       openSheet(`Sửa vùng ${z.code}`, [
         { k: "puc_code", label: "Mã số vùng trồng (PUC)", def: z.puc_code || "" },
         { k: "puc_status", label: "Trạng thái mã số vùng trồng", type: "select", def: z.puc_status || "", options: PUC_STATUSES },
@@ -800,6 +817,10 @@ VIEWS.zones = async () => {
           options: [{ v: "", t: "— Chưa gắn —" }, ...actors.map(fmtActorOpt)],
           addNew: quickActor,
           refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Chưa gắn —", fmtActorOpt) },
+        { k: "jurisdiction_commune_code", label: "Đơn vị hành chính quản lý (xã)", type: "select", def: z.jurisdiction_commune_code || "",
+          options: [{ v: "", t: "— Chưa gắn —" }, ...adminUnits.map(fmtRefOpt("ref_admin_units"))],
+          addNew: (done, back) => quickRef("ref_admin_units", done, back),
+          refreshOptions: async () => optOf(await ensure("ref_admin_units", "/ref-admin-units"), "— Chưa gắn —", fmtRefOpt("ref_admin_units")) },
         { k: "initial_declared_area_ha", label: "Diện tích khai báo ban đầu (ha)", type: "number", step: "0.01", def: z.initial_declared_area_ha ?? "" },
         { k: "valid_from", label: "Mã vùng trồng hiệu lực từ", type: "date", def: z.valid_from ? String(z.valid_from).slice(0, 10) : "" },
         { k: "valid_to", label: "Mã vùng trồng hiệu lực đến", type: "date", def: z.valid_to ? String(z.valid_to).slice(0, 10) : "" },
@@ -1418,6 +1439,121 @@ VIEWS.actors = async () => {
   } catch (err) { el.innerHTML = banner(err); }
   fab("Thêm chủ thể", async () => {
     openSheet("Thêm chủ thể", await actorCreateFields(), async (p) => { await T("/actors", { method: "POST", body: p }); invalidate("actors"); });
+  });
+};
+
+/* ---------------- reference catalogues (GD3, Bang 1-5) ---------------- */
+const REF_KINDS = {
+  ref_admin_units: { path: "/ref-admin-units", title: "Đơn vị hành chính", nameKey: "official_name", fields: [
+    { k: "code", label: "Mã đơn vị hành chính", required: true, placeholder: "vd: 66, 650, 24370" },
+    { k: "parent_unit_code", label: "Đơn vị cấp trên", type: "select", refKind: "ref_admin_units", empty: "— Cấp cao nhất —" },
+    { k: "admin_level", label: "Cấp hành chính", type: "select", enum: "ADMIN_LEVELS" },
+    { k: "official_name", label: "Tên chính thức" },
+    { k: "puc_prefix_code", label: "Mã ghép mã số vùng trồng (PUC)" },
+    { k: "is_active", label: "Đang hiệu lực", type: "bool" },
+    { k: "boundary_polygon_gis", label: "Ranh giới GIS (GeoJSON)", type: "textarea" },
+  ]},
+  ref_market_regulations: { path: "/ref-market-regulations", title: "Thị trường & kiểm dịch", nameKey: "market_name", fields: [
+    { k: "code", label: "Mã thị trường (ISO alpha-2)", required: true, placeholder: "vd: CN, US, EU" },
+    { k: "market_name", label: "Tên thị trường" },
+    { k: "requires_bilateral_pre_approval", label: "Bắt buộc phê duyệt trước song phương", type: "bool" },
+    { k: "competent_authority_name", label: "Cơ quan thẩm quyền nước nhập khẩu" },
+    { k: "protocol_reference_doc", label: "Nghị định thư / thỏa thuận dẫn chiếu" },
+    { k: "quarantine_special_rules", label: "Quy định kiểm dịch đặc thù", type: "textarea" },
+  ]},
+  ref_active_substance_mrls: { path: "/ref-active-substance-mrls", title: "Hoạt chất & ngưỡng MRL", nameKey: "substance_name", fields: [
+    { k: "code", label: "Mã quy tắc MRL", required: true, placeholder: "vd: MRL-CLP-CN" },
+    { k: "substance_code", label: "Mã hoạt chất (CAS/CIPAC)" },
+    { k: "substance_name", label: "Tên hoạt chất" },
+    { k: "substance_category", label: "Phân loại hoạt chất", type: "select", enum: "SUBSTANCE_CATEGORIES" },
+    { k: "market_code", label: "Thị trường áp dụng", type: "select", refKind: "ref_market_regulations", empty: "— Chọn thị trường —", addNew: true },
+    { k: "commodity_group_code", label: "Mã nhóm nông sản" },
+    { k: "approval_status", label: "Trạng thái pháp lý", type: "select", enum: "SUBSTANCE_APPROVAL_STATUSES" },
+    { k: "mrl_threshold_value", label: "Ngưỡng MRL tối đa", type: "number", step: "0.000001" },
+    { k: "mrl_measurement_unit", label: "Đơn vị đo MRL", type: "select", enum: "MRL_UNITS" },
+    { k: "default_phi_days", label: "PHI mặc định (ngày)", type: "number" },
+    { k: "legal_circular_ref", label: "Văn bản pháp quy dẫn chiếu" },
+    { k: "effective_from", label: "Hiệu lực từ ngày", type: "date" },
+    { k: "effective_to", label: "Hiệu lực đến ngày", type: "date" },
+  ]},
+  ref_certification_schemes: { path: "/ref-certification-schemes", title: "Tiêu chuẩn & quy chuẩn", nameKey: "scheme_name", fields: [
+    { k: "code", label: "Mã tiêu chuẩn / quy chuẩn", required: true, placeholder: "vd: GLOBALGAP_V6" },
+    { k: "scheme_name", label: "Tên tiêu chuẩn / quy chuẩn" },
+    { k: "scheme_level", label: "Cấp độ tiêu chuẩn", type: "select", enum: "SCHEME_LEVELS" },
+    { k: "applicable_sector", label: "Ngành áp dụng", type: "select", enum: "SCHEME_SECTORS" },
+    { k: "cb_accreditation_req", label: "Yêu cầu với tổ chức chứng nhận" },
+  ]},
+  ref_transport_modes: { path: "/ref-transport-modes", title: "Phương thức vận tải", nameKey: "mode_name", fields: [
+    { k: "code", label: "Mã phương thức vận tải", required: true, placeholder: "vd: ROAD_TRUCK" },
+    { k: "mode_name", label: "Tên phương thức" },
+    { k: "vehicle_id_format_rule", label: "Quy tắc định danh phương tiện" },
+    { k: "customs_circular_ref", label: "Văn bản hải quan dẫn chiếu" },
+  ]},
+};
+const fmtRefOpt = (kind) => (r) => ({ v: r.code, t: `${r.code}${r[REF_KINDS[kind].nameKey] ? " · " + r[REF_KINDS[kind].nameKey] : ""}` });
+async function refFormFields(kind, rec) {
+  const cfg = REF_KINDS[kind];
+  const out = [];
+  for (const f of cfg.fields) {
+    const nf = { k: f.k, label: f.label, type: f.type, required: f.required, placeholder: f.placeholder, step: f.step };
+    if (rec && rec[f.k] !== undefined && rec[f.k] !== null) nf.def = typeof rec[f.k] === "object" ? JSON.stringify(rec[f.k]) : rec[f.k];
+    if (f.type === "select" && f.enum) nf.options = (window.IAICT_META.enums[f.enum] || []).map((o) => ({ ...o }));
+    if (f.type === "select" && f.refKind) {
+      const items = await ensure(f.refKind, REF_KINDS[f.refKind].path).catch(() => []);
+      nf.options = [{ v: "", t: f.empty || "— Chọn —" }, ...items.map(fmtRefOpt(f.refKind))];
+      if (f.addNew) {
+        nf.addNew = (done, back) => quickRef(f.refKind, done, back);
+        nf.refreshOptions = async () => optOf(await ensure(f.refKind, REF_KINDS[f.refKind].path), f.empty || "— Chọn —", fmtRefOpt(f.refKind));
+      }
+    }
+    out.push(nf);
+  }
+  return out;
+}
+async function quickRef(kind, done, back) {
+  try {
+    openSheet("Thêm " + REF_KINDS[kind].title.toLowerCase(), await refFormFields(kind), async (p) => {
+      const r = await T(REF_KINDS[kind].path, { method: "POST", body: p });
+      invalidate(kind); toast("Đã thêm " + r.code); done(r.code);
+    }, { onCancel: back });
+  } catch { toast("Không mở được form danh mục.", true); back(); }
+}
+let refTab = "ref_admin_units";
+VIEWS.refs = async () => {
+  const el = $("#view");
+  el.innerHTML = `<div class="section-head"><h2>📚 Danh mục tham chiếu</h2>
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>
+    <div class="chips">${Object.entries(REF_KINDS).map(([k, c]) => `<button class="chip${k === refTab ? " on" : ""}" data-reftab="${k}">${c.title}</button>`).join("")}</div>
+    <div id="refBody"></div>`;
+  $("#reload").onclick = () => { invalidate(refTab); navigate("refs", true); };
+  el.querySelectorAll("[data-reftab]").forEach((b) => b.onclick = () => { refTab = b.dataset.reftab; navigate("refs", true); });
+  const cfg = REF_KINDS[refTab];
+  const body = el.querySelector("#refBody");
+  try {
+    const items = await ensure(refTab, cfg.path);
+    body.innerHTML = items.length ? `<div class="list">${items.map((r) => `
+      <div class="card" data-card="${esc(r.code)}"><div class="thumb slate">📚</div><div class="body">
+        <div class="title">${esc(r.code)}</div>
+        <div class="sub">${esc(r[cfg.nameKey] || "")}</div>
+        <div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-ref="${esc(r.code)}">✏️ Sửa</button> <button class="btn btn-ghost btn-sm" data-del-ref="${esc(r.code)}">🗑️ Xoá</button></div>
+      </div></div>`).join("")}</div>`
+      : emptyState("📚", "Chưa có mục nào", "Bấm nút + để thêm vào danh mục " + cfg.title.toLowerCase() + ".");
+    body.querySelectorAll("[data-edit-ref]").forEach((b) => b.onclick = async () => {
+      const rec = items.find((x) => x.code === b.dataset.editRef);
+      openSheet("Sửa " + rec.code, await refFormFields(refTab, rec), async (p) => {
+        delete p.code;
+        await T(`${cfg.path}/${encodeURIComponent(rec.code)}`, { method: "PATCH", body: p });
+        invalidate(refTab);
+      });
+    });
+    body.querySelectorAll("[data-del-ref]").forEach((b) => b.onclick = () =>
+      confirmDelete(`mục ${b.dataset.delRef}`, `${cfg.path}/${encodeURIComponent(b.dataset.delRef)}`, [refTab]));
+    wireCardDetails(body, items, (r) => `${cfg.title} ${r.code}`, refTab);
+  } catch (err) { body.innerHTML = banner(err); }
+  fab("Thêm vào danh mục", async () => {
+    openSheet("Thêm " + cfg.title.toLowerCase(), await refFormFields(refTab), async (p) => {
+      await T(cfg.path, { method: "POST", body: p }); invalidate(refTab);
+    });
   });
 };
 
