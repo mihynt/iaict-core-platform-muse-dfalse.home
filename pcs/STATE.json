@@ -1,5 +1,5 @@
 {
- "revision": 95,
+ "revision": 96,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-080",
-   "last_completed_step": "T-079 (AG15) TECH_DONE + DEPLOYED (rev 95): Pack 03 + AI gateway mock; Worker 675fc93e.",
-   "next_action": "AG16 (T-080): danh muc 82 bao cao + API cong khai/webhook/xuat ban + dispatcher outbox.",
+   "active_task": "T-081",
+   "last_completed_step": "T-080 (AG16) TECH_DONE + DEPLOYED (rev 96): 82 bao cao + ReportEngine + webhook/dispatcher; Worker d2bf4ca1.",
+   "next_action": "AG17 (T-081): van hanh & nghiem thu — tai/khoi phuc, runbook, cong phat hanh, chay du CF-T01..T08 cho G5.",
    "blockers": []
   },
   "decisions": [
@@ -1129,9 +1129,9 @@
    {
     "id": "T-080",
     "title": "AG16 — Bao cao va tich hop cong bo (82 bao cao) (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commit 57d3626 (+ e04f6aa). (1) Danh muc 82 bao cao Phu luc D dang ky day du lam du lieu (report_catalog.py, assert 82 ma, 14 ho); ReportEngine tinh truc tiep tu store: 30 bao cao IMPLEMENTED (vd REP-TX-01 truy vet nguoc di duoc chuoi that PUBLIC_RECORD→FL→BATCH→TRACE_LOT; REP-SX-07 lo dang giu tu AG10; REP-SX-02 yield 0.96; REP-TT-01 tu nhat ky rule_evaluations; REP-IA-01 usage/limits; CR/PA/MO phia platform); phan con lai CATALOGUED — goi se tra 409 REPORT_NOT_IMPLEMENTED kem nguon du lieu, khong bia bang. Xuat CSV. UI: tab Danh muc bao cao trong man Bao cao + xem truc tiep + tai CSV (sim25 pass). (2) Webhook + dispatcher outbox (COM-18): dang ky endpoint (secret hien 1 lan, ky HMAC moi lan gui), POST /outbox/dispatch gui kem event-id, ghi tung lan thu vao webhook_deliveries, gui loi thi dong van PENDING (at-least-once); transport tach khoi bundle Worker (httpx tuy chon o server, urllib fallback) sau khi deploy dau loi validation 10021 vi httpx khong nam trong deps cua Worker va mang PyPI timeout — da xu ly sach. (3) Sua loi tiem an o InMemoryStore.reset: truoc day khong xoa cac bucket tinh nang (trace_rows/grants/crm...) — test AG16 dung trung ma cong khai voi test AG10 lam lo (public 409 AMBIGUOUS sau reset); nay reset xoa toan bo bucket. Suite: memory 101+2, D1 103, PG 99+4; CI GREEN. DEPLOYED Worker d2bf4ca1; migration 17; probe live: catalog tenant 51 bao cao (29 implemented), REP-SX-03 + REP-TX-01 dung du lieu demo; test trinh duyet that: bang danh muc 51 dong, REP-SX-03 4 dong khop API.",
     "blockers": []
    },
    {
@@ -1153,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T10:58:45Z"
+ "updated_at": "2026-11-04T12:09:37Z"
 }
