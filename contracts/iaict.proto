@@ -461,3 +461,12 @@ message RecallCase {
   string recirculation_approval_doc = 16;  // Số VB đồng ý lưu thông lại
   string repurpose_or_reexport_doc = 17;  // Số HĐ chuyển mục đích / tờ khai tái xuất
 }
+
+message IotDevice {
+  string code = 1;  // Mã thiết bị
+  string device_type = 2;  // Loại thiết bị
+  string zone_code = 3;  // Vùng lắp đặt
+  string parcel_code = 4;  // Thửa / ao lắp đặt
+  string firmware_version = 5;  // Phiên bản firmware
+  string installed_at = 6;  // Ngày lắp đặt
+}

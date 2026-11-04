@@ -510,6 +510,7 @@ Object.assign(DETAIL_VALUE_MAPS, {
   recall_initiation_type: _enumMap("RECALL_INITIATION_TYPES"),
   risk_classification: _enumMap("RISK_CLASSES"),
   post_recall_handling_method: _enumMap("RECALL_HANDLING_METHODS"),
+  device_type: _enumMap("IOT_DEVICE_TYPES"),
 });
 
 function fmtDetailVal(k2, v) {
@@ -1684,6 +1685,17 @@ VIEWS.market = async () => {
 
 /* ---------------- livestock + monitoring logs (GD3 Bang 14, 16, 19-22) ---------------- */
 const GD3B_KINDS = {
+  iot_devices: { path: "/iot-devices", title: "Thiết bị IoT", editable: false,
+    titleOf: (r) => `${r.code || "Thiết bị"}${r.device_type ? " · " + r.device_type : ""}`,
+    subOf: (r) => r.parcel_code ? "Thửa/ao: " + r.parcel_code : (r.zone_code ? "Vùng: " + r.zone_code : ""),
+    fields: [
+      { k: "code", label: "Mã thiết bị" },
+      { k: "device_type", label: "Loại thiết bị", type: "select", enum: "IOT_DEVICE_TYPES" },
+      { k: "zone_code", label: "Vùng lắp đặt", type: "select", target: "zones", empty: "— Chọn vùng —" },
+      { k: "parcel_code", label: "Thửa / ao lắp đặt", type: "select", target: "spatial_units", empty: "— Không gắn —" },
+      { k: "firmware_version", label: "Phiên bản firmware" },
+      { k: "installed_at", label: "Ngày lắp đặt", type: "date" },
+    ]},
   livestock_units: { path: "/livestock-units", title: "Cá thể / đàn vật nuôi", editable: true,
     titleOf: (r) => `${r.code || "?"}${r.species_code ? " · " + r.species_code : ""}`,
     subOf: (r) => r.facility_actor_code ? "Cơ sở: " + r.facility_actor_code : "",
@@ -1771,7 +1783,7 @@ Object.assign(GD3A_TARGETS, {
   crop_plans: { path: "/crop-plans", fmt: fmtPlanOpt, addNew: (d, b) => quickPlan(d, b) },
   spatial_units: { path: "/spatial-units", fmt: fmtParcelOpt, addNew: (d, b) => quickParcel(d, b) },
 });
-let gd3bTab = "livestock_units";
+let gd3bTab = "iot_devices";
 VIEWS.monitor = async () => {
   const el = $("#view");
   el.innerHTML = `<div class="section-head"><h2>🔬 Giám sát & kê khai</h2>

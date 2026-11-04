@@ -10,7 +10,7 @@ window.IAICT_META = {
   "address": "Địa chỉ",
   "phone": "Số điện thoại",
   "email": "Email",
-  "code": "Mã thẻ tai / mã đàn",
+  "code": "Mã thiết bị",
   "gs1_role_ai": "Mã vai trò GS1",
   "parent_code": "Chủ thể cấp trên",
   "legal_id": "Số CCCD / MST",
@@ -28,9 +28,9 @@ window.IAICT_META = {
   "end_date": "Ngày kết thúc",
   "target_yield_kg": "Sản lượng mục tiêu (kg)",
   "status": "Trạng thái",
-  "zone_code": "Vùng",
+  "zone_code": "Vùng lắp đặt",
   "plant_code": "Cây đầu dòng",
-  "parcel_code": "Thửa / ao được đo",
+  "parcel_code": "Thửa / ao lắp đặt",
   "forest_harvest_plan_no": "Số VB phê duyệt PA khai thác rừng (nếu có)",
   "departure_port_code": "Mã cảng xuất bến (thủy sản, nếu có)",
   "arrival_port_code": "Mã cảng cập bến (thủy sản, nếu có)",
@@ -274,6 +274,9 @@ window.IAICT_META = {
   "authority_recirc_reply_due": "Hạn trả lời cho lưu thông lại",
   "recirculation_approval_doc": "Số VB đồng ý lưu thông lại",
   "repurpose_or_reexport_doc": "Số HĐ chuyển mục đích / tờ khai tái xuất",
+  "device_type": "Loại thiết bị",
+  "firmware_version": "Phiên bản firmware",
+  "installed_at": "Ngày lắp đặt",
   "registration_no": "Số đăng ký",
   "active_ingredient": "Hoạt chất",
   "quantity_received": "Số lượng nhập",
@@ -675,6 +678,14 @@ window.IAICT_META = {
    "authority_recirc_reply_due",
    "recirculation_approval_doc",
    "repurpose_or_reexport_doc"
+  ],
+  "iot_devices": [
+   "code",
+   "device_type",
+   "zone_code",
+   "parcel_code",
+   "firmware_version",
+   "installed_at"
   ]
  },
  "enums": {
@@ -1352,6 +1363,24 @@ window.IAICT_META = {
    {
     "v": "DESTRUCTION",
     "t": "Tiêu hủy"
+   }
+  ],
+  "IOT_DEVICE_TYPES": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "WATER_QUALITY_SENSOR",
+    "t": "Cảm biến chất lượng nước"
+   },
+   {
+    "v": "INSECT_TRAP_AI",
+    "t": "Bẫy côn trùng AI"
+   },
+   {
+    "v": "WEATHER_STATION",
+    "t": "Trạm thời tiết"
    }
   ]
  }

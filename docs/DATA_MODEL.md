@@ -214,3 +214,9 @@ FKs).
   idempotently at startup.
 - Workers beta → Cloudflare D1 (`app/d1store.py`, DEC-008) with the
   PostgreSQL backends kept green as the exit path.
+
+## Platform extensions (not dossier tables)
+
+| Kind | Purpose |
+|---|---|
+| `iot_devices` | T-005 gate slice (T-045): device registry (type / zone / parcel / firmware). Telemetry lands in the dossier's own tables - water metrics in Bang 20, trap counts in Bang 19 - via `POST /api/v1/iot/readings` (key-gated, closed by default). See `docs/IOT_GATE_T005.md`. |

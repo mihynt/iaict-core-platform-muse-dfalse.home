@@ -18,7 +18,7 @@ the caller's tenant. Field definitions: docs/DATA_MODEL.md.
 """
 from datetime import date, datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from .config import settings
@@ -49,6 +49,10 @@ class RecordIn(BaseModel):
     code: str | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]{1,63}$")
     name: str | None = None
     status: str | None = None
+    # T-005 IoT slice: device registry fields
+    device_type: str | None = None
+    firmware_version: str | None = None
+    installed_at: str | None = None
     # GD3 Bang 28/31: transport trips + recall cases
     carrier_actor_code: str | None = None
     transport_mode_code: str | None = None
@@ -1355,6 +1359,101 @@ async def report_packing_mass_balance(tenant: str = Depends(require_tenant)) -> 
                            if (output is not None and expected is not None) else None,
         })
     return {"tenant_id": tenant, "items": items}
+
+
+# ---- IoT ingestion slice (T-045, T-005 preparation) ---------------------------
+
+class IotReadingIn(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    device_code: str
+    measured_at: str | None = None
+    water: dict | None = None
+    trap: dict | None = None
+
+
+def _configured_iot_key(request: Request) -> str | None:
+    """Tenant ingest key: process env first, ASGI scope env on Workers
+    (same pattern as the platform key in deps.py). Unset means the IoT
+    gate stays closed (503), exactly like platform administration."""
+    import os
+    key = os.environ.get("IAICT_IOT_KEY")
+    if key:
+        return key
+    env = request.scope.get("env") if request is not None else None
+    if env is not None:
+        return getattr(env, "IAICT_IOT_KEY", None)
+    return None
+
+
+_WATER_METRICS = ("water_salinity_permille", "ph_value", "dissolved_oxygen_mg_l",
+                  "water_temp_celsius", "nh3_unionized_mg_l", "no2_nitrite_mg_l",
+                  "alkalinity_mg_l", "is_within_safe_range")
+
+
+@router.post("/iot-devices", status_code=status.HTTP_201_CREATED)
+async def create_iot_device(body: RecordIn, tenant: str = Depends(require_tenant),
+                            actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "iot_devices", "IOT", body)
+
+
+@router.get("/iot-devices")
+async def list_iot_devices(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "iot_devices")
+
+
+@router.post("/iot/readings", status_code=status.HTTP_201_CREATED)
+async def ingest_iot_reading(body: IotReadingIn, request: Request,
+                             tenant: str = Depends(require_tenant),
+                             x_iot_key: str | None = Header(default=None)) -> dict:
+    """Device telemetry landing zone (simulation slice): water metrics
+    become Bang 20 water-quality records on the device's parcel; trap
+    counts become Bang 19 monitoring records of type
+    AI_INSECT_TRAP_REALTIME on the device's zone."""
+    configured = _configured_iot_key(request)
+    if not configured:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"code": "IOT_DISABLED",
+                    "message": "IoT ingestion is not configured (IAICT_IOT_KEY unset)"})
+    if x_iot_key != configured:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"code": "IOT_KEY_INVALID", "message": "Invalid IoT ingest key"})
+    device = await store.get_record_by_code(tenant, "iot_devices", body.device_code)
+    if device is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "DEVICE_UNKNOWN",
+                    "message": f"No IoT device with code {body.device_code}"})
+    from datetime import datetime, timezone
+    ts = body.measured_at or datetime.now(timezone.utc).isoformat()
+    created: dict = {}
+    if body.water:
+        fields = {"parcel_code": device.get("parcel_code"),
+                  "measured_timestamp": ts}
+        for k in _WATER_METRICS:
+            if body.water.get(k) is not None:
+                fields[k] = body.water[k]
+        rec = await store.create_record(tenant, "water_quality_tests", fields)
+        created["water_test_id"] = rec["id"]
+    if body.trap:
+        rec = await store.create_record(tenant, "monitoring_declarations", {
+            "zone_code": device.get("zone_code"),
+            "monitoring_type": "AI_INSECT_TRAP_REALTIME",
+            "inspection_timestamp": ts,
+            "pest_species_detected": body.trap.get("pest_species_detected"),
+            "pest_density_index": body.trap.get("pest_density_index"),
+        })
+        created["monitoring_id"] = rec["id"]
+    if not created:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "READING_EMPTY",
+                    "message": "Reading carries neither water metrics nor trap data"})
+    await store.record_audit(
+        scope="tenant", tenant_id=tenant, actor=f"iot:{body.device_code}",
+        action="IOT_READING", target=body.device_code, outcome="OK")
+    return {"tenant_id": tenant, "device_code": body.device_code, **created}
 
 
 # ---- Updates (T-023) -------------------------------------------------------

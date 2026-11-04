@@ -118,6 +118,14 @@
   "unit": 8,
   "vn_registration_number": 4
  },
+ "iot_devices": {
+  "code": 1,
+  "device_type": 2,
+  "firmware_version": 5,
+  "installed_at": 6,
+  "parcel_code": 4,
+  "zone_code": 3
+ },
  "livestock_decl_items": {
   "declared_quantity": 3,
   "farming_purpose": 5,

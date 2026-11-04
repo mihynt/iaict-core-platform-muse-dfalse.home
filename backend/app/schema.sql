@@ -863,3 +863,23 @@ CREATE TABLE IF NOT EXISTS recall_cases (
     FOREIGN KEY (tenant_id, affected_zone_id) REFERENCES zones (tenant_id, id),
     FOREIGN KEY (tenant_id, isolated_household_id) REFERENCES actors (tenant_id, id)
 );
+
+CREATE TABLE IF NOT EXISTS iot_devices (
+    id              BIGSERIAL,
+    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    code            TEXT NOT NULL,
+    device_type     TEXT,
+    zone_id         BIGINT,
+    zone_code       TEXT,
+    parcel_id       BIGINT,
+    parcel_code     TEXT,
+    firmware_version TEXT,
+    installed_at    TEXT,
+    data            JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (tenant_id, code),
+    UNIQUE (tenant_id, id),
+    FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id),
+    FOREIGN KEY (tenant_id, parcel_id) REFERENCES spatial_units (tenant_id, id)
+);

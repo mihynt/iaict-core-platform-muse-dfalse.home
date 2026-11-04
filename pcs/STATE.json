@@ -1,5 +1,5 @@
 {
- "revision": 59,
+ "revision": 60,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-045",
-   "last_completed_step": "Programme FULL stage 6 DONE (rev 59): T-044 store core live (Worker 8f4c82cc), browser-verified; T-032 complete (all 4 slices TECH_DONE).",
-   "next_action": "Stage 7 (final): T-005 IoT gate package + simulation ingestion slice; surface the 3 Owner decisions at delivery.",
+   "active_task": null,
+   "last_completed_step": "FULL programme COMPLETE (rev 60): all 7 stages TECH_DONE and live - migrations, 33/33 dossier tables + 3 views, store-core unification, IoT gate package.",
+   "next_action": "Owner decisions: (1) T-005 go/no-go + the 3 IoT decisions in docs/IOT_GATE_T005.md; (2) Q-TX-01 frozen-retention precedence; (3) Q-TX-02 national portal scope. Optional engineering follow-ups: list pagination (P2-b); the pre-existing PG-mode null-key test.",
    "blockers": []
   },
   "decisions": [
@@ -284,6 +284,12 @@
     "name": "Dialect-unified SQL store core (T-044, completes T-032)",
     "status": "TECH_DONE",
     "notes": "sqlcore.py: one record engine for D1 (live) + PG (exit path); workerstore stays transactional by design."
+   },
+   {
+    "id": "F-024",
+    "name": "IoT gate package + simulation ingestion (T-045)",
+    "status": "TECH_DONE",
+    "notes": "iot_devices registry + key-gated ingestion into Bang 19/20; gate closed by default; decisions in docs/IOT_GATE_T005.md."
    }
   ],
   "flows": [],
@@ -423,7 +429,8 @@
     "id": "T-005",
     "status": "PLANNED",
     "title": "M3a day-90 hard gate: IoT gateway baseline and device ingestion evidence (UAT-60)",
-    "classification": "PUBLIC"
+    "classification": "PUBLIC",
+    "evidence": " Gate package prepared by T-045 (rev 60): docs/IOT_GATE_T005.md + live simulation ingestion slice. The go/no-go decision itself remains the Owner's (3 open decisions recorded in the package)."
    },
    {
     "id": "T-006",
@@ -708,9 +715,21 @@
     ],
     "evidence": "New backend/app/sqlcore.py (406 lines): SqlStoreCore implements the whole store contract once (audit, tenants, users, workspaces, record CRUD, legacy-schema guard) over a dialect interface (placeholder, one/all/run/insert, Jsonb-vs-text JSON, unique-violation detection, legacy-column introspection). PgStore is now a 98-line psycopg adapter; D1Store keeps its schema management (fresh DDL, phase upgrades, migration ledger) over a D1 dialect (352 lines). Timestamps are written explicitly on both dialects. WorkerPgStore intentionally NOT on the core: its operations are transactional units (Hyperdrive session pinning, SQLSTATE 26000; rollback-and-drop; retry-once reads; per-isolate caches) and cannot be decomposed into per-statement dialect calls without changing failure semantics - documented in sqlcore's docstring. Verification: a local PostgreSQL 18.6 cluster was rebuilt and the FULL suite ran in all four modes BEFORE and AFTER the refactor with identical results (memory 91 passed + 4 skipped; D1 subsets 35 passed; psycopg 91 passed + 1 pre-existing failure (test_zone_status_history_logged - the recorded cross-store null-key nuance, present on the pristine tree in both PG modes) + 3 skipped; pg8000 worker mode identical). Production write probes on the unified core passed (zone create 201, patch 200, market create/delete 201/200, dashboard consistent; probe data removed); live browser round passed. Worker 8f4c82cc.",
     "blockers": []
+   },
+   {
+    "id": "T-045",
+    "title": "T-005 preparation: IoT gate package + simulation ingestion slice",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "T-005",
+     "Bang 19",
+     "Bang 20"
+    ],
+    "evidence": "New kind iot_devices (registry kind #33; code, device_type enum WATER_QUALITY_SENSOR/INSECT_TRAP_AI/WEATHER_STATION, zone_code, parcel_code, firmware_version, installed_at; migration v9; UI tab in the monitoring view). POST /api/v1/iot/readings lands telemetry in the dossier's own tables (water metrics -> Bang 20 water_quality_tests on the device's parcel; trap counts -> Bang 19 monitoring_declarations AI_INSECT_TRAP_REALTIME on the device's zone), gated by the IAICT_IOT_KEY secret: unset -> 503 IOT_DISABLED (closed by default), wrong key -> 401, unknown device -> 404, empty reading -> 400, each accepted reading writes an IOT_READING audit row. tools/simulate_iot.py simulates a field gateway. Gate package: docs/IOT_GATE_T005.md (readiness evidence, what real devices still need, the 3 open Owner decisions). Verification: memory suite 94 passed + 4 skipped; D1 subset incl. schema guard 5 passed; production end-to-end with a temporary key: device+parcel created (201), keyless reading 401, simulator readings landed as real water/trap records (verified via API), probe rows removed at the D1 layer, temp secret deleted and the gate verified closed (503). One process incident: the first secret-delete attempt ran outside the deploy directory and failed on a missing Worker name; re-run correctly, deletion confirmed via secret list + the 503 probe. Live browser round passed (7 monitoring tabs, device form 6 fields). Worker 4263c4c6.",
+    "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T02:02:00Z"
+ "updated_at": "2026-11-04T02:12:00Z"
 }

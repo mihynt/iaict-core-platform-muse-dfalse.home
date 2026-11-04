@@ -479,6 +479,16 @@ type RecallCase {
   repurpose_or_reexport_doc: String
 }
 
+type IotDevice {
+  id: ID
+  code: String
+  device_type: String
+  zone_code: String
+  parcel_code: String
+  firmware_version: String
+  installed_at: String
+}
+
 type Query {
   actors: [Actor!]!
   crop_plans: [CropPlan!]!
@@ -512,4 +522,5 @@ type Query {
   livestock_decl_items: [LivestockDeclItem!]!
   transport_trips: [TransportTrip!]!
   recall_cases: [RecallCase!]!
+  iot_devices: [IotDevice!]!
 }

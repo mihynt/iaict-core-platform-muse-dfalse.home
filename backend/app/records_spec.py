@@ -274,7 +274,9 @@ SPECS = {'actors': ('actors',
                    'fix_report_submitted_date': 'ts',
                    'authority_recirc_reply_due': 'ts',
                    'recirculation_approval_doc': 'text',
-                   'repurpose_or_reexport_doc': 'text'})}
+                   'repurpose_or_reexport_doc': 'text'}),
+ 'iot_devices': ('iot_devices',
+                 {'device_type': 'text', 'firmware_version': 'text', 'installed_at': 'date'})}
 
 RECORD_REFS = {'actors': {'parent_code': 'actors'},
  'crop_plans': {'zone_code': 'zones',
@@ -324,7 +326,8 @@ RECORD_REFS = {'actors': {'parent_code': 'actors'},
                      'transport_mode_code': 'ref_transport_modes',
                      'origin_actor_code': 'actors',
                      'destination_actor_code': 'actors'},
- 'recall_cases': {'affected_zone_code': 'zones', 'isolated_household_actor_code': 'actors'}}
+ 'recall_cases': {'affected_zone_code': 'zones', 'isolated_household_actor_code': 'actors'},
+ 'iot_devices': {'zone_code': 'zones', 'parcel_code': 'spatial_units'}}
 
 REF_ID_COLUMN = {'parent_code': 'parent_id',
  'zone_code': 'zone_id',
