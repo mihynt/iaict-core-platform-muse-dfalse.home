@@ -1,5 +1,5 @@
 {
- "revision": 71,
+ "revision": 72,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -29,7 +29,7 @@
   ],
   "current": {
    "active_task": "T-056",
-   "last_completed_step": "T-055 TECH_DONE (V2-4): Pack Engine + Rule Engine + Pack 01 — cong PHI chay bang rule khai bao, golden vectors dat",
+   "last_completed_step": "T-057 TECH_DONE: ra soat 2 luot V2-4 — sua 2 loi nghiem trong (PATCH alias, lach cong PHI) + 1 loi tiem an; T-056 (V2-5) van la buoc tiep theo",
    "next_action": "Xay V2-5 TraceEngine + profile TT 02/2024 (T-056) theo DESIGN.md muc 3.4.",
    "blockers": []
   },
@@ -913,9 +913,22 @@
     ],
     "evidence": "Chua bat dau; theo DESIGN.md muc 3.4 + muc 9 lat V2-5.",
     "blockers": []
+   },
+   {
+    "id": "T-057",
+    "title": "Ra soat 2 luot V2-1..V2-4 (trong tam V2-4) + sua loi",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "GEN-02",
+     "GEN-03",
+     "FLD-16",
+     "FLD-17"
+    ],
+    "evidence": "Bien ban: your_files/iaict-core-v2/bien-ban-ra-soat-2-luot-v2-4.md. Luot 1 (code + tai hien): S1 PATCH hong cho moi ban ghi co alias (truong he thong/FK bi tinh la extension, additionalProperties:false chan oan) — da sua + test hoi quy; S2 cong PHI bi lach do priors chi theo chu ky (xu ly ghi theo doi tuong vo hinh voi thu hoach co chu ky) — da sua bang pham vi hop nhat chu ky HOAC doi tuong; M0 sentinel thieu-du-lieu bi nuot trong all/any — da sua. Luot 2 (thiet ke/nhat quan): grep pack-01 trong backend/app = 0; HARVEST la category canonical cua 5.2 nen khong nam trong denylist (co y); 4 diem mo nho ghi nhan (M1 event_id o nhat ky danh gia, M2 rule khong when, M3 so sanh chuoi-so, M4 cong chay tai thoi diem ghi). Sau sua: memory 54+2, D1 56, PG 52+4; script trung lap dat. Commit repo v2 sau T-055.",
+    "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T05:42:25Z"
+ "updated_at": "2026-11-04T05:47:24Z"
 }
