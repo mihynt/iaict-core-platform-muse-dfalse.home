@@ -1,5 +1,5 @@
 {
- "revision": 72,
+ "revision": 73,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -29,8 +29,8 @@
   ],
   "current": {
    "active_task": "T-056",
-   "last_completed_step": "T-057 TECH_DONE: ra soat 2 luot V2-4 — sua 2 loi nghiem trong (PATCH alias, lach cong PHI) + 1 loi tiem an; T-056 (V2-5) van la buoc tiep theo",
-   "next_action": "Xay V2-5 TraceEngine + profile TT 02/2024 (T-056) theo DESIGN.md muc 3.4.",
+   "last_completed_step": "T-058 TECH_DONE (rev 73): beta Core v2 ĐÃ LIVE tại https://iaict-core-v2.mihy.workers.dev theo yêu cầu Owner — D1 riêng, Pack 01 kích hoạt, cổng PHI chặn thật trên production, checkpoint toàn vẹn VALID, test trình duyệt đạt. V2-6 còn lại: pack thứ hai qua cổng trung lập GEN-12.",
+   "next_action": "T-056 V2-5 TraceEngine (chờ lệnh Owner như đã trình ở rev 72); hoặc V2-6 phần pack thứ hai nếu Owner muốn hoàn tất cổng trung lập trước.",
    "blockers": []
   },
   "decisions": [
@@ -926,9 +926,19 @@
     ],
     "evidence": "Bien ban: your_files/iaict-core-v2/bien-ban-ra-soat-2-luot-v2-4.md. Luot 1 (code + tai hien): S1 PATCH hong cho moi ban ghi co alias (truong he thong/FK bi tinh la extension, additionalProperties:false chan oan) — da sua + test hoi quy; S2 cong PHI bi lach do priors chi theo chu ky (xu ly ghi theo doi tuong vo hinh voi thu hoach co chu ky) — da sua bang pham vi hop nhat chu ky HOAC doi tuong; M0 sentinel thieu-du-lieu bi nuot trong all/any — da sua. Luot 2 (thiet ke/nhat quan): grep pack-01 trong backend/app = 0; HARVEST la category canonical cua 5.2 nen khong nam trong denylist (co y); 4 diem mo nho ghi nhan (M1 event_id o nhat ky danh gia, M2 rule khong when, M3 so sanh chuoi-so, M4 cong chay tai thoi diem ghi). Sau sua: memory 54+2, D1 56, PG 52+4; script trung lap dat. Commit repo v2 sau T-055.",
     "blockers": []
+   },
+   {
+    "id": "T-058",
+    "title": "Deploy beta Core v2 sớm theo yêu cầu Owner (trước V2-6) + seed demo",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "GEN-02"
+    ],
+    "evidence": "Owner chọn 'Deploy v2 ngay để tôi kiểm tra' 2026-11-04 13:17. Đã tạo D1 iaict-core-v2 (id 5d10b6fd-6e5e-4aef-9e5e-fde7982b8d0f), điền binding DB vào wrangler.jsonc, deploy Worker iaict-core-v2 version 3ac2f205-dffc-4584-a132-ca61df32f5d8 — https://iaict-core-v2.mihy.workers.dev (health: storage d1, version 2.0.0). Seed qua API bằng khóa platform TẠM rồi XÓA secret ngay (secret list rỗng sau seed): tenant beta-pilot + user admin (Pilot Admin, TENANT_ADMIN); Pack 01 đăng ký PUBLISHED + kích hoạt; chuỗi demo PR-01 (COOPERATIVE) → ST-01 → SB-01 (GROUP) → CY-01; sự kiện OPENING 1000 plants + TREATMENT 2026-03-02 (phi_days 14). PROBE GHI THẬT trên production: HARVEST 2026-03-05 → 400 PHI_VIOLATION (rule phi-gate chặn), HARVEST 2026-03-20 → 201; current_state = 1000 plants, state_version 3; rule_evaluations có BLOCKED + PASSED. Niêm phong toàn vẹn: checkpoint 2026-11-04 (seq 1-11), verify VALID. Test trình duyệt thật 13:24-13:25: đăng nhập OK, dashboard/hồ sơ lõi (4 tab có bản ghi)/sổ sự kiện (state 1000 plants v3)/gói ngành (pack đang kích hoạt + dòng BLOCKED PHI_VIOLATION)/toàn vẹn đều hiển thị đúng số liệu API. Repo v2 commit f77036b (wrangler binding + pyproject/pylock/uv.lock; .gitignore bổ sung cache deploy). Ghi chú trung thực: giữa seed có 1 lần response 503 trong khi bản ghi vẫn được tạo (đã đối chiếu GET, không trùng dữ liệu) và proxy của VM làm vỡ luồng đọc response của script seed 2 lần — trạng thái cuối đối chiếu bằng API là đúng và duy nhất.",
+    "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T05:47:24Z"
+ "updated_at": "2026-11-04T06:25:48Z"
 }
