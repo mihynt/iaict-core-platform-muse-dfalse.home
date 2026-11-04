@@ -1,5 +1,5 @@
 {
- "revision": 77,
+ "revision": 78,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -29,11 +29,9 @@
   ],
   "current": {
    "active_task": null,
-   "last_completed_step": "T-060 (V2-7) TECH_DONE (rev 77): anh xa du lieu pilot v1 -> v2 hoan tat, doi chieu khop, chay song song dang dien ra (v1 khong bi dung vao; v2 pilot-dalat la ban guong). Cho Owner quyet dinh chuyen doi A/B/C.",
-   "next_action": "Owner quyet dinh chuyen doi pilot: A chuyen han sang v2 / B chay song song tiep / C giu v1 lam pilot chinh thuc.",
-   "blockers": [
-    "Quyet dinh chuyen doi pilot thuoc Owner"
-   ]
+   "last_completed_step": "DEC-015 (rev 78): Owner chon chay song song v1/v2 (phuong an B). Chuong trinh Core v2 V2-1..V2-7 da xong toan bo.",
+   "next_action": "Chay song song: v1 la ban chinh, v2 pilot-dalat la ban guong; chay lai script anh xa khi v1 co du lieu moi. Quyet dinh chuyen doi A/C de danh gia sau.",
+   "blockers": []
   },
   "decisions": [
    {
@@ -122,6 +120,12 @@
     "date": "2026-11-04",
     "title": "Direction correction: build sector-neutral Core v2 (option B); v1 frozen as pilot",
     "detail": "Owner ruling 2026-11-04 10:56 +07 after reviewing an external diagnosis document (kept at ~/workspace/user/files/c_T__Ki_m_So_t_AI_Agent_Thi_t_K__Core_Platform_Trung_L_p_Ng_nh.md). Diagnosis VERIFIED on the primary sources before acceptance: (1) SOW R30 Appendix U table U.2 labels ENT_PRODUCTION_ZONE 'Core + Vertical: vung' and ENT_ACTOR_HOUSEHOLD 'Core: chu the' although both carry sector-specific columns; (2) SOW section 5.2 defines the canonical core entities (Subject with 5 types, Site, SpatialUnit, ProductionUnit, OperationalActivity, ProductionCycle, RecognitionDocument, TraceEvent, VerticalPack/FormSchema...) in one prose line each, with no physical schema; (3) the v1 build promoted the 33-table traceability dossier (Appendix U content) into the core schema under DEC-011/DEC-013: zones conflate Site+ProductionUnit+PUC recognition, mother_plants is a core kind, field_events carries fruit_bagging_count, spatial_units carries forestry/vessel/slope columns, the PHI gate is hard-coded. The canonical layer of SOW 5.2 (generic Subject/ProductionUnit/EventLedger/CurrentState/Pack manifests/Rule engine) was never built (own coverage register: GEN-02/03, LFC-04/05/06 NOT_STARTED). DECISION (Owner chose option B over A in-place refactor and C accept-as-is): build Core v2 greenfield in a new project (~/workspace/projects/iaict-core-v2) following the D-04 design gate at docs/DESIGN.md there; v1 is FROZEN for features (critical fixes only) and remains the running pilot until v2 slices V2-6/V2-7 qualify. v1 assets that carry over unchanged: tenancy/RBAC/audit/PII, D-10 integrity, per-device IoT keys, store abstraction + versioned migrations, registry/codegen machinery (re-aimed at packs), the coverage register, PCS discipline. The 33-table content is re-homed as Vertical Pack 01 data/configuration, not deleted. DEC-011/DEC-013 remain in force FOR V1 only; for v2 the dossier is Pack 01 reference material."
+   },
+   {
+    "id": "DEC-015",
+    "date": "2026-11-04",
+    "title": "Chay song song v1/v2 them mot thoi gian (phuong an B cua V2-7)",
+    "detail": "Owner chon phuong an B trong goi quyet dinh chuyen doi cua bao cao V2-7: pilot tiep tuc chay song song — v1 beta-pilot van la ban dang chay chinh thuc, v2 pilot-dalat la ban guong da anh xa. Khi v1 co ban ghi MOI, chay lai tools/migrate_pilot_v1_to_v2.py de bat kip (script bo qua ban ghi da co). Luu y van hanh: ban ghi da anh xa ma bi SUA tren v1 se khong tu cap nhat sang v2 — xu ly tay khi phat hien lech. Quyet dinh chuyen doi (A/C) de lai cho Owner tai danh gia sau."
    }
   ],
   "features": [
@@ -956,9 +960,7 @@
     "status": "TECH_DONE",
     "srs_refs": [],
     "evidence": "Anh xa chay that tren hai beta: cong cu tools/migrate_pilot_v1_to_v2.py (repo v2, commit 1c88ab6) doc API v1 beta-pilot, ghi API v2 vao tenant MOI pilot-dalat (Pack 01 v1.1.0 da kich hoat; khoa platform tam da xoa, secret list rong). Doi chieu so luong khop tuyet doi: producer PR-DALAT 1; zones 2 -> sites 2 (giu ma Z-01, Z-TMP) + production_units 2; vung co PUC 1 -> recognition_documents 1 (PUC-Z-TMP); mother_plants 2 -> subjects 2 (MPL-001, Uuu); crop_plans 1 -> cycles 1 (PLAN-2026); field_events 1 -> ledger events 1 (ACTIVITY/PRUNING); lots 2 -> trace_lots 2 (Loi, Lol01); users 1. Chay lai script: 12/12 'already', khong trung. Bien doi ghi cong khai: RUNNING -> ACTIVE (giu v1_status), ALIVE -> ACTIVE, species -> species_name; trang thai PUC PENDING_POST_INSPECTION giu trong payload vi enum DOC_STATUS cua loi khong co gia tri nay. Khong anh xa co chu dich: audit 89 dong + 3 checkpoint toan ven o lai v1 (chuoi bam khong the chuyen nha); ban ghi cong khai cho lo Loi (thieu chuoi GTIN/me); 2 truong cua cay Uuu khong co cho trong schema Pack 01 -> giu nguyen van trong so anh xa. Test trinh duyet that tren pilot-dalat dat toan bo. Bao cao + goi quyet dinh chuyen doi: ~/workspace/your_files/iaict-core-v2/bao-cao-anh-xa-v2-7.md. Con cho QUYET DINH Owner: A chuyen han / B song song / C giu v1.",
-    "blockers": [
-     "Cho quyet dinh chuyen doi cua Owner (A/B/C trong bao cao V2-7)"
-    ]
+    "blockers": []
    },
    {
     "id": "T-061",
@@ -979,5 +981,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T07:05:49Z"
+ "updated_at": "2026-11-04T07:16:13Z"
 }
