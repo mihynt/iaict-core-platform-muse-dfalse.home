@@ -1,5 +1,5 @@
 {
- "revision": 91,
+ "revision": 92,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-076",
-   "last_completed_step": "T-075 (AG11) TECH_DONE + DEPLOYED (rev 91): control plane + metering + quota; Worker ccd75a39.",
-   "next_action": "AG12 (T-076): CRM — khach hang/don vi mua, bang gia, bao gia/don hang o muc khung (du lieu phap ly/gia chinh thuc cho IAICT).",
+   "active_task": "T-077",
+   "last_completed_step": "T-076 (AG12) TECH_DONE + DEPLOYED (rev 92): CRM Lite noi bo; Worker 946616c6.",
+   "next_action": "AG13 (T-077): payment adapters + mock (production cho nha cung cap — SRS-DEC15).",
    "blockers": []
   },
   "decisions": [
@@ -1097,9 +1097,9 @@
    {
     "id": "T-076",
     "title": "AG12 — CRM price book va revenue (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commits a788a9c + 4f6abc1. CRM Lite theo dung SRS CRM-01: du lieu thuong mai NOI BO cua IAICT, bao ve bang platform key (tenant admin khong thay). 7 bang crm_* (migration v13): accounts/contacts/leads/opportunities/activities/quotes/handoffs. Luong: lead convert idempotent (ACC-/OPP-, chay lai khong nhan ban); bao gia phien ban hoa (v1/v2 song song, tong mot-lan/dinh-ky tinh phia server, chiet khau ap dung nhat quan); giam gia vuot nguong 20% phai duyet kem ly do moi phat hanh duoc (409 APPROVAL_REQUIRED / 400 APPROVAL_REASON_REQUIRED); Won bat buoc co quote da duyet (409 QUOTE_REQUIRED_FOR_WON), Lost bat buoc ly do; convert-won idempotent: gan goi AG11 cho tenant huong loi + checklist handoff onboarding (CRM-08/11); renewals generate (khong trung); dashboard pipeline/forecast cong thuc v1 khai bao cong khai. Gia cong thuc thue la quyet dinh tai chinh IAICT (SRS-DEC13/14) — engine chi cong so, khong tu dat gia. Suite: memory 95+2, D1 97, PG 93+4; CI GREEN. DEPLOYED Worker 946616c6; migration 13 xac nhan tren D1 production (luu y: probe platform-key thuan khong bind store — phai co request tenant thi migration moi chay o isolate moi).",
     "blockers": []
    },
    {
@@ -1153,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T10:26:10Z"
+ "updated_at": "2026-11-04T10:29:59Z"
 }
