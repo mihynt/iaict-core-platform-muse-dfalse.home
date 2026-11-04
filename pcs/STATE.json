@@ -1,5 +1,5 @@
 {
- "revision": 74,
+ "revision": 75,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -29,7 +29,7 @@
   ],
   "current": {
    "active_task": "T-060",
-   "last_completed_step": "T-056 + T-059 TECH_DONE (rev 74): TraceEngine + profile TT 02/2024 va Pack 02 thuy san qua cong trung lap GEN-12 — toan bo lat xay dung cua Core v2 da xong va dang chay tren beta v2 (Worker 190641d8); so phu 39 C / 118 P / 232 N (GEN-12 -> C, TRC-07 -> P).",
+   "last_completed_step": "T-061 TECH_DONE (rev 75): ra soat 2 luot V2-5/V2-6 — 2 loi trung binh (F1 nhan hieu mac dinh GTIN, F2 don vi lo thu hoach) da sua, kiem chung live; diem mo M1-M4 ghi nhan.",
    "next_action": "T-060 V2-7 (anh xa du lieu beta-pilot v1 -> v2 + chay song song + quyet dinh chuyen doi) khi Owner ra lenh; hoac ra soat 2 luot V2-5/V2-6 neu Owner yeu cau nhu cac lat truoc.",
    "blockers": []
   },
@@ -957,9 +957,17 @@
     "blockers": [
      "Cho lenh Owner sau khi kiem tra beta v2."
     ]
+   },
+   {
+    "id": "T-061",
+    "title": "Ra soat 2 luot V2-5 + V2-6 (TraceEngine + Pack 02)",
+    "status": "TECH_DONE",
+    "srs_refs": [],
+    "evidence": "Bien ban: ~/workspace/your_files/iaict-core-v2/bien-ban-ra-soat-2-luot-v2-5-v2-6.md. Luot 1 xac nhan 2 loi trung binh, da sua + test hoi quy (tests/test_trace_review.py): F1 truong brand_trademark_serial cua ban ghi cong khai bi mac dinh bang GTIN (sai nghia truong so 8 TT 02/2024) — nay chi lay tu du lieu phat hanh; ban ghi demo tren beta da don o tang du lieu. F2 lo thu hoach rut tu su kien khong bi kiem tra don vi (cong phan bo cong don khac don vi) — nay bat UNIT_MISMATCH theo quantity_unit cua su kien. Probe dat ngay: phat hanh trung ma 409, khong co route PATCH/DELETE cho ban ghi chuoi. Luot 2: GEN-12 kiem chung bang git (commit a5cc3f0 dung 2 file, 0 dong backend/app), Core khong chua tham chieu pack nao, DESIGN SS3.4/SS4/SS8 dat, hai manifest qua check_manifest, tab giao dien flex-wrap an toan mobile. Diem mo ghi nhan M1-M4 (ma cong khai phan giai toan cuc; check_manifest chua kiem hinh dang trace_profile; danh dau dong lanh chua co o nhap giao dien; lech kieu so-luong dang chuoi giua cac store). Suite sau sua: memory 65+2, D1 67, PG 63+4. Redeploy beta v2 Worker 16aaaf42; probe live: F2 -> 400 UNIT_MISMATCH, phat hanh Pack 02 tren beta-aqua brand=null + ma ghep dung.",
+    "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T06:44:54Z"
+ "updated_at": "2026-11-04T06:52:19Z"
 }
