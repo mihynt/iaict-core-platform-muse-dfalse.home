@@ -1,5 +1,5 @@
 {
- "revision": 96,
+ "revision": 97,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-081",
-   "last_completed_step": "T-080 (AG16) TECH_DONE + DEPLOYED (rev 96): 82 bao cao + ReportEngine + webhook/dispatcher; Worker d2bf4ca1.",
-   "next_action": "AG17 (T-081): van hanh & nghiem thu — tai/khoi phuc, runbook, cong phat hanh, chay du CF-T01..T08 cho G5.",
+   "active_task": null,
+   "last_completed_step": "T-081 (AG17) TECH_DONE + DEPLOYED (rev 97): bo CF day du + backup/restore + runbook/cong G5; Worker fdb8c892. CHUONG TRINH AG (SRS R3) KHEP LAI phan ky thuat.",
+   "next_action": "Cho Owner danh gia tong the beta v2 va quyet dinh huong tiep (chuyen han sang v2 / tiep tuc song song theo DEC-015; cac SRS-DEC ben ngoai va AG09 khi Owner mo lai).",
    "blockers": []
   },
   "decisions": [
@@ -348,8 +348,9 @@
    {
     "id": "F-030",
     "name": "Chuong trinh hoan thien Core v2 theo SRS R3 (AG01-AG17)",
-    "status": "IN_PROGRESS",
-    "notes": "Baseline: SRS R3 159 trang (DEC-016). Ban do khoang thieu tai ~/workspace/your_files/iaict-core-v2/ban-do-khoang-thieu-srs-r3-ag01-ag17.md. Thu tu theo phu thuoc SRS 13.2; AG09 cho phan quyet Owner."
+    "status": "TECH_DONE",
+    "notes": "Baseline: SRS R3 159 trang (DEC-016). Ban do khoang thieu tai ~/workspace/your_files/iaict-core-v2/ban-do-khoang-thieu-srs-r3-ag01-ag17.md. Thu tu theo phu thuoc SRS 13.2; AG09 cho phan quyet Owner.",
+    "evidence": " [Rev 97] Chuong trinh AG01-AG17 hoan tat phan ky thuat: 16/17 goi TECH_DONE va da deploy len beta v2 (AG01-AG08, AG10-AG17); AG09 Android de sau theo chi thi Owner (DEC-017). Cac muc NOT_RUN ben ngoai (pentest, load quy mo, du lieu danh muc DEC07, provider DEC15/17...) ghi trong docs/RELEASE_GATE.md repo v2."
    }
   ],
   "flows": [],
@@ -1137,9 +1138,9 @@
    {
     "id": "T-081",
     "title": "AG17 — Van hanh tai va nghiem thu (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commit c0cea37. (1) Bo CF-T01..T08 day du (test_cf_full.py, 8 bai) chay xanh cung bo smoke AG01: tenant trong khong truong nganh; Plant (alias cay dau dong + schema pack); Aquaculture (2 ao, mortality, state 4900); Livestock CF-T04 mo rong (retry idempotent cung id, correction bang event moi + rebuild 0 mismatch, state 150); da pack tren mot producer + hai tenant hai phien ban Pack 01 khac nhau khong lan du lieu; them truong extension khong sua Core (upgrade 1.0.0→1.1.0 chi cau hinh); pin cach ly lien tenant (bao cao/outbox/pham vi grant); CF-T08 tinh (neutrality script + 3 manifest tren cung 1 build). (2) tools/backup_restore.py: xuat/khoi phuc tenant qua API (spine + events giu idempotency key + chuoi trace remap event id + settings + manifest pack) — test round-trip tren server that: state 900 dung, ban ghi cong khai nguyen ma, settings nguyen. (3) tools/load_smoke.py: smoke cuc bo 60/60 request OK (p50 8.4ms, store trong bo nho — chi la smoke, khong phai so lieu tai production). (4) docs/RUNBOOK.md + docs/RELEASE_GATE.md: quy trinh deploy/rollback/su co + cong G5 liet ke NOT_RUN trung thuc: pentest ngoai chua dat, load test quy mo production chua chay, AG09 de sau theo Owner, SRS-DEC07/08/13-17 cho IAICT. PHAT HIEN LOI THAT nho bai restore: GET /processing-batches/{code}/inputs tra 500 tu ban V2-5 (route dang lambda dong bo tra coroutine) — da sua, probe production: 200 kem du lieu that. Suite: memory 110+2, D1 112, PG 108+4; CI GREEN. DEPLOYED Worker fdb8c892 (chi chua ban sua inputs + tai lieu/tests/tools, khong migration moi).",
     "blockers": []
    },
    {
@@ -1153,5 +1154,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T12:09:37Z"
+ "updated_at": "2026-11-04T12:26:46Z"
 }
