@@ -1,5 +1,5 @@
 {
- "revision": 69,
+ "revision": 70,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-054",
-   "last_completed_step": "T-053 TECH_DONE (V2-2): spine loi canonical 9 kind chay xanh 3 che do store + UI generic + guardrail dat",
-   "next_action": "Xay V2-3 Event Ledger + Current State (T-054) theo DESIGN.md muc 3.3.",
+   "active_task": "T-055",
+   "last_completed_step": "T-054 TECH_DONE (V2-3): Event Ledger + Current State xong, so phu LFC-05/06 len PARTIAL",
+   "next_action": "Xay V2-4 Pack Engine + Rule Engine + Pack 01 manifest (T-055); cong PHI phai chay bang rule khai bao, khong code cung.",
    "blockers": []
   },
   "decisions": [
@@ -873,7 +873,7 @@
    {
     "id": "T-054",
     "title": "V2-3 Event Ledger + Current State: ghi su kien bat bien, idempotency, correction bang su kien dao, projection + rebuild, cong khong-am",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [
      "LFC-04",
      "LFC-05",
@@ -883,11 +883,26 @@
      "LFC-12",
      "GEN-04"
     ],
-    "evidence": "Chua bat dau; theo DESIGN.md muc 3.3 + muc 9 lat V2-3. Ngu canh Core (AGENTS.md muc 4): chi doc SOW 4.13/LFC + 5.2 + DESIGN.",
+    "evidence": "V2-3 xong (repo v2 HEAD sau commit nay): event_ledger append-only (khong co route PATCH/DELETE — test chung minh 404/405), idempotency_key unique theo tenant (gui lai tra ban goc, state khong nhan doi), occurred_at + recorded_at tach biet, corrects_event_id (sua bang su kien dao — test ADJUSTMENT -50 dua state ve dung), quantity_delta dau am/duong + quantity_unit; cong tai API: so luong am -> 400 NEGATIVE_QUANTITY (khong ghi gi), lech don vi -> 400 UNIT_MISMATCH; current_state projection theo (subject, cycle) + state_version + last_event_id; POST /state/rebuild (TENANT_ADMIN) replay toan bo ledger — test chung minh 0 lech va state giong het truoc/sau; ACTIVITY/OBSERVATION la vertical_event_type/extension, khong doi so luong nhung van tang state_version. Store: methods rieng cho InMemory + SqlStoreCore (PG+D1 dung chung), D1 migration v3, ledger [1,2,3]. UI: man So su kien (bang trang thai + nut dung lai + form ghi su kien day du) — jsdom sim19 dat (POST dung dang so, state hien 100 head, rebuild hien thong bao, 0 loi JS). Suite: memory 41+2, D1 43, PG 39+4; script trung lap dat. So phu cap nhat: LFC-05 N->P, LFC-06 N->P, LFC-04 ghi bang chung v2; tong 38/115/236.",
+    "blockers": []
+   },
+   {
+    "id": "T-055",
+    "title": "V2-4 Pack Engine + Rule Engine + Pack 01 manifest: nap manifest, extension validation bang JSON Schema, rule khai bao (kieu JSON Logic/AST) danh gia tren ledger; cong PHI cua v1 tai hien bang rule cua Pack 01 (golden test vectors)",
+    "status": "PLANNED",
+    "srs_refs": [
+     "GEN-02",
+     "GEN-03",
+     "GEN-12",
+     "CMP-05",
+     "FLD-16",
+     "FLD-17"
+    ],
+    "evidence": "Chua bat dau; theo DESIGN.md muc 4-5 + muc 9 lat V2-4. Lat nay duoc doc tai lieu nganh cua Pack 01 (AGENTS.md muc 4) nhung CAM ghi vao core/engines ngoai engine generic.",
     "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T04:33:15Z"
+ "updated_at": "2026-11-04T04:43:11Z"
 }

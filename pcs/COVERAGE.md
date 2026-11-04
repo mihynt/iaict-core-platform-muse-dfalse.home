@@ -16,8 +16,8 @@ Lập tại T-049 (2026-11-04), từ rà soát T-048. Bản máy đọc: `pcs/co
 
 ## Tổng hợp
 
-- Toàn bộ 389 mã: **COVERED 38 · PARTIAL 113 · NOT_STARTED 238**.
-- Riêng 302 FR: COVERED 29 · PARTIAL 79 · NOT_STARTED 194 — phần đã phủ tập trung ở lõi sản xuất/truy xuất (ZON/MPL/FLD/LOT/TRC + Phụ lục U); phần chưa phủ lớn nhất là lớp thương mại/vận hành (COM/CRM/PAY/MOP/AIX) thuộc mốc M5–M7 và nền tảng lõi còn thiếu (BLC = D-10, entitlement/metering trong COM/ADM).
+- Toàn bộ 389 mã: **COVERED 38 · PARTIAL 115 · NOT_STARTED 236**.
+- Riêng 302 FR: COVERED 29 · PARTIAL 81 · NOT_STARTED 192 — phần đã phủ tập trung ở lõi sản xuất/truy xuất (ZON/MPL/FLD/LOT/TRC + Phụ lục U); phần chưa phủ lớn nhất là lớp thương mại/vận hành (COM/CRM/PAY/MOP/AIX) thuộc mốc M5–M7 và nền tảng lõi còn thiếu (BLC = D-10, entitlement/metering trong COM/ADM).
 
 | Nhóm | Tên | Tổng | COVERED | PARTIAL | NOT_STARTED |
 |---|---|---|---|---|---|
@@ -32,7 +32,7 @@ Lập tại T-049 (2026-11-04), từ rà soát T-048. Bản máy đọc: `pcs/co
 | IOT | IoT | 15 | 0 | 5 | 10 |
 | MOB | Ứng dụng di động | 13 | 1 | 1 | 11 |
 | AIX | AI Gateway | 10 | 0 | 0 | 10 |
-| LFC | Vòng đời & Event Ledger | 13 | 1 | 8 | 4 |
+| LFC | Vòng đời & Event Ledger | 13 | 1 | 10 | 2 |
 | BLC | Toàn vẹn dữ liệu / blockchain | 9 | 3 | 2 | 4 |
 | HLT | Sức khỏe & dịch tễ | 12 | 0 | 5 | 7 |
 | PRO | Chủ thể & địa giới | 10 | 2 | 5 | 3 |
@@ -265,9 +265,9 @@ Lập tại T-049 (2026-11-04), từ rà soát T-048. Bản máy đọc: `pcs/co
 | LFC-01 | Subject hỗ trợ Individual, Group, Cohort, Population và AreaBasedAsset; type mở rộng qua Vertic… | PARTIAL | T-042 · test_gd3_monitoring | Đơn vị chăn nuôi theo cá thể/đàn (Bảng 14) + đơn vị không gian; mô hình Subject hợp nhất chưa có. |
 | LFC-02 | Một Subject/Cohort gắn Producer, Site/ProductionUnit, loài/giống/dòng và trạng thái vòng đời. | PARTIAL | T-042 · test_gd3_monitoring | Đơn vị chăn nuôi gắn cơ sở + trạng thái vòng đời. |
 | LFC-03 | ProductionCycle quản lý vụ/lứa/chu kỳ sản xuất-sinh trưởng-nuôi-khai thác, ngày bắt đầu-kết thú… | COVERED | T-042 · test_gd3_monitoring | Chu kỳ sản xuất = mùa vụ (Bảng 15) dùng chung đa ngành. |
-| LFC-04 | Event Ledger ghi event_id, event_type, occurred_at, recorded_at, actor, subject/cycle, quantity… | PARTIAL | T-042 · test_gd3_monitoring | Nhật ký + audit là sổ sự kiện dạng đơn giản; event lượng thay đổi (quantity delta) chưa có. |
-| LFC-05 | Các event biến động số lượng tối thiểu: opening/import/birth/addition, mortality, culling, tran… | NOT_STARTED | T-042 · test_gd3_monitoring | Đơn vị chăn nuôi có; Event Ledger/Current State projection chưa có. |
-| LFC-06 | Current State projection được tính/đối soát từ Event Ledger; có snapshot/version và rebuild. | NOT_STARTED | T-042 · test_gd3_monitoring | Đơn vị chăn nuôi có; Event Ledger/Current State projection chưa có. |
+| LFC-04 | Event Ledger ghi event_id, event_type, occurred_at, recorded_at, actor, subject/cycle, quantity… | PARTIAL | T-042 · test_gd3_monitoring | Core v2 (T-054): event_ledger append-only co idempotency_key, occurred_at + recorded_at, corrects_event_id; v1 dung nhat ky/audit don gian. Cho cat chuyen V2-7. |
+| LFC-05 | Các event biến động số lượng tối thiểu: opening/import/birth/addition, mortality, culling, tran… | PARTIAL | T-042 · test_gd3_monitoring | Core v2 (T-054): bo category canonical OPENING/ADDITION/MORTALITY/CULLING/TRANSFER_IN/OUT/SALE/HARVEST/ADJUSTMENT; cac bien the nganh (sinh san/no...) la vertical_event_type cua pack. |
+| LFC-06 | Current State projection được tính/đối soát từ Event Ledger; có snapshot/version và rebuild. | PARTIAL | T-042 · test_gd3_monitoring | Core v2 (T-054): current_state projection + POST /state/rebuild doi soat tu ledger, test 3 che do; cho cat chuyen V2-7. |
 | LFC-07 | Không cho Current State âm hoặc vượt ràng buộc sinh học/nghiệp vụ được cấu hình; ngoại lệ phải … | PARTIAL | T-042 · test_gd3_monitoring | Các cổng khối lượng/PHI chặn trạng thái âm/vượt ở điểm nghiệp vụ chính. |
 | LFC-08 | Mortality event lưu số lượng, nguyên nhân biết/nghi ngờ, triệu chứng/health case liên quan, các… | NOT_STARTED | T-042 · test_gd3_monitoring | Đơn vị chăn nuôi có; Event Ledger/Current State projection chưa có. |
 | LFC-09 | Hỗ trợ membership Group↔Individual khi ngành cần quản lý từng cá thể trong đàn/nhóm. Chuyển mem… | NOT_STARTED | T-042 · test_gd3_monitoring | Đơn vị chăn nuôi có; Event Ledger/Current State projection chưa có. |

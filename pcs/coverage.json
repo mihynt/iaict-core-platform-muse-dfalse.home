@@ -1610,27 +1610,27 @@
    "tasks": "T-042",
    "api": "/livestock-units, /livestock-decl-items",
    "tests": "test_gd3_monitoring",
-   "note": "Nhật ký + audit là sổ sự kiện dạng đơn giản; event lượng thay đổi (quantity delta) chưa có."
+   "note": "Core v2 (T-054): event_ledger append-only co idempotency_key, occurred_at + recorded_at, corrects_event_id; v1 dung nhat ky/audit don gian. Cho cat chuyen V2-7."
   },
   {
    "id": "LFC-05",
    "group": "LFC",
    "name": "Các event biến động số lượng tối thiểu: opening/import/birth/addition, mortality, culling, transfer in/out, sale, harvest và adjustment có phê duyệt.",
-   "status": "N",
+   "status": "P",
    "tasks": "T-042",
    "api": "/livestock-units, /livestock-decl-items",
    "tests": "test_gd3_monitoring",
-   "note": "Đơn vị chăn nuôi có; Event Ledger/Current State projection chưa có."
+   "note": "Core v2 (T-054): bo category canonical OPENING/ADDITION/MORTALITY/CULLING/TRANSFER_IN/OUT/SALE/HARVEST/ADJUSTMENT; cac bien the nganh (sinh san/no...) la vertical_event_type cua pack."
   },
   {
    "id": "LFC-06",
    "group": "LFC",
    "name": "Current State projection được tính/đối soát từ Event Ledger; có snapshot/version và rebuild.",
-   "status": "N",
+   "status": "P",
    "tasks": "T-042",
    "api": "/livestock-units, /livestock-decl-items",
    "tests": "test_gd3_monitoring",
-   "note": "Đơn vị chăn nuôi có; Event Ledger/Current State projection chưa có."
+   "note": "Core v2 (T-054): current_state projection + POST /state/rebuild doi soat tu ledger, test 3 che do; cho cat chuyen V2-7."
   },
   {
    "id": "LFC-07",
