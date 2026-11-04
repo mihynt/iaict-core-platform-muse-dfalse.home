@@ -1,5 +1,5 @@
 {
- "revision": 66,
+ "revision": 67,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-052",
-   "last_completed_step": "T-051 TECH_DONE (DEC-014): thiet ke loi chuan Core v2 + scaffold du an iaict-core-v2; v1 dong bang lam pilot",
-   "next_action": "Xay V2-1 foundation trong du an iaict-core-v2 theo DESIGN.md (T-052). Owner tao repo GitHub cho v2 khi can push (nhu v1); deploy beta v2 o lat V2-6.",
+   "active_task": "T-053",
+   "last_completed_step": "T-052 TECH_DONE (V2-1): nen tang Core v2 chay xanh o 3 che do store; guardrail trung lap da bat va chan duoc 2 sot cua v1 ngay lat dau",
+   "next_action": "Xay V2-2 spine loi (T-053) trong du an iaict-core-v2 theo DESIGN.md muc 3.1-3.2.",
    "blockers": []
   },
   "decisions": [
@@ -844,7 +844,7 @@
    {
     "id": "T-052",
     "title": "V2-1 foundation: tenancy/users/audit/integrity port + store da che do + migration + UI shell (du an iaict-core-v2)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [
      "GEN-01",
      "ADM-01",
@@ -852,11 +852,26 @@
      "SEC-03",
      "NFR-20"
     ],
-    "evidence": "Chua bat dau; lam theo DESIGN.md muc 9 lat V2-1. Ngu canh xay Core: chi dung Muc 3/4.0/4.13/5.2 + DESIGN.md (guardrail muc 8).",
+    "evidence": "V2-1 foundation xong trong du an iaict-core-v2 (git local 324dc0e): backend/app/core gom auditctx/pii/integrity/tenancy/deps/platform/identity (doi ten linked_actor_code->linked_producer_code, jurisdiction_admin_code->admin_unit_code; _check_linked_producer tam no-op cho toi V2-2) + store da che do (InMemory + sqlcore/PgStore + D1Store lean viet lai: fresh-install DDL + migration ledger [(1,[])], bo khoi legacy cua v1, bo WorkerPgStore) + records_spec rong. Schema PG/D1 chi 5 bang nen tang. API /api/v2: health, context, dashboard nen tang, workspaces, platform tenants (+status), users (+PATCH), audit, 4 endpoint integrity nguyen trang tu T-050. UI shell moi (~29KB app.js): dang nhap the tai khoan, dashboard, users, bao cao toan ven, tenants, cai dat, SWR cache; styles.css cua v1 + khoi bo sung v2. Suite: memory 21+2 skipped, D1 23 dat (chay tron 1 process sach), PG psycopg 19+4 skipped. GUARDRAIL TRUNG LAP DA LAM VIEC NGAY LAT DAU: script verify-core-neutrality bat duoc CODED_KINDS/LINK_UNIQUE cua v1 con sot trong store.py va danh sach TRUNCATE bang v1 trong pgstore.py — da xoa sach, script dat. jsdom sim17 dat toan luong (dang nhap -> dashboard -> users -> toan ven -> proof, 0 loi JS). Chua deploy (theo DESIGN: beta v2 o lat V2-6; can Owner tao D1 iaict-core-v2 + repo GitHub v2 khi day code len).",
+    "blockers": []
+   },
+   {
+    "id": "T-053",
+    "title": "V2-2 spine loi: admin_units, producers, sites, spatial_units, production_units, subjects, taxonomy, cycles, recognition_documents (CRUD + form loi)",
+    "status": "PLANNED",
+    "srs_refs": [
+     "GEN-01",
+     "GEN-04",
+     "PRO-01",
+     "PRO-02",
+     "ZON-01",
+     "MPL-01"
+    ],
+    "evidence": "Chua bat dau; theo DESIGN.md muc 3.1-3.2 + muc 9 lat V2-2. Core schema canonical viet tay; extension payload validate bang JSON Schema cua pack tu V2-4 (V2-2 chap nhan payload co khai bao truong trong registry loi).",
     "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T03:58:29Z"
+ "updated_at": "2026-11-04T04:09:25Z"
 }
