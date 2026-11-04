@@ -49,6 +49,52 @@ class RecordIn(BaseModel):
     code: str | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]{1,63}$")
     name: str | None = None
     status: str | None = None
+    # GD3 Bang 14/16/19-22: livestock + monitoring logs
+    facility_actor_code: str | None = None
+    management_granularity: str | None = None
+    species_code: str | None = None
+    breed_variety_name: str | None = None
+    birth_or_import_date: str | None = None
+    initial_head_count: int | None = None
+    current_head_count: int | None = None
+    lifecycle_status: str | None = None
+    registration_date: str | None = None
+    expected_harvest_start: str | None = None
+    supervising_agency_name: str | None = None
+    supervision_date: str | None = None
+    pest_control_compliant: bool | None = None
+    diary_records_compliant: bool | None = None
+    supervision_outcome: str | None = None
+    report_minutes_no: str | None = None
+    declarant_actor_code: str | None = None
+    monitoring_type: str | None = None
+    inspection_timestamp: str | None = None
+    pest_species_detected: str | None = None
+    pest_density_index: str | None = None
+    quarantine_cert_no: str | None = None
+    compliance_conclusion: str | None = None
+    monitoring_id: int | None = None
+    measured_timestamp: str | None = None
+    water_salinity_permille: float | None = None
+    ph_value: float | None = None
+    dissolved_oxygen_mg_l: float | None = None
+    water_temp_celsius: float | None = None
+    nh3_unionized_mg_l: float | None = None
+    no2_nitrite_mg_l: float | None = None
+    alkalinity_mg_l: float | None = None
+    is_within_safe_range: bool | None = None
+    sampling_standard_code: str | None = None
+    mrl_rule_code: str | None = None
+    measured_value: float | None = None
+    measurement_unit: str | None = None
+    applied_mrl_limit: float | None = None
+    is_mrl_exceeded: bool | None = None
+    testing_lab_name: str | None = None
+    lab_test_report_no: str | None = None
+    species_category_code: str | None = None
+    declared_quantity: float | None = None
+    quantity_unit: str | None = None
+    farming_purpose: str | None = None
     # GD3 Bang 8-10: market approvals, foreign warnings, certifications
     foreign_approval_code: str | None = None
     submitted_to_foreign_date: str | None = None
@@ -585,6 +631,13 @@ def _snap(record: dict | None) -> str | None:
                        default=str)[:8000]
 
 
+def _prepare_residue_detail(fields: dict) -> None:
+    """Bang 21: is_mrl_exceeded is a generated flag (measured > limit)."""
+    mv, lim = fields.get("measured_value"), fields.get("applied_mrl_limit")
+    if mv is not None and lim is not None:
+        fields["is_mrl_exceeded"] = mv > lim
+
+
 async def _prepare_certification(tenant: str, fields: dict) -> None:
     """Bang 10: the certified target must match the declared entity type."""
     etype = fields.get("certified_entity_type")
@@ -617,6 +670,8 @@ async def _create(tenant: str, actor: User, kind: str, prefix: str, body: Record
         await _prepare_lot(tenant, fields)
     if kind == "entity_certifications":
         await _prepare_certification(tenant, fields)
+    if kind == "residue_test_details":
+        _prepare_residue_detail(fields)
     elif kind == "packing_inputs":
         await _prepare_packing_input(tenant, fields)
     elif kind == "traceability_records":
@@ -1033,6 +1088,76 @@ async def create_entity_certification(body: RecordIn, tenant: str = Depends(requ
 @router.get("/entity-certifications")
 async def list_entity_certifications(tenant: str = Depends(require_tenant)) -> dict:
     return await _list(tenant, "entity_certifications")
+
+
+# ---- GD3 monitoring group (Bang 14, 16, 19-22) ------------------------------
+
+@router.post("/livestock-units", status_code=status.HTTP_201_CREATED)
+async def create_livestock_unit(body: RecordIn, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "livestock_units", "LVU", body)
+
+
+@router.get("/livestock-units")
+async def list_livestock_units(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "livestock_units")
+
+@router.post("/pre-harvest-supervisions", status_code=status.HTTP_201_CREATED)
+async def create_pre_harvest_supervision(body: RecordIn, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "pre_harvest_supervisions", "PHS", body)
+
+
+@router.get("/pre-harvest-supervisions")
+async def list_pre_harvest_supervisions(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "pre_harvest_supervisions")
+
+@router.post("/monitoring-declarations", status_code=status.HTTP_201_CREATED)
+async def create_monitoring_declaration(body: RecordIn, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "monitoring_declarations", "MON", body)
+
+
+@router.get("/monitoring-declarations")
+async def list_monitoring_declarations(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "monitoring_declarations")
+
+@router.post("/water-quality-tests", status_code=status.HTTP_201_CREATED)
+async def create_water_quality_test(body: RecordIn, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "water_quality_tests", "WQT", body)
+
+
+@router.get("/water-quality-tests")
+async def list_water_quality_tests(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "water_quality_tests")
+
+@router.post("/residue-test-details", status_code=status.HTTP_201_CREATED)
+async def create_residue_test_detail(body: RecordIn, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "residue_test_details", "RTD", body)
+
+
+@router.get("/residue-test-details")
+async def list_residue_test_details(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "residue_test_details")
+
+@router.post("/livestock-decl-items", status_code=status.HTTP_201_CREATED)
+async def create_livestock_decl_item(body: RecordIn, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "livestock_decl_items", "LDI", body)
+
+
+@router.get("/livestock-decl-items")
+async def list_livestock_decl_items(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "livestock_decl_items")
+
+
+@router.patch("/livestock-units/{rec_id}")
+async def update_livestock_unit(rec_id: int, body: RecordIn,
+                                tenant: str = Depends(require_tenant),
+                                actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update_by_id(tenant, actor, "livestock_units", "LVU", rec_id, body)
 
 
 # ---- Updates (T-023) -------------------------------------------------------

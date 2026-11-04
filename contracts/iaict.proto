@@ -355,3 +355,74 @@ message EntityCertification {
   string cert_status = 9;  // Trạng thái chứng nhận
   string cert_scan_url = 10;  // Bản sao điện tử (URL)
 }
+
+message LivestockUnit {
+  string code = 1;  // Mã thẻ tai / mã đàn
+  string facility_actor_code = 2;  // Cơ sở chăn nuôi
+  string management_granularity = 3;  // Cấp độ định danh
+  string species_code = 4;  // Mã loài vật nuôi
+  string breed_variety_name = 5;  // Tên giống / nguồn gốc giống
+  string birth_or_import_date = 6;  // Ngày sinh / nhập đàn
+  int64 initial_head_count = 7;  // Số lượng ban đầu (con)
+  int64 current_head_count = 8;  // Số lượng hiện tại (con)
+  string lifecycle_status = 9;  // Trạng thái vòng đời
+}
+
+message PreHarvestSupervision {
+  string plan_code = 1;  // Vụ mùa / kế hoạch
+  string zone_code = 2;  // Vùng được giám sát
+  string registration_date = 3;  // Ngày đăng ký giám sát
+  string expected_harvest_start = 4;  // Ngày dự kiến bắt đầu thu hoạch
+  string supervising_agency_name = 5;  // Cơ quan giám sát
+  string supervision_date = 6;  // Ngày giám sát thực địa
+  bool pest_control_compliant = 7;  // Quản lý sinh vật gây hại đạt (IPM)
+  bool diary_records_compliant = 8;  // Nhật ký & chứng từ đạt
+  string supervision_outcome = 9;  // Kết quả giám sát
+  string report_minutes_no = 10;  // Số biên bản giám sát
+}
+
+message MonitoringDeclaration {
+  string zone_code = 1;  // Vùng
+  string plan_code = 2;  // Vụ mùa liên quan
+  string declarant_actor_code = 3;  // Đơn vị kê khai / được kiểm tra
+  string monitoring_type = 4;  // Loại hình giám sát
+  string inspection_timestamp = 5;  // Thời điểm giám sát / kê khai
+  string pest_species_detected = 6;  // Sinh vật gây hại phát hiện
+  string pest_density_index = 7;  // Mật độ / tỷ lệ hại
+  string quarantine_cert_no = 8;  // Số giấy chứng nhận kiểm dịch
+  string compliance_conclusion = 9;  // Kết luận kiểm tra
+}
+
+message WaterQualityTest {
+  int64 monitoring_id = 1;  // Biên bản giám sát (ID)
+  string parcel_code = 2;  // Thửa / ao được đo
+  string measured_timestamp = 3;  // Thời điểm lấy mẫu đo
+  double water_salinity_permille = 4;  // Độ mặn (‰)
+  double ph_value = 5;  // Độ pH
+  double dissolved_oxygen_mg_l = 6;  // Oxy hòa tan DO (mg/l)
+  double water_temp_celsius = 7;  // Nhiệt độ nước (°C)
+  double nh3_unionized_mg_l = 8;  // NH3 tự do (mg/l)
+  double no2_nitrite_mg_l = 9;  // NO2 nitrit (mg/l)
+  double alkalinity_mg_l = 10;  // Độ kiềm (mg CaCO3/l)
+  bool is_within_safe_range = 11;  // Đạt ngưỡng an toàn
+}
+
+message ResidueTestDetail {
+  int64 monitoring_id = 1;  // Biên bản giám sát (ID)
+  string sampling_standard_code = 2;  // Phương pháp lấy mẫu
+  string mrl_rule_code = 3;  // Quy tắc MRL áp dụng
+  double measured_value = 4;  // Giá trị đo được
+  string measurement_unit = 5;  // Đơn vị đo
+  double applied_mrl_limit = 6;  // Ngưỡng MRL áp dụng
+  bool is_mrl_exceeded = 7;  // Vượt ngưỡng MRL (tự động)
+  string testing_lab_name = 8;  // Phòng thử nghiệm
+  string lab_test_report_no = 9;  // Số phiếu kết quả thử nghiệm
+}
+
+message LivestockDeclItem {
+  int64 monitoring_id = 1;  // Bản kê khai (ID)
+  string species_category_code = 2;  // Nhóm vật nuôi
+  double declared_quantity = 3;  // Số lượng kê khai
+  string quantity_unit = 4;  // Đơn vị tính
+  string farming_purpose = 5;  // Mục đích nuôi
+}

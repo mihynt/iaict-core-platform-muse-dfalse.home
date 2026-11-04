@@ -651,3 +651,123 @@ CREATE TABLE IF NOT EXISTS entity_certifications (
     FOREIGN KEY (tenant_id, facility_actor_id) REFERENCES actors (tenant_id, id),
     FOREIGN KEY (tenant_id, scheme_id) REFERENCES ref_certification_schemes (tenant_id, id)
 );
+
+CREATE TABLE IF NOT EXISTS livestock_units (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    code            TEXT NOT NULL,
+    facility_actor_id INTEGER,
+    facility_actor_code TEXT,
+    management_granularity TEXT,
+    species_code    TEXT,
+    breed_variety_name TEXT,
+    birth_or_import_date TEXT,
+    initial_head_count INTEGER,
+    current_head_count INTEGER,
+    lifecycle_status TEXT,
+    data            TEXT NOT NULL DEFAULT '{}',
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT NOT NULL,
+    UNIQUE (tenant_id, code),
+    UNIQUE (tenant_id, id),
+    FOREIGN KEY (tenant_id, facility_actor_id) REFERENCES actors (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS pre_harvest_supervisions (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    plan_id         INTEGER,
+    plan_code       TEXT,
+    zone_id         INTEGER,
+    zone_code       TEXT,
+    registration_date TEXT,
+    expected_harvest_start TEXT,
+    supervising_agency_name TEXT,
+    supervision_date TEXT,
+    supervision_outcome TEXT,
+    report_minutes_no TEXT,
+    data            TEXT NOT NULL DEFAULT '{}',
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT NOT NULL,
+    UNIQUE (tenant_id, id),
+    FOREIGN KEY (tenant_id, plan_id) REFERENCES crop_plans (tenant_id, id),
+    FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS monitoring_declarations (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    zone_id         INTEGER,
+    zone_code       TEXT,
+    plan_id         INTEGER,
+    plan_code       TEXT,
+    declarant_actor_id INTEGER,
+    declarant_actor_code TEXT,
+    monitoring_type TEXT,
+    inspection_timestamp TEXT,
+    pest_species_detected TEXT,
+    pest_density_index TEXT,
+    quarantine_cert_no TEXT,
+    compliance_conclusion TEXT,
+    data            TEXT NOT NULL DEFAULT '{}',
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT NOT NULL,
+    UNIQUE (tenant_id, id),
+    FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id),
+    FOREIGN KEY (tenant_id, plan_id) REFERENCES crop_plans (tenant_id, id),
+    FOREIGN KEY (tenant_id, declarant_actor_id) REFERENCES actors (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS water_quality_tests (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    monitoring_id   INTEGER,
+    parcel_id       INTEGER,
+    parcel_code     TEXT,
+    measured_timestamp TEXT,
+    water_salinity_permille REAL,
+    ph_value        REAL,
+    dissolved_oxygen_mg_l REAL,
+    water_temp_celsius REAL,
+    nh3_unionized_mg_l REAL,
+    no2_nitrite_mg_l REAL,
+    alkalinity_mg_l REAL,
+    data            TEXT NOT NULL DEFAULT '{}',
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT NOT NULL,
+    UNIQUE (tenant_id, id),
+    FOREIGN KEY (tenant_id, parcel_id) REFERENCES spatial_units (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS residue_test_details (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    monitoring_id   INTEGER,
+    sampling_standard_code TEXT,
+    mrl_rule_id     INTEGER,
+    mrl_rule_code   TEXT,
+    measured_value  REAL,
+    measurement_unit TEXT,
+    applied_mrl_limit REAL,
+    testing_lab_name TEXT,
+    lab_test_report_no TEXT,
+    data            TEXT NOT NULL DEFAULT '{}',
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT NOT NULL,
+    UNIQUE (tenant_id, id),
+    FOREIGN KEY (tenant_id, mrl_rule_id) REFERENCES ref_active_substance_mrls (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS livestock_decl_items (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    monitoring_id   INTEGER,
+    species_category_code TEXT,
+    declared_quantity REAL,
+    quantity_unit   TEXT,
+    farming_purpose TEXT,
+    data            TEXT NOT NULL DEFAULT '{}',
+    created_at      TEXT NOT NULL,
+    updated_at      TEXT NOT NULL,
+    UNIQUE (tenant_id, id)
+);

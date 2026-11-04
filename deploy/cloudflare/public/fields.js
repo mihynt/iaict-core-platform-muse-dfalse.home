@@ -10,7 +10,7 @@ window.IAICT_META = {
   "address": "Địa chỉ",
   "phone": "Số điện thoại",
   "email": "Email",
-  "code": "Mã phương thức vận tải",
+  "code": "Mã thẻ tai / mã đàn",
   "gs1_role_ai": "Mã vai trò GS1",
   "parent_code": "Chủ thể cấp trên",
   "legal_id": "Số CCCD / MST",
@@ -28,9 +28,9 @@ window.IAICT_META = {
   "end_date": "Ngày kết thúc",
   "target_yield_kg": "Sản lượng mục tiêu (kg)",
   "status": "Trạng thái",
-  "zone_code": "Vùng sản xuất",
+  "zone_code": "Vùng",
   "plant_code": "Cây đầu dòng",
-  "parcel_code": "Thửa đất",
+  "parcel_code": "Thửa / ao được đo",
   "forest_harvest_plan_no": "Số VB phê duyệt PA khai thác rừng (nếu có)",
   "departure_port_code": "Mã cảng xuất bến (thủy sản, nếu có)",
   "arrival_port_code": "Mã cảng cập bến (thủy sản, nếu có)",
@@ -48,7 +48,7 @@ window.IAICT_META = {
   "safe_harvest_date": "Thu hoạch an toàn từ",
   "application_method": "Phương pháp áp dụng",
   "fruit_bagging_count": "Số trái đã bao",
-  "plan_code": "Kế hoạch",
+  "plan_code": "Vụ mùa liên quan",
   "input_lot_code": "Lô vật tư đã dùng",
   "dosage_concentration": "Liều lượng / nồng độ",
   "total_quantity_applied": "Tổng lượng đã dùng",
@@ -199,11 +199,55 @@ window.IAICT_META = {
   "remediation_report_sent_at": "Ngày gửi báo cáo khắc phục",
   "sanction_lifted_date": "Ngày được khôi phục mã số",
   "certified_entity_type": "Loại thực thể được chứng nhận",
-  "facility_actor_code": "Cơ sở đóng gói / chế biến",
+  "facility_actor_code": "Cơ sở chăn nuôi",
   "certificate_number": "Số giấy chứng nhận",
   "cert_body_name": "Tổ chức chứng nhận",
   "cert_status": "Trạng thái chứng nhận",
   "cert_scan_url": "Bản sao điện tử (URL)",
+  "management_granularity": "Cấp độ định danh",
+  "species_code": "Mã loài vật nuôi",
+  "breed_variety_name": "Tên giống / nguồn gốc giống",
+  "birth_or_import_date": "Ngày sinh / nhập đàn",
+  "initial_head_count": "Số lượng ban đầu (con)",
+  "current_head_count": "Số lượng hiện tại (con)",
+  "lifecycle_status": "Trạng thái vòng đời",
+  "registration_date": "Ngày đăng ký giám sát",
+  "expected_harvest_start": "Ngày dự kiến bắt đầu thu hoạch",
+  "supervising_agency_name": "Cơ quan giám sát",
+  "supervision_date": "Ngày giám sát thực địa",
+  "pest_control_compliant": "Quản lý sinh vật gây hại đạt (IPM)",
+  "diary_records_compliant": "Nhật ký & chứng từ đạt",
+  "supervision_outcome": "Kết quả giám sát",
+  "report_minutes_no": "Số biên bản giám sát",
+  "declarant_actor_code": "Đơn vị kê khai / được kiểm tra",
+  "monitoring_type": "Loại hình giám sát",
+  "inspection_timestamp": "Thời điểm giám sát / kê khai",
+  "pest_species_detected": "Sinh vật gây hại phát hiện",
+  "pest_density_index": "Mật độ / tỷ lệ hại",
+  "quarantine_cert_no": "Số giấy chứng nhận kiểm dịch",
+  "compliance_conclusion": "Kết luận kiểm tra",
+  "monitoring_id": "Bản kê khai (ID)",
+  "measured_timestamp": "Thời điểm lấy mẫu đo",
+  "water_salinity_permille": "Độ mặn (‰)",
+  "ph_value": "Độ pH",
+  "dissolved_oxygen_mg_l": "Oxy hòa tan DO (mg/l)",
+  "water_temp_celsius": "Nhiệt độ nước (°C)",
+  "nh3_unionized_mg_l": "NH3 tự do (mg/l)",
+  "no2_nitrite_mg_l": "NO2 nitrit (mg/l)",
+  "alkalinity_mg_l": "Độ kiềm (mg CaCO3/l)",
+  "is_within_safe_range": "Đạt ngưỡng an toàn",
+  "sampling_standard_code": "Phương pháp lấy mẫu",
+  "mrl_rule_code": "Quy tắc MRL áp dụng",
+  "measured_value": "Giá trị đo được",
+  "measurement_unit": "Đơn vị đo",
+  "applied_mrl_limit": "Ngưỡng MRL áp dụng",
+  "is_mrl_exceeded": "Vượt ngưỡng MRL (tự động)",
+  "testing_lab_name": "Phòng thử nghiệm",
+  "lab_test_report_no": "Số phiếu kết quả thử nghiệm",
+  "species_category_code": "Nhóm vật nuôi",
+  "declared_quantity": "Số lượng kê khai",
+  "quantity_unit": "Đơn vị tính",
+  "farming_purpose": "Mục đích nuôi",
   "registration_no": "Số đăng ký",
   "active_ingredient": "Hoạt chất",
   "quantity_received": "Số lượng nhập",
@@ -507,6 +551,71 @@ window.IAICT_META = {
    "expiry_date",
    "cert_status",
    "cert_scan_url"
+  ],
+  "livestock_units": [
+   "code",
+   "facility_actor_code",
+   "management_granularity",
+   "species_code",
+   "breed_variety_name",
+   "birth_or_import_date",
+   "initial_head_count",
+   "current_head_count",
+   "lifecycle_status"
+  ],
+  "pre_harvest_supervisions": [
+   "plan_code",
+   "zone_code",
+   "registration_date",
+   "expected_harvest_start",
+   "supervising_agency_name",
+   "supervision_date",
+   "pest_control_compliant",
+   "diary_records_compliant",
+   "supervision_outcome",
+   "report_minutes_no"
+  ],
+  "monitoring_declarations": [
+   "zone_code",
+   "plan_code",
+   "declarant_actor_code",
+   "monitoring_type",
+   "inspection_timestamp",
+   "pest_species_detected",
+   "pest_density_index",
+   "quarantine_cert_no",
+   "compliance_conclusion"
+  ],
+  "water_quality_tests": [
+   "monitoring_id",
+   "parcel_code",
+   "measured_timestamp",
+   "water_salinity_permille",
+   "ph_value",
+   "dissolved_oxygen_mg_l",
+   "water_temp_celsius",
+   "nh3_unionized_mg_l",
+   "no2_nitrite_mg_l",
+   "alkalinity_mg_l",
+   "is_within_safe_range"
+  ],
+  "residue_test_details": [
+   "monitoring_id",
+   "sampling_standard_code",
+   "mrl_rule_code",
+   "measured_value",
+   "measurement_unit",
+   "applied_mrl_limit",
+   "is_mrl_exceeded",
+   "testing_lab_name",
+   "lab_test_report_no"
+  ],
+  "livestock_decl_items": [
+   "monitoring_id",
+   "species_category_code",
+   "declared_quantity",
+   "quantity_unit",
+   "farming_purpose"
   ]
  },
  "enums": {
@@ -940,6 +1049,196 @@ window.IAICT_META = {
    {
     "v": "WITHDRAWN",
     "t": "Bị thu hồi"
+   }
+  ],
+  "LIVESTOCK_GRANULARITY": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "INDIVIDUAL_ANIMAL",
+    "t": "Cá thể"
+   },
+   {
+    "v": "FLOCK_HERD_BATCH",
+    "t": "Theo đàn / lô"
+   }
+  ],
+  "LIVESTOCK_LIFECYCLE": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "ACTIVE_REARING",
+    "t": "Đang nuôi"
+   },
+   {
+    "v": "ACTIVE_BREEDING",
+    "t": "Đang sinh sản"
+   },
+   {
+    "v": "EXPORTED_TO_SLAUGHTER",
+    "t": "Đã xuất giết mổ"
+   },
+   {
+    "v": "TRANSFERRED_FARM",
+    "t": "Đã chuyển cơ sở"
+   },
+   {
+    "v": "DECEASED_CULLED",
+    "t": "Chết / tiêu hủy"
+   }
+  ],
+  "SUPERVISION_OUTCOMES": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "REGISTERED_PENDING",
+    "t": "Đã đăng ký — chờ giám sát"
+   },
+   {
+    "v": "APPROVED_FOR_HARVEST",
+    "t": "Đạt — được thu hoạch"
+   },
+   {
+    "v": "REJECTED_SUSPEND_PUC",
+    "t": "Không đạt — đề xuất đình chỉ mã"
+   }
+  ],
+  "MONITORING_TYPES": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "INTERNAL_ICS_AUDIT",
+    "t": "Kiểm tra nội bộ ICS"
+   },
+   {
+    "v": "PEST_DISEASE_SURVEY",
+    "t": "Điều tra sinh vật gây hại"
+   },
+   {
+    "v": "AI_INSECT_TRAP_REALTIME",
+    "t": "Bẫy côn trùng AI thời gian thực"
+   },
+   {
+    "v": "WATER_QUALITY_INSPECTION",
+    "t": "Kiểm tra chất lượng nước"
+   },
+   {
+    "v": "COMMUNE_POST_INSPECTION_NQ36",
+    "t": "Hậu kiểm cấp xã (NQ 36)"
+   },
+   {
+    "v": "PROVINCIAL_PERIODIC_SUPERVISION",
+    "t": "Giám sát định kỳ cấp tỉnh"
+   },
+   {
+    "v": "LIVESTOCK_SEMIANNUAL_DECLARATION",
+    "t": "Kê khai chăn nuôi 6 tháng"
+   },
+   {
+    "v": "LIVESTOCK_ADHOC_3DAY_DECLARATION",
+    "t": "Kê khai chăn nuôi đột xuất 3 ngày"
+   },
+   {
+    "v": "ANIMAL_TRANSPORT_QUARANTINE",
+    "t": "Kiểm dịch vận chuyển động vật"
+   }
+  ],
+  "COMPLIANCE_CONCLUSIONS": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "COMPLIANT",
+    "t": "Đạt"
+   },
+   {
+    "v": "MINOR_NC_REMEDIATION_REQUIRED",
+    "t": "Lỗi nhẹ — phải khắc phục"
+   },
+   {
+    "v": "MAJOR_NC_SUSPEND_PROPOSED",
+    "t": "Lỗi nặng — đề xuất đình chỉ"
+   },
+   {
+    "v": "CRITICAL_NC_REVOKE_PROPOSED",
+    "t": "Nghiêm trọng — đề xuất thu hồi"
+   }
+  ],
+  "DECL_SPECIES_CATEGORIES": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "BUFFALO_CATTLE_HORSE",
+    "t": "Trâu / bò / ngựa"
+   },
+   {
+    "v": "SOW_BOAR_BREEDER",
+    "t": "Lợn nái / đực giống"
+   },
+   {
+    "v": "FATTENING_PIG_PIGLET",
+    "t": "Lợn thịt / lợn con"
+   },
+   {
+    "v": "GOAT_SHEEP",
+    "t": "Dê / cừu"
+   },
+   {
+    "v": "RABBIT",
+    "t": "Thỏ"
+   },
+   {
+    "v": "CHICKEN_DUCK_GOOSE",
+    "t": "Gà / vịt / ngan ngỗng"
+   },
+   {
+    "v": "PIGEON",
+    "t": "Bồ câu"
+   },
+   {
+    "v": "QUAIL",
+    "t": "Chim cút"
+   },
+   {
+    "v": "DEER_DOG_CAT",
+    "t": "Hươu / chó / mèo"
+   },
+   {
+    "v": "HONEY_BEE_COLONY",
+    "t": "Đàn ong mật"
+   },
+   {
+    "v": "EARTHWORM_AREA",
+    "t": "Giun quế (diện tích)"
+   }
+  ],
+  "DECL_QUANTITY_UNITS": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "HEAD_COUNT",
+    "t": "Con"
+   },
+   {
+    "v": "BEE_COLONY",
+    "t": "Đàn"
+   },
+   {
+    "v": "SQUARE_METER",
+    "t": "m²"
    }
   ]
  }

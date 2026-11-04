@@ -58,7 +58,7 @@ CODED_KINDS = {"zones", "mother_plants", "crop_plans", "lots",
                "packing_lots", "packaging_units",
                "ref_admin_units", "ref_market_regulations",
                "ref_active_substance_mrls", "ref_certification_schemes",
-               "ref_transport_modes"}
+               "ref_transport_modes", "livestock_units"}
 
 
 LINK_UNIQUE_FIELDS: dict[str, tuple[str, ...]] = {

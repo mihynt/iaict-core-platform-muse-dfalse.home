@@ -118,6 +118,24 @@
   "unit": 8,
   "vn_registration_number": 4
  },
+ "livestock_decl_items": {
+  "declared_quantity": 3,
+  "farming_purpose": 5,
+  "monitoring_id": 1,
+  "quantity_unit": 4,
+  "species_category_code": 2
+ },
+ "livestock_units": {
+  "birth_or_import_date": 6,
+  "breed_variety_name": 5,
+  "code": 1,
+  "current_head_count": 8,
+  "facility_actor_code": 2,
+  "initial_head_count": 7,
+  "lifecycle_status": 9,
+  "management_granularity": 3,
+  "species_code": 4
+ },
  "lots": {
   "code": 11,
   "data_retention_until": 10,
@@ -135,6 +153,17 @@
   "unit": 3,
   "weigh_slip_number": 8,
   "zone_code": 12
+ },
+ "monitoring_declarations": {
+  "compliance_conclusion": 9,
+  "declarant_actor_code": 3,
+  "inspection_timestamp": 5,
+  "monitoring_type": 4,
+  "pest_density_index": 7,
+  "pest_species_detected": 6,
+  "plan_code": 2,
+  "quarantine_cert_no": 8,
+  "zone_code": 1
  },
  "mother_plants": {
   "code": 14,
@@ -196,6 +225,18 @@
   "plan_code": 2,
   "validation_outcome": 7
  },
+ "pre_harvest_supervisions": {
+  "diary_records_compliant": 8,
+  "expected_harvest_start": 4,
+  "pest_control_compliant": 7,
+  "plan_code": 1,
+  "registration_date": 3,
+  "report_minutes_no": 10,
+  "supervising_agency_name": 5,
+  "supervision_date": 6,
+  "supervision_outcome": 9,
+  "zone_code": 2
+ },
  "ref_active_substance_mrls": {
   "approval_status": 7,
   "code": 1,
@@ -240,6 +281,17 @@
   "customs_circular_ref": 4,
   "mode_name": 2,
   "vehicle_id_format_rule": 3
+ },
+ "residue_test_details": {
+  "applied_mrl_limit": 6,
+  "is_mrl_exceeded": 7,
+  "lab_test_report_no": 9,
+  "measured_value": 4,
+  "measurement_unit": 5,
+  "monitoring_id": 1,
+  "mrl_rule_code": 3,
+  "sampling_standard_code": 2,
+  "testing_lab_name": 8
  },
  "spatial_units": {
   "aquaculture_water_type": 21,
@@ -286,6 +338,19 @@
   "sync_status": 11,
   "synced_at": 12,
   "traceability_code": 1
+ },
+ "water_quality_tests": {
+  "alkalinity_mg_l": 10,
+  "dissolved_oxygen_mg_l": 6,
+  "is_within_safe_range": 11,
+  "measured_timestamp": 3,
+  "monitoring_id": 1,
+  "nh3_unionized_mg_l": 8,
+  "no2_nitrite_mg_l": 9,
+  "parcel_code": 2,
+  "ph_value": 5,
+  "water_salinity_permille": 4,
+  "water_temp_celsius": 7
  },
  "zone_market_approvals": {
   "foreign_approval_code": 3,

@@ -1,5 +1,5 @@
 {
- "revision": 56,
+ "revision": 57,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-042",
-   "last_completed_step": "Programme FULL stage 3 DONE (rev 56): T-041 GD3 group B live (Worker 3f42ef92), browser-verified; suites 83+4.",
-   "next_action": "Stage 4: GD3 monitoring logs (Bang 16, 19, 20, 21, 22) + livestock units (Bang 14).",
+   "active_task": "T-043",
+   "last_completed_step": "Programme FULL stage 4 DONE (rev 57): T-042 GD3 monitoring group live (Worker d73fa1a8), browser-verified; suites 86+4.",
+   "next_action": "Stage 5: GD3 transport trips (Bang 28) + recall compliance (Bang 31) + 3 dossier views as report endpoints + FLD-17 per-parcel PHI completion.",
    "blockers": []
   },
   "decisions": [
@@ -266,6 +266,12 @@
     "name": "GD3 group B: approvals, warnings, certifications (T-041)",
     "status": "TECH_DONE",
     "notes": "Bang 8/9/10 live with Thi truong & chung nhan UI; migration v6. Worker 3f42ef92."
+   },
+   {
+    "id": "F-021",
+    "name": "GD3 monitoring group: livestock + supervision/monitoring logs (T-042)",
+    "status": "TECH_DONE",
+    "notes": "Bang 14/16/19/20/21/22 live with Giam sat & ke khai UI; migration v7. Worker d73fa1a8."
    }
   ],
   "flows": [],
@@ -655,9 +661,21 @@
     ],
     "evidence": "zone_market_approvals (link kind, UNIQUE zone+market, LINK_UNIQUE_FIELDS), foreign_warnings (append-only log; dossier approval FK carried as the validated zone+market pair), entity_certifications (prepare hook enforces the dossier's conditional target rule: PRODUCTION_ZONE requires zone_code, FACILITY_ACTOR requires facility_actor_code -> 400 CERT_TARGET_REQUIRED). Approvals and certifications evolve over time, so both gained by-id PATCH routes with full audit snapshots (_update_by_id). All dossier enums verbatim. D1 migration v6 (3 tables). UI: 'Thi truong & chung nhan' view, 3 tabs, generic form builder with inline create on every reference picker. Verification: suites memory 83 passed + 4 skipped; D1 subset 10 passed (after fixing _TABLES_CHILD_FIRST reset order for the new tables - children must be deleted before parents or the reset hits FK errors); production probes passed (approval 201, duplicate pair 409, PATCH by id 200, cert without target 400, warning 201; probe data removed, migration ledger at v6); live browser round passed (3 tabs, 6-field approval form, 10-field cert form, inline create present). Worker 3f42ef92.",
     "blockers": []
+   },
+   {
+    "id": "T-042",
+    "title": "GD3 monitoring group: livestock units (Bang 14), pre-harvest supervision (16), monitoring declarations (19), water tests (20), residue details (21), livestock declaration items (22)",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "DEC-011",
+     "DEC-013",
+     "D-STD-01"
+    ],
+    "evidence": "Six kinds live. livestock_units coded by ear-tag/herd code with by-id PATCH (lifecycle). Monitoring hub = monitoring_declarations; water_quality_tests / residue_test_details / livestock_decl_items hang off it by plain monitoring_id (uncoded-record link pattern, documented in DATA_MODEL). Bang 21's is_mrl_exceeded is server-generated (measured > applied limit), mirroring the dossier GENERATED ALWAYS column. D1 migration v7 (6 tables); reset order extended again. UI: 'Giam sat & ke khai' view, 6 tabs, generic builder. Verification: suites memory 86 passed + 4 skipped; D1 subset 8 passed; production probes passed (livestock 201, monitoring 201, residue flag generated True, water 201, decl item 201, supervision 201; probe data removed; ledger v7); live browser round passed (6 tabs, 9-field livestock form, 11-field water form). Worker d73fa1a8.",
+    "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T01:38:00Z"
+ "updated_at": "2026-11-04T01:44:00Z"
 }

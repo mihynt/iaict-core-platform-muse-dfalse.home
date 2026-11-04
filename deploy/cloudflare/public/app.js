@@ -500,6 +500,13 @@ Object.assign(DETAIL_VALUE_MAPS, {
   foreign_sanction_action: _enumMap("FOREIGN_SANCTION_ACTIONS"),
   certified_entity_type: _enumMap("CERT_ENTITY_TYPES"),
   cert_status: _enumMap("CERT_STATUSES"),
+  management_granularity: _enumMap("LIVESTOCK_GRANULARITY"),
+  lifecycle_status: _enumMap("LIVESTOCK_LIFECYCLE"),
+  supervision_outcome: _enumMap("SUPERVISION_OUTCOMES"),
+  monitoring_type: _enumMap("MONITORING_TYPES"),
+  compliance_conclusion: _enumMap("COMPLIANCE_CONCLUSIONS"),
+  species_category_code: _enumMap("DECL_SPECIES_CATEGORIES"),
+  quantity_unit: _enumMap("DECL_QUANTITY_UNITS"),
 });
 
 function fmtDetailVal(k2, v) {
@@ -600,6 +607,7 @@ const NAV = [
   { id: "actors", ic: "🧑‍🌾", label: "Chủ thể" },
   { id: "refs", ic: "📚", label: "Danh mục" },
   { id: "market", ic: "🌏", label: "Thị trường" },
+  { id: "monitor", ic: "🔬", label: "Giám sát" },
   { id: "philogs", ic: "🛡️", label: "Kiểm tra PHI" },
   { id: "users", ic: "👥", label: "Người dùng" },
   { id: "tenants", ic: "🏢", label: "Tenant" },
@@ -1613,8 +1621,8 @@ const GD3A_TARGETS = {
   actors: { path: "/actors", fmt: fmtActorOpt, addNew: (d, b) => quickActor(d, b) },
   packing_lots: { path: "/packing-lots", fmt: (r) => ({ v: r.code, t: r.code }), addNew: null },
 };
-async function gd3FormFields(kind, rec) {
-  const cfg = GD3A_KINDS[kind];
+async function gd3FormFields(kind, rec, cfgs) {
+  const cfg = (cfgs || GD3A_KINDS)[kind];
   const out = [];
   for (const f of cfg.fields) {
     const nf = { k: f.k, label: f.label, type: f.type };
@@ -1665,6 +1673,131 @@ VIEWS.market = async () => {
   fab("Thêm " + cfg.title.toLowerCase(), async () => {
     openSheet("Thêm " + cfg.title.toLowerCase(), await gd3FormFields(gd3Tab), async (p) => {
       await T(cfg.path, { method: "POST", body: p }); invalidate(gd3Tab);
+    });
+  });
+};
+
+/* ---------------- livestock + monitoring logs (GD3 Bang 14, 16, 19-22) ---------------- */
+const GD3B_KINDS = {
+  livestock_units: { path: "/livestock-units", title: "Cá thể / đàn vật nuôi", editable: true,
+    titleOf: (r) => `${r.code || "?"}${r.species_code ? " · " + r.species_code : ""}`,
+    subOf: (r) => r.facility_actor_code ? "Cơ sở: " + r.facility_actor_code : "",
+    fields: [
+      { k: "code", label: "Mã thẻ tai / mã đàn" },
+      { k: "facility_actor_code", label: "Cơ sở chăn nuôi", type: "select", target: "actors", empty: "— Chọn cơ sở —" },
+      { k: "management_granularity", label: "Cấp độ định danh", type: "select", enum: "LIVESTOCK_GRANULARITY" },
+      { k: "species_code", label: "Mã loài (VD: CATTLE, BUFFALO)" },
+      { k: "breed_variety_name", label: "Tên giống / nguồn gốc giống" },
+      { k: "birth_or_import_date", label: "Ngày sinh / nhập đàn", type: "date" },
+      { k: "initial_head_count", label: "Số lượng ban đầu (con)", type: "number" },
+      { k: "current_head_count", label: "Số lượng hiện tại (con)", type: "number" },
+      { k: "lifecycle_status", label: "Trạng thái vòng đời", type: "select", enum: "LIVESTOCK_LIFECYCLE" },
+    ]},
+  pre_harvest_supervisions: { path: "/pre-harvest-supervisions", title: "Giám sát trước thu hoạch", editable: false,
+    titleOf: (r) => `${r.zone_code || "?"} · ${r.report_minutes_no || r.registration_date || ""}`,
+    subOf: (r) => r.supervising_agency_name || "",
+    fields: [
+      { k: "plan_code", label: "Vụ mùa / kế hoạch", type: "select", target: "crop_plans", empty: "— Chọn vụ mùa —" },
+      { k: "zone_code", label: "Vùng được giám sát", type: "select", target: "zones", empty: "— Chọn vùng —" },
+      { k: "registration_date", label: "Ngày đăng ký giám sát", type: "date" },
+      { k: "expected_harvest_start", label: "Ngày dự kiến bắt đầu thu hoạch", type: "date" },
+      { k: "supervising_agency_name", label: "Cơ quan giám sát" },
+      { k: "supervision_date", label: "Ngày giám sát thực địa", type: "date" },
+      { k: "pest_control_compliant", label: "Quản lý sinh vật gây hại đạt (IPM)", type: "bool" },
+      { k: "diary_records_compliant", label: "Nhật ký & chứng từ đạt", type: "bool" },
+      { k: "supervision_outcome", label: "Kết quả giám sát", type: "select", enum: "SUPERVISION_OUTCOMES" },
+      { k: "report_minutes_no", label: "Số biên bản giám sát" },
+    ]},
+  monitoring_declarations: { path: "/monitoring-declarations", title: "Biên bản giám sát / kê khai", editable: false,
+    titleOf: (r) => `${r.zone_code || "?"} · ${r.inspection_timestamp || ""}`,
+    subOf: (r) => r.pest_species_detected || "",
+    fields: [
+      { k: "zone_code", label: "Vùng", type: "select", target: "zones", empty: "— Chọn vùng —" },
+      { k: "plan_code", label: "Vụ mùa liên quan", type: "select", target: "crop_plans", empty: "— Không gắn —" },
+      { k: "declarant_actor_code", label: "Đơn vị kê khai / được kiểm tra", type: "select", target: "actors", empty: "— Chọn đơn vị —" },
+      { k: "monitoring_type", label: "Loại hình giám sát", type: "select", enum: "MONITORING_TYPES" },
+      { k: "inspection_timestamp", label: "Thời điểm giám sát / kê khai", type: "datetime-local" },
+      { k: "pest_species_detected", label: "Sinh vật gây hại phát hiện" },
+      { k: "pest_density_index", label: "Mật độ / tỷ lệ hại" },
+      { k: "quarantine_cert_no", label: "Số giấy chứng nhận kiểm dịch" },
+      { k: "compliance_conclusion", label: "Kết luận kiểm tra", type: "select", enum: "COMPLIANCE_CONCLUSIONS" },
+    ]},
+  water_quality_tests: { path: "/water-quality-tests", title: "Quan trắc nước", editable: false,
+    titleOf: (r) => `${r.parcel_code || "Nước"} · ${r.measured_timestamp || ""}`,
+    subOf: (r) => r.ph_value !== undefined && r.ph_value !== null ? "pH " + r.ph_value : "",
+    fields: [
+      { k: "monitoring_id", label: "Biên bản giám sát (ID)", type: "number" },
+      { k: "parcel_code", label: "Thửa / ao được đo", type: "select", target: "spatial_units", empty: "— Chọn thửa / ao —" },
+      { k: "measured_timestamp", label: "Thời điểm lấy mẫu đo", type: "datetime-local" },
+      { k: "water_salinity_permille", label: "Độ mặn (‰)", type: "number" },
+      { k: "ph_value", label: "Độ pH", type: "number" },
+      { k: "dissolved_oxygen_mg_l", label: "Oxy hòa tan DO (mg/l)", type: "number" },
+      { k: "water_temp_celsius", label: "Nhiệt độ nước (°C)", type: "number" },
+      { k: "nh3_unionized_mg_l", label: "NH3 tự do (mg/l)", type: "number" },
+      { k: "no2_nitrite_mg_l", label: "NO2 nitrit (mg/l)", type: "number" },
+      { k: "alkalinity_mg_l", label: "Độ kiềm (mg CaCO3/l)", type: "number" },
+      { k: "is_within_safe_range", label: "Đạt ngưỡng an toàn", type: "bool" },
+    ]},
+  residue_test_details: { path: "/residue-test-details", title: "Xét nghiệm dư lượng", editable: false,
+    titleOf: (r) => r.lab_test_report_no || r.mrl_rule_code || "Xét nghiệm",
+    subOf: (r) => r.testing_lab_name || "",
+    fields: [
+      { k: "monitoring_id", label: "Biên bản giám sát (ID)", type: "number" },
+      { k: "sampling_standard_code", label: "Phương pháp lấy mẫu" },
+      { k: "mrl_rule_code", label: "Quy tắc MRL áp dụng", type: "select", target: "ref_active_substance_mrls", empty: "— Chọn quy tắc —" },
+      { k: "measured_value", label: "Giá trị đo được", type: "number" },
+      { k: "measurement_unit", label: "Đơn vị đo", type: "select", enum: "MRL_UNITS" },
+      { k: "applied_mrl_limit", label: "Ngưỡng MRL áp dụng", type: "number" },
+      { k: "testing_lab_name", label: "Phòng thử nghiệm" },
+      { k: "lab_test_report_no", label: "Số phiếu kết quả thử nghiệm" },
+    ]},
+  livestock_decl_items: { path: "/livestock-decl-items", title: "Dòng kê khai chăn nuôi", editable: false,
+    titleOf: (r) => `${r.species_category_code || "?"} · ${r.declared_quantity ?? ""}`,
+    subOf: (r) => r.farming_purpose || "",
+    fields: [
+      { k: "monitoring_id", label: "Bản kê khai (ID)", type: "number" },
+      { k: "species_category_code", label: "Nhóm vật nuôi", type: "select", enum: "DECL_SPECIES_CATEGORIES" },
+      { k: "declared_quantity", label: "Số lượng kê khai", type: "number" },
+      { k: "quantity_unit", label: "Đơn vị tính", type: "select", enum: "DECL_QUANTITY_UNITS" },
+      { k: "farming_purpose", label: "Mục đích nuôi" },
+    ]},
+};
+Object.assign(GD3A_TARGETS, {
+  crop_plans: { path: "/crop-plans", fmt: fmtPlanOpt, addNew: (d, b) => quickPlan(d, b) },
+  spatial_units: { path: "/spatial-units", fmt: fmtParcelOpt, addNew: (d, b) => quickParcel(d, b) },
+});
+let gd3bTab = "livestock_units";
+VIEWS.monitor = async () => {
+  const el = $("#view");
+  el.innerHTML = `<div class="section-head"><h2>🔬 Giám sát & kê khai</h2>
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>
+    <div class="chips">${Object.entries(GD3B_KINDS).map(([k, c]) => `<button class="chip${k === gd3bTab ? " on" : ""}" data-gd3btab="${k}">${c.title}</button>`).join("")}</div>
+    <div id="gd3bBody"></div>`;
+  $("#reload").onclick = () => { invalidate(gd3bTab); navigate("monitor", true); };
+  el.querySelectorAll("[data-gd3btab]").forEach((b) => b.onclick = () => { gd3bTab = b.dataset.gd3btab; navigate("monitor", true); });
+  const cfg = GD3B_KINDS[gd3bTab];
+  const body = el.querySelector("#gd3bBody");
+  try {
+    const items = await ensure(gd3bTab, cfg.path);
+    body.innerHTML = items.length ? `<div class="list">${items.map((r) => `
+      <div class="card" data-card="${esc(r.code ?? r.id)}"><div class="thumb slate">🔬</div><div class="body">
+        <div class="title">${esc(cfg.titleOf(r))}</div>
+        <div class="sub">${esc(cfg.subOf(r))}</div>
+        ${cfg.editable ? `<div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-gd3b="${r.id}">✏️ Sửa</button></div>` : ""}
+      </div></div>`).join("")}</div>`
+      : emptyState("🔬", "Chưa có bản ghi nào", "Bấm nút + để thêm " + cfg.title.toLowerCase() + ".");
+    if (cfg.editable) body.querySelectorAll("[data-edit-gd3b]").forEach((b) => b.onclick = async () => {
+      const rec = items.find((x) => x.id === Number(b.dataset.editGd3b));
+      openSheet("Sửa " + cfg.titleOf(rec), await gd3FormFields(gd3bTab, rec, GD3B_KINDS), async (p) => {
+        await T(`${cfg.path}/${rec.id}`, { method: "PATCH", body: p });
+        invalidate(gd3bTab);
+      });
+    });
+    wireCardDetails(body, items, (r) => cfg.titleOf(r), gd3bTab);
+  } catch (err) { body.innerHTML = banner(err); }
+  fab("Thêm " + cfg.title.toLowerCase(), async () => {
+    openSheet("Thêm " + cfg.title.toLowerCase(), await gd3FormFields(gd3bTab, null, GD3B_KINDS), async (p) => {
+      await T(cfg.path, { method: "POST", body: p }); invalidate(gd3bTab);
     });
   });
 };

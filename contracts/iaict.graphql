@@ -365,6 +365,83 @@ type EntityCertification {
   cert_scan_url: String
 }
 
+type LivestockUnit {
+  id: ID
+  code: String
+  facility_actor_code: String
+  management_granularity: String
+  species_code: String
+  breed_variety_name: String
+  birth_or_import_date: String
+  initial_head_count: Int
+  current_head_count: Int
+  lifecycle_status: String
+}
+
+type PreHarvestSupervision {
+  id: ID
+  plan_code: String
+  zone_code: String
+  registration_date: String
+  expected_harvest_start: String
+  supervising_agency_name: String
+  supervision_date: String
+  pest_control_compliant: Boolean
+  diary_records_compliant: Boolean
+  supervision_outcome: String
+  report_minutes_no: String
+}
+
+type MonitoringDeclaration {
+  id: ID
+  zone_code: String
+  plan_code: String
+  declarant_actor_code: String
+  monitoring_type: String
+  inspection_timestamp: String
+  pest_species_detected: String
+  pest_density_index: String
+  quarantine_cert_no: String
+  compliance_conclusion: String
+}
+
+type WaterQualityTest {
+  id: ID
+  monitoring_id: Int
+  parcel_code: String
+  measured_timestamp: String
+  water_salinity_permille: Float
+  ph_value: Float
+  dissolved_oxygen_mg_l: Float
+  water_temp_celsius: Float
+  nh3_unionized_mg_l: Float
+  no2_nitrite_mg_l: Float
+  alkalinity_mg_l: Float
+  is_within_safe_range: Boolean
+}
+
+type ResidueTestDetail {
+  id: ID
+  monitoring_id: Int
+  sampling_standard_code: String
+  mrl_rule_code: String
+  measured_value: Float
+  measurement_unit: String
+  applied_mrl_limit: Float
+  is_mrl_exceeded: Boolean
+  testing_lab_name: String
+  lab_test_report_no: String
+}
+
+type LivestockDeclItem {
+  id: ID
+  monitoring_id: Int
+  species_category_code: String
+  declared_quantity: Float
+  quantity_unit: String
+  farming_purpose: String
+}
+
 type Query {
   actors: [Actor!]!
   crop_plans: [CropPlan!]!
@@ -390,4 +467,10 @@ type Query {
   zone_market_approvals: [ZoneMarketApproval!]!
   foreign_warnings: [ForeignWarning!]!
   entity_certifications: [EntityCertification!]!
+  livestock_units: [LivestockUnit!]!
+  pre_harvest_supervisions: [PreHarvestSupervision!]!
+  monitoring_declarations: [MonitoringDeclaration!]!
+  water_quality_tests: [WaterQualityTest!]!
+  residue_test_details: [ResidueTestDetail!]!
+  livestock_decl_items: [LivestockDeclItem!]!
 }
