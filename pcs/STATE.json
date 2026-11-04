@@ -1,5 +1,5 @@
 {
- "revision": 90,
+ "revision": 91,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-075",
-   "last_completed_step": "T-074 (AG10) TECH_DONE + DEPLOYED (rev 90): hold/release + nhan GS1 + cung co tra cuu cong khai; Worker ca7d500c.",
-   "next_action": "AG11 (T-075): control plane + metering (goi dich vu, han muc, do dung luong).",
+   "active_task": "T-076",
+   "last_completed_step": "T-075 (AG11) TECH_DONE + DEPLOYED (rev 91): control plane + metering + quota; Worker ccd75a39.",
+   "next_action": "AG12 (T-076): CRM — khach hang/don vi mua, bang gia, bao gia/don hang o muc khung (du lieu phap ly/gia chinh thuc cho IAICT).",
    "blockers": []
   },
   "decisions": [
@@ -1089,9 +1089,9 @@
    {
     "id": "T-075",
     "title": "AG11 — Control plane va metering (COM-01..29) (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commits 2ebf5a2 + sua ma tran TEN. Bang moi (migration v12): service_plans (nen tang), tenant_subscriptions, usage_counters. API control plane: POST/GET /platform/plans (platform key), gan goi POST /platform/tenants/{slug}/subscription, GET /platform/usage tong hop; phia tenant GET /subscription + GET /usage (bo dem ky hien tai + headroom). Metering best-effort khong bao gio lam hong thao tac chinh: requests (middleware), events, records, public_records, iot_readings. Quota la cong chan TRUOC khi ghi: max_users (dem song), max_events_per_month, max_public_records_per_month, max_iot_readings_per_month — vuot tra 429 QUOTA_EXCEEDED; tenant chua gan goi = khong gioi han (giu nguyen hanh vi cu), nang tran goi mo khoa ngay. Tien hoa don/thanh toan la pham vi AG13 — plan chi mang tran + truong mo ta gia. Suite: memory 92+2, D1 94, PG 90+4; CI GREEN. DEPLOYED Worker ccd75a39 (migration 12 xac nhan qua hanh vi); probe live: /subscription 200 (null = chua gan goi), /usage dem requests ngay tu cac probe. (Probe dau tien ngay sau deploy bi 404 do tre truyen phien ban Worker — probe lai sau 8s dat; da ghi nhan mau hinh tre nay tu truoc.)",
     "blockers": []
    },
    {
@@ -1153,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T10:01:37Z"
+ "updated_at": "2026-11-04T10:26:10Z"
 }
