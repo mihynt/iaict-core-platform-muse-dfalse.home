@@ -1,5 +1,5 @@
 {
- "revision": 89,
+ "revision": 90,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-074",
-   "last_completed_step": "T-072 (AG08) TECH_DONE + DEPLOYED (rev 89): IoT port; Worker 626f36af.",
-   "next_action": "AG10 (T-074): lo giu/tha (hold/release), dinh dang nhan, cung co tra cuu cong khai chong liet ke. AG09 (T-073) van de sau theo chi thi Owner.",
+   "active_task": "T-075",
+   "last_completed_step": "T-074 (AG10) TECH_DONE + DEPLOYED (rev 90): hold/release + nhan GS1 + cung co tra cuu cong khai; Worker ca7d500c.",
+   "next_action": "AG11 (T-075): control plane + metering (goi dich vu, han muc, do dung luong).",
    "blockers": []
   },
   "decisions": [
@@ -1081,9 +1081,9 @@
    {
     "id": "T-074",
     "title": "AG10 — Lo trace QR integrity (hold/release, nhan) (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commit 5a55a72. Hold/release: POST /trace-lots|finished-lots/{code}/hold|release — trang thai + lich su nam trong payload namespace '_' (_hold/_hold_history); cong chan: lo dang giu khong vao duoc me che bien (409 LOT_HELD, ca truong hop me tao truoc khi giu — quet input khi tao finished lot), lo thanh pham dang giu khong phat hanh duoc ban ghi cong khai. Nhan GS1: GET /labels/{finished-lots|logistic-units|public-records}/{code} — chuoi phan tu (01)GTIN(10)lot(17)han dung YYMMDD, (00)SSCC, qr_payload. Cung co tra cuu cong khai: store.trace_find_all moi — ma ton tai o >1 tenant tra 409 TRACE_CODE_AMBIGUOUS thay vi phuc vu ban ghi tuy y (dong M1 cua T-061); gioi han toc do truot 120 lan/phut/client (best-effort trong isolate, ghi ro hard limit thuoc edge rules). Doc truy xuat theo pham vi grant (phan du AG02): user co grant chi thay trace-lots cua subject trong pham vi + batches cua unit trong pham vi, get ngoai pham vi 404. Suite: memory 90+2, D1 92, PG 88+4; CI GREEN. DEPLOYED Worker ca7d500c: probe live — nhan FL-02 dung chuoi GS1, vong hold->release tren TL-01 production dat (lich su ghi du), tra cuu cong khai ban ghi demo van dung.",
     "blockers": []
    },
    {
@@ -1153,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T09:42:00Z"
+ "updated_at": "2026-11-04T10:01:37Z"
 }
