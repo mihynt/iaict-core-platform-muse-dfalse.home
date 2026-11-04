@@ -104,6 +104,7 @@ class D1Store:
     def __init__(self, db) -> None:
         self._db = db
         self._schema_ready = False
+        self._legacy_cols: dict[str, list] = {}
 
     # ---- plumbing ------------------------------------------------------
     async def _ensure_schema(self) -> None:
@@ -395,6 +396,24 @@ class D1Store:
         )
         return None if row is None else row["id"]
 
+    async def _legacy_required_columns(self, table: str) -> list:
+        """(column, neutral value) for NOT NULL columns that have no default
+        and are not part of the standard write set — see the guard in
+        create_record. Cached per table for the isolate's lifetime."""
+        if table in self._legacy_cols:
+            return self._legacy_cols[table]
+        rows = await self._all(f"PRAGMA table_info({table})")
+        system = {"id", "tenant_id", "code", "data", "created_at", "updated_at"}
+        found = []
+        for r in rows:
+            if r.get("notnull") == 1 and r.get("dflt_value") is None \
+                    and r.get("name") not in system:
+                ctype = (r.get("type") or "").upper()
+                neutral = 0 if any(t in ctype for t in ("INT", "REAL", "NUM", "DEC")) else ""
+                found.append((r["name"], neutral))
+        self._legacy_cols[table] = found
+        return found
+
     async def create_record(self, tenant: str, kind: str, fields: dict) -> dict | None:
         table, columns = SPECS[kind]
         refs = RECORD_REFS[kind]
@@ -423,6 +442,16 @@ class D1Store:
         if kind in CODED_KINDS:
             names.insert(1, "code")
             params.insert(1, fields.get("code"))
+        # Legacy-schema guard: a table created by an earlier schema era can
+        # carry NOT NULL columns with no default that the current field model
+        # has retired (production zones.name, cut in T-034, blocked every zone
+        # create with a constraint 500). Reads are SPECS-driven, so such
+        # columns are never surfaced; satisfy the constraint with a neutral
+        # value instead of failing the insert.
+        for col, neutral in await self._legacy_required_columns(table):
+            if col not in names:
+                names.append(col)
+                params.append(neutral)
         placeholders = ", ".join(["?"] * len(names))
         try:
             meta = await self._run(

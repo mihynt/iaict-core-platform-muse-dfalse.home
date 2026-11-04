@@ -791,6 +791,7 @@ VIEWS.plans = async () => {
         ensure("zones", "/zones").catch(() => []),
         ensure("inputs", "/input-lots").catch(() => []),
       ]);
+      const cropZones = zones.filter((z) => z.sector_category === "CROP_FARMING").map((z) => z.code);
       openSheet("Ghi nhật ký đồng ruộng", [
         { k: "event_type", label: "Loại sự kiện", type: "select", required: true, options: EVENT_TYPES },
         { k: "plan_code", label: "Kế hoạch mùa vụ", type: "select",
@@ -807,7 +808,7 @@ VIEWS.plans = async () => {
         { k: "application_method", label: "Phương pháp áp dụng", placeholder: "vd: Phun áp lực, Tưới nhỏ giọt…" },
         { k: "crop_animal_growth_stage", label: "Giai đoạn sinh trưởng", placeholder: "vd: Ra hoa, Nuôi trái…" },
         { k: "target_pest_disease_reason", label: "Đối tượng / lý do xử lý", placeholder: "vd: Rệp sáp, thán thư…" },
-        { k: "fruit_bagging_count", label: "Số trái đã bao (nếu có)", type: "number", step: "1" },
+        { k: "fruit_bagging_count", label: "Số trái đã bao (nếu có)", type: "number", step: "1" , visIf: { k: "zone_code", in: cropZones } },
         { k: "occurred_at", label: "Thời gian thực hiện", type: "datetime-local" },
       ], async (p) => {
         if (p.occurred_at) p.occurred_at = new Date(p.occurred_at).toISOString();
@@ -822,6 +823,8 @@ VIEWS.plans = async () => {
       ensure("zones", "/zones").catch(() => []), ensure("plants", "/mother-plants").catch(() => []),
       ensure("parcels", "/spatial-units").catch(() => []),
     ]);
+    const forestZones = zones.filter((z) => z.sector_category === "FORESTRY_PLANTATION").map((z) => z.code);
+    const aquaZones = zones.filter((z) => z.sector_category === "AQUACULTURE").map((z) => z.code);
     openSheet("Tạo kế hoạch mùa vụ", [
       { k: "code", label: "Mã kế hoạch", required: true, placeholder: "vd: PLAN-2026" },
       { k: "name", label: "Tên kế hoạch", placeholder: "vd: Vụ rau Đông Xuân" },
@@ -844,11 +847,12 @@ VIEWS.plans = async () => {
       { k: "target_yield_kg", label: "Mục tiêu sản lượng (kg)", type: "number", step: "0.1" },
       { k: "planting_density", label: "Mật độ trồng (cây/ha)", type: "number", step: "0.1" },
       { k: "seed_origin_doc", label: "Hồ sơ nguồn gốc giống", placeholder: "Số giấy chứng nhận / hóa đơn giống" },
-      { k: "forest_harvest_plan_no", label: "Số VB phê duyệt PA khai thác rừng (nếu có)" },
-      { k: "departure_port_code", label: "Mã cảng xuất bến (thủy sản, nếu có)" },
-      { k: "arrival_port_code", label: "Mã cảng cập bến (thủy sản, nếu có)" },
-      { k: "status", label: "Trạng thái", type: "select", options: [
-        { v: "DRAFT", t: "Dự thảo" }, { v: "RUNNING", t: "Đang chạy" }, { v: "ENDED", t: "Đã kết thúc" }] },
+      { k: "forest_harvest_plan_no", label: "Số VB phê duyệt PA khai thác rừng (nếu có)" , visIf: { k: "zone_code", in: forestZones } },
+      { k: "departure_port_code", label: "Mã cảng xuất bến (thủy sản, nếu có)" , visIf: { k: "zone_code", in: aquaZones } },
+      { k: "arrival_port_code", label: "Mã cảng cập bến (thủy sản, nếu có)" , visIf: { k: "zone_code", in: aquaZones } },
+      { k: "status", label: "Trạng thái chu kỳ", type: "select", options: [
+        { v: "IN_PROGRESS", t: "Đang thực hiện" }, { v: "HARVESTING", t: "Đang thu hoạch" },
+        { v: "COMPLETED_CLOSED", t: "Đã kết thúc" }, { v: "ABORTED_BY_DISASTER_DISEASE", t: "Hủy do thiên tai / dịch bệnh" }] },
     ], async (p) => { await T("/crop-plans", { method: "POST", body: p }); invalidate("plans"); });
   });
 };

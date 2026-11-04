@@ -1,563 +1,579 @@
 {
-  "revision": 50,
-  "schema": "pcs.solo.v1",
-  "state": {
-    "architecture_map": {
-      "status": "DRAFT",
-      "summary": "API-first modular monolith (Python 3.12 + FastAPI, versioned OpenAPI /api/v1) with deny-by-default tenant isolation on every tenant-scoped resource. Android offline-first field client, IoT device ingestion and a public traceability page follow the SRS milestone order. Persistence layer arrives at M2 without changing the tenant-isolation contract."
-    },
-    "artifacts": [
-      {
-        "name": "SRS v2.0 — requirements baseline (document file)",
-        "published": false,
-        "ref": "IAICT/SRS-CORE/2026/V2.0",
-        "sha256": "3a5d21e1bf34650dd3fdb4af844eccc34823cbaa7a48bc4d2fd0beec66866fe1",
-        "classification": "PUBLIC"
-      },
-      {
-        "name": "Requirement-level traceability matrix for SRS v2.0 (CSV/XLSX)",
-        "published": false,
-        "ref": "ma-tran-truy-vet-muc-ma-SRS-v2.0",
-        "classification": "PUBLIC"
-      },
-      {
-        "name": "Project GitHub repository",
-        "classification": "PUBLIC",
-        "ref": "https://github.com/mihynt/iaict-core-platform-muse-dfalse.home",
-        "published": true
-      }
-    ],
-    "current": {
-      "active_task": "T-005",
-      "last_completed_step": "T-035 DONE (rev 50): forms organized Core + Vertical with sector-conditional blocks, deployed and browser-verified. Open: T-032 slices 3-4; Q-TX-01/02; phase 3 vs T-005; keep-warm; IAICT_PII_KEY.",
-      "next_action": "Owner reviews SRS v2.1 (Appendix F) and decides Q-TX-01 (frozen-retention precedence) when ready. Remaining roadmap choice: D-STD-01 phase 3 (reference catalogues incl. MRL cross-checks, market approvals/GACC warnings, certifications, monitoring logs; transport + recall) and the national-portal sync integration (Q-TX-02), sequenced with T-006 pilot go-live — or T-005 (M3a day-90 IoT go/no-go gate). SRS v2.1 and the SOW/SRS set remain drafts pending IAICT approval of INT-01..06. Platform admin remains disabled until the Owner sets a fresh PLATFORM_ADMIN_KEY in the Cloudflare dashboard.",
-      "blockers": []
-    },
-    "decisions": [
-      {
-        "date": "2026-11-02",
-        "decision": "Repository visibility PUBLIC for dungnt-mhy/iaict-core-platform, chosen by the Owner in chat on 2026-11-02. Full SOW/SRS documents are NOT classified for publication: only hashes and public-safe summaries are recorded in this repository.",
-        "id": "DEC-001",
-        "classification": "PUBLIC"
-      },
-      {
-        "date": "2026-11-02",
-        "decision": "Backend stack for the first milestones: Python 3.12 + FastAPI modular monolith; Android client and IoT ingestion follow the SRS milestone order.",
-        "id": "DEC-002",
-        "classification": "PUBLIC"
-      },
-      {
-        "date": "2026-11-02",
-        "decision": "Requirements baseline is SRS v2.0 (IAICT/SRS-CORE/2026/V2.0) derived from SOW R21. Requirement changes are appended to pcs/SRS_CHANGES.md as deltas; the baseline itself is never edited.",
-        "id": "DEC-003",
-        "classification": "PUBLIC"
-      },
-      {
-        "id": "DEC-004",
-        "date": "2026-11-02",
-        "classification": "PUBLIC",
-        "decision": "Correction by Owner (2026-11-02): the connected GitHub account is mihynt (verified via get_me, account id 351337042), not dungnt-mhy. Repository target corrected to mihynt/iaict-core-platform. DEC-001 is otherwise unchanged: visibility PUBLIC, full SOW/SRS not published."
-      },
-      {
-        "id": "DEC-005",
-        "date": "2026-11-02",
-        "classification": "PUBLIC",
-        "decision": "Repository created by the Owner as mihynt/iaict-core-platform-muse-dfalse.home (PUBLIC) because the Muse GitHub App lacks repository-creation permission (403). This actual repository is the project's canonical GitHub home; it supersedes the proposed name in DEC-004."
-      },
-      {
-        "id": "DEC-006",
-        "date": "2026-11-02",
-        "classification": "PUBLIC",
-        "decision": "Beta hosting decided by Owner (2026-11-02): Cloudflare Workers Free runs the API and web UI; Neon Free provides PostgreSQL, reached from Workers through Hyperdrive Free; Supabase was evaluated and kept as a fully compatible alternative. Portability rules are binding: (1) only deploy/cloudflare/src/entry.py knows about Cloudflare - no Cloudflare-proprietary APIs (D1/KV/Durable Objects) in core logic; (2) persistence uses standard SQL and widely-available PostgreSQL extensions only, no Neon/Supabase platform extras (their Auth/Storage/Realtime) in the product core; (3) the app stays stateless, all durable state in PostgreSQL; daily development and tests use a local database, Neon is reserved for the shared beta/staging environments (separate Neon project per environment, compute kept at the 0.25 CU minimum). Rationale: the whole beta stack costs 0; PostgreSQL-to-PostgreSQL migration between Neon and Supabase, or out to a VPS/AWS/Azure/GCP running the same ASGI app under uvicorn, stays a pg_dump/pg_restore operation. Deployment packaging prepared in deploy/cloudflare/ with runbook docs/DEPLOY_CLOUDFLARE_NEON.md; actual deployment awaits the Owner's Cloudflare and Neon accounts. DEPLOYED 2026-11-02: the API is live at https://iaict-core-platform.iaict-coreplatform-mhy.workers.dev (Cloudflare account subdomain iaict-coreplatform-mhy; deployed via uv run pywrangler deploy after the browser-OAuth route failed on wrangler's ~2-minute authorization window and the Owner chose the one-time API-token route; the token was used transiently and never stored). Live verification: /health 200 with env=beta, deny-by-default 400/403/503 responses, tenant creation 201 with a temporary platform secret that was deleted right after the check (platform administration stays disabled at 503 until the Owner sets their own PLATFORM_ADMIN_KEY secret). Verified platform constraint: in-memory state is per-isolate and is not shared between Worker requests, so multi-request flows only become meaningful when the T-004 PostgreSQL layer lands - as planned. PERSISTENCE WIRING (2026-11-02): the Owner created the Neon project (ap-southeast-1, PostgreSQL 18.6) and shared the direct connection string transiently (never stored). Verified from this environment over Neon's HTTPS SQL endpoint (the VM proxy intercepts raw TCP/5432): credentials valid, all 12 schema tables applied, cross-tenant FK rejection reproduced on Neon itself (SQLSTATE 23503). Worker-side driver settled by spike tests against Cloudflare's official Python+Hyperdrive guidance: asyncpg is recommended but its Pyodide wheel is served from a CDN unreachable from this build environment, and direct-to-Neon connections from Python Workers fail on TLS over the socket shim - which is exactly what Hyperdrive exists to solve (plaintext local leg, ssl=False). Chosen driver: pg8000 (pure Python, on Cloudflare's supported list). app/workerstore.py implements the store contract on pg8000; app/store.py gained a LazyWorkerStore selected by the Workers entrypoint (IAICT_BACKEND=hyperdrive) that binds the Hyperdrive config from the first request env and otherwise falls back to in-memory storage, reported openly by /health (storage field). Full suite passes 31/31 in all three modes (memory, psycopg, pg8000) against real PostgreSQL. The updated app is deployed to the beta (currently storage: memory). ONE step remains, with the Owner: create the Hyperdrive configuration - the current API token is denied Hyperdrive access (error 10000), so the Owner creates it in the dashboard (Workers & Pages -> Hyperdrive -> Create, name iaict-neon, direct Neon connection string) and shares the config id; then the binding is uncommented in wrangler.jsonc, the beta redeployed, and durable multi-request flows verified live. COMPLETED 2026-11-02: the Owner created the Hyperdrive config 'iaict-neon' (id 3cdbf0e61cfc4a078ea1f4790200a65f; direct connection string without channel_binding, caching disabled) in the dashboard; the binding is active in wrangler.jsonc and the beta now runs DURABLE: /health reports storage 'postgresql-hyperdrive'. Live verification with a temporary platform secret (deleted afterwards): tenant beta-pilot created in one request was fully usable in later requests - bootstrap admin, zone Z-01, mother plant MPL-001 referencing the zone, crop plan PLAN-2026 - with 5 audit entries readable through the API; records cross-checked present in Neon. One transient 500 on a list call was traced to the cached per-isolate connection pattern; WorkerPgStore now opens a fresh connection per operation (Cloudflare's prescribed Hyperdrive pattern) and repeated spaced calls all return 200. Seed records (beta-pilot tenant with its zone/plant/plan) intentionally remain in Neon as the beta's first real data. Platform administration stays disabled until the Owner sets their own PLATFORM_ADMIN_KEY secret. URL CHANGE + ADMIN KEY (2026-11-02): the Owner renamed the account workers.dev subdomain from 'iaict-coreplatform-mhy' to 'mihy' - the canonical beta URL is now https://iaict-core-platform.mihy.workers.dev and the old URL no longer resolves; all data was unaffected (it lives in Neon, verified: beta-pilot records intact at the new address). The Owner also set their own PLATFORM_ADMIN_KEY secret (verified active from outside: a wrong key now returns 401 PLATFORM_KEY_INVALID instead of 503)."
-      },
-      {
-        "id": "DEC-007",
-        "date": "2026-11-02",
-        "classification": "PUBLIC",
-        "decision": "Supabase trial executed at the Owner's direction (2026-11-02): the beta's Hyperdrive binding now points at a Supabase PostgreSQL project (Singapore, direct connection, config 'iaict-supabase' id 4ee90fdeba69436493d69e11fd7a870b); the schema was auto-created by the Worker on first request and the beta-pilot dataset was rebuilt from an API snapshot (tenant, Pilot Admin, zones Z-01 + Z-TMP, plant MPL-001, plan PLAN-2026). Neon (config 'iaict-neon') is untouched and remains the instant rollback. Measured result: latency improved (successful calls 5-6s vs 7-10s) but the failure rate did NOT improve (sequential 8/20, dashboard-parallel 19/48 - same class as Neon: 1101/1102/dropped connections). wrangler tail evidence (14 sampled requests: 9 ok, 4 canceled by the runtime's hang detector, 1 exceededCpu; successful requests burn ~1.2-1.9s CPU each) identifies the bottleneck as the Cloudflare Python Workers runtime itself (Pyodide + synchronous pg8000), not the database. DEC-006 is therefore amended in part: the database may be Neon or Supabase interchangeably, but the API runtime is expected to move to a plain always-on host (T-013) running the same ASGI app under uvicorn with the psycopg backend - the portability rules of DEC-006 are what make this a packaging change, not a rewrite. The Owner also forgot their PLATFORM_ADMIN_KEY; a temporary secret was used to create the tenant on Supabase and deleted immediately after, so platform administration is disabled (503) until the Owner sets a fresh key of their own choosing."
-      },
-      {
-        "id": "DEC-008",
-        "date": "2026-11-03",
-        "classification": "PUBLIC",
-        "decision": "Owner decision 2026-11-03: adopt Cloudflare D1 as the beta's store on Workers (T-014), superseding the T-013 plain-host relocation. This AMENDS DEC-006 in one respect: a Cloudflare-proprietary API (D1) now sits behind the store boundary. The rest of DEC-006's portability discipline is kept and is what bounds the lock-in: the store interface is storage-agnostic, the PostgreSQL backends (psycopg + pg8000/Hyperdrive) remain in the tree and green in tests, the datasets on Supabase and Neon are untouched, and wrangler.jsonc documents the rollback (restore the Hyperdrive binding + IAICT_BACKEND=hyperdrive + redeploy). Rationale is measured, not preferential: on the same free Python Workers runtime, D1 scored sequential 20/20 + parallel 48/48 with cpuTime median ~26-42ms per request, versus 8/20 + 19/48 at ~1,241ms CPU on PostgreSQL via Hyperdrive; the hang-cancellations and exceededCpu failures disappeared entirely. D1 was also verified to enforce the composite (tenant_id, ref_id) foreign keys the tenant isolation model relies on (cross-tenant INSERT rejected, SQLITE_CONSTRAINT_FOREIGNKEY)."
-      },
-      {
-        "id": "DEC-009",
-        "date": "2026-11-03",
-        "classification": "PUBLIC",
-        "decision": "Owner decision 2026-11-03: adopt the Vietnamese agri-forestry-fishery traceability data standard (research dossier, 33 tables + 3 views; ND 38/2026, NQ 36/2026, TCVN 11892-1:2026, TT 02/2024/TT-BKHCN, TCVN 12850:2019, GS1) as the platform's data-model reference, recorded as SRS delta D-STD-01. Adoption is phased: phase 1 (T-015) covers the crop-chain core that maps onto the SRS ZON/MPL/FLD/LOT groups; the packing chain, national-portal sync, transport/recall and the forestry/livestock/fishery specializations are phase 2, sequenced with the pilot milestones. The standard's PostgreSQL/PostGIS/bitemporal forms are adapted to the platform's tenant-scoped composite-FK model behind the existing store boundary; enforcement rules (PHI gate, mass balance) live at the API layer so they hold identically on every backend."
-      },
-      {
-        "id": "DEC-010",
-        "date": "2026-11-03",
-        "decision": "Consolidate the traceability data standard into the SRS baseline as SRS v2.1 (Appendix F + TX-01..TX-12 requirements + §1.4 precedence clause), superseding the delta-only handling of D-STD-01 for documentation purposes; implementation deltas continue to be recorded in pcs/SRS_CHANGES.md.",
-        "rationale": "Owner directive 2026-11-03: 'Ghi nho va hop nhat voi srs, dieu chinh theo tai lieu nay'. The re-uploaded dossier is byte-identical to the adopted D-STD-01 source (SHA-256 verified), so v2.1 is a consolidation of already-adopted content, not a scope change: no existing requirement ID, threshold or definition changes (385/385 IDs preserved, machine-checked). Open items are carried explicitly as Q-TX-01..03 instead of being silently decided.",
-        "status": "ACTIVE"
-      },
-      {
-        "id": "DEC-011",
-        "date": "2026-11-03",
-        "decision": "The Owner-supplied traceability-standard dossier (SHA-256 3afb2be6baf68765e80be68513f84736d94bca1b51a445a59bc59829668cfeb1) is the foundational baseline for the platform's data standard. Precedence: the dossier is the ultimate source for traceability data definitions; SRS v2.1 Appendix F is its consolidated normative form; implementation follows Appendix F. Deviations require a recorded delta with rationale (D-STD-03).",
-        "rationale": "Owner directive 2026-11-03: 'Lay tai lieu toi vua gui lam nen tang' (take the document I just sent as the foundation), following the adoption (DEC-009) and the SRS consolidation (DEC-010). A pinned reference copy is kept outside the public repo (workspace/projects/iaict-references/) per DEC-001; only the hash is recorded in the repo.",
-        "status": "ACTIVE"
-      },
-      {
-        "id": "DEC-012",
-        "date": "2026-11-03",
-        "decision": "In SRS Appendix F, tables follow the Owner-supplied dossier as the root: the dossier's own table numbers and names are reproduced without grouping or renaming, every consolidated rule cites its source dossier table, and overlaps with pre-existing SRS requirements are cross-referenced in place (the pre-existing requirement governs; a TX code records only the dossier's addition). Applied in SRS v2.1.1 (delta D-STD-04).",
-        "rationale": "Owner directive 2026-11-03 after catching that TX-01/TX-03 duplicated ZON-09/CMP-10 and FLD-16/FLD-17: 'Cac bang lay theo file toi gui (lam goc)'. Implements DEC-011's foundation designation at document level.",
-        "status": "ACTIVE"
-      },
-      {
-        "id": "DEC-013",
-        "date": "2026-11-04",
-        "title": "Field baseline: the 33 dossier tables, provisionally",
-        "detail": "Owner ruling 2026-11-04 04:55 +07: 'Cac truong tam thoi lay theo 33 bang' — for the time being, the platform's field set follows the 33-table traceability dossier as extracted and analysed in T-030. This ratifies DEC-011/DEC-012 in operational terms: any new build (phase-3 tables, the SYS pack for Bang 32/33, portal sync) takes its fields from the dossier tables field-by-field; platform deviations remain recorded deltas, never silent. 'Provisionally' = until IAICT locks INT-01..06 / Q-TX-01..03, which may amend the baseline through the SRS delta process."
-      }
-    ],
-    "features": [
-      {
-        "evidence": "backend/tests/test_api.py — 7 tests passed locally on 2026-11-02 (health open; tenant header required; invalid tenant rejected; cross-tenant isolation verified)",
-        "id": "F-001",
-        "name": "Tenant-scoped API foundation: /health, tenant context enforcement, tenant-isolated workspaces",
-        "srs_refs": [
-          "TEN-01",
-          "GEN-07"
-        ],
-        "status": "TECH_DONE",
-        "classification": "PUBLIC"
-      },
-      {
-        "id": "F-002",
-        "name": "Compliance Rule Pack CMP-01..12 enforcement for Vertical Pack 01",
-        "srs_refs": [
-          "CMP-01..CMP-12",
-          "FLD-15",
-          "FLD-16",
-          "LOT-11",
-          "LOT-12",
-          "MPL-11"
-        ],
-        "status": "TECH_DONE",
-        "classification": "PUBLIC",
-        "note": "PostgreSQL persistence delivered with T-004 (schema + PgStore behind the store boundary); Neon/Hyperdrive wiring for the shared beta is the remaining deployment step."
-      },
-      {
-        "id": "F-003",
-        "classification": "PUBLIC",
-        "status": "TECH_DONE",
-        "name": "Tenant registry and lifecycle: create/list/get, ACTIVE/SUSPENDED, platform-key administration",
-        "srs_refs": [
-          "TEN-01",
-          "TEN-02",
-          "ADM-01"
-        ],
-        "evidence": "backend/tests/test_m1.py registry/lifecycle tests within the 24/24 passing suite"
-      },
-      {
-        "id": "F-004",
-        "classification": "PUBLIC",
-        "status": "TECH_DONE",
-        "name": "Tenant identity skeleton and append-only audit: bootstrap TENANT_ADMIN, role guards (VIEWER/OPERATOR/TENANT_ADMIN), per-tenant audit views without cross-tenant leakage",
-        "srs_refs": [
-          "ADM-02",
-          "SEC-05",
-          "NFR-36"
-        ],
-        "evidence": "backend/tests/test_m1.py identity/audit tests within the 24/24 passing suite"
-      },
-      {
-        "id": "F-005",
-        "name": "Mobile-first web UI served by the Worker",
-        "status": "TECH_DONE",
-        "evidence": "Live at https://iaict-core-platform.mihy.workers.dev (verified 2026-11-02: HTML/CSS/JS served with correct content types; API and Neon data unaffected). All screens operate on live API data."
-      },
-      {
-        "id": "F-006",
-        "name": "Traceability data standard - phase 1 (PUC identity, actors & parcels, PHI + mass-balance gates, traceability codes)",
-        "status": "TECH_DONE",
-        "evidence": "Live on the beta 2026-11-03 (Worker 871beb1e, D1 upgraded in place, browser-verified). See T-015 evidence."
-      },
-      {
-        "id": "F-007",
-        "name": "Traceability data standard - phase 2 (packing chain PHC/SKU, national traceability records, CTE stages)",
-        "status": "TECH_DONE",
-        "evidence": "Live on the beta 2026-11-03 (Worker 146e24f2, D1 upgraded in place, browser-verified). See T-016 evidence."
-      },
-      {
-        "id": "F-008",
-        "name": "Performance pack P1 + functional pack (audit T-021 follow-up)",
-        "status": "TECH_DONE",
-        "notes": "Both packs (T-022 performance + T-023 functional) complete locally at STATE rev 30; deployment to beta pending Owner token + push approval. Deployed live 2026-11-03 (Worker 0bbaac5b)."
-      },
-      {
-        "id": "F-009",
-        "name": "Phase-review supplements (T-024)",
-        "status": "TECH_DONE",
-        "notes": "Principal fields (zones VSIC/buffers, input-lot invoice/QCVN, field-event application method/bagging, plan density/seed doc), duplicate-link parity, CTE audit, GTIN digits discipline. Deploy pending with T-022/T-023. Deployed live 2026-11-03 (Worker 0bbaac5b)."
-      },
-      {
-        "id": "F-010",
-        "name": "UX completion: delete + detail view + actors catalogue + inline create in pickers",
-        "priority": "P1",
-        "status": "TECH_DONE",
-        "notes": "Owner feedback 2026-11-03: CRUD completeness, inline create like WordPress, date pickers, do not be rigid about the SRS for interaction design. Built in T-026; deploy pending token. Deployed live 2026-11-03 (Worker 3bddc15e)."
-      },
-      {
-        "id": "F-011",
-        "name": "Complete detail sheets + latency pack (prefetch, freshness window, keep-warm)",
-        "priority": "P1",
-        "status": "TECH_DONE",
-        "notes": "Owner review 2026-11-03 22:09: detail must show full information; screens still delayed. Built in T-027; deploy pending token. Deployed live 2026-11-03 (Worker bf53d3cb)."
-      },
-      {
-        "id": "F-012",
-        "name": "Entry/detail field consistency + zone-owner actor relationship",
-        "priority": "P1",
-        "status": "TECH_DONE",
-        "notes": "Owner review 2026-11-03 23:10. Built in T-029; deploy pending token. Deployed live 2026-11-03 (Worker 920420f7)."
-      },
-      {
-        "id": "F-013",
-        "name": "Load speed round 2: persistent SWR cache + non-blocking boot + sign-in warm-up",
-        "priority": "P1",
-        "status": "TECH_DONE",
-        "notes": "Owner report 2026-11-04 (load still slow). Built in T-030; deploy pending token. Deployed live 2026-11-04 (Worker 1ae828e8); reload-instant behavior browser-verified."
-      },
-      {
-        "id": "F-014",
-        "name": "33-table field conformance completion (T-031)",
-        "status": "TECH_DONE",
-        "notes": "All classified field gaps of the implemented scope closed per DEC-013; Q-TX-03 resolved (hash always, encryption with IAICT_PII_KEY). Awaiting deploy."
-      }
-    ],
-    "flows": [],
-    "name": "IAICT Core Platform",
-    "phase": "DISCOVERY",
-    "policy": {
-      "content_classification": "PUBLIC",
-      "destructive": "EXPLICIT_VERIFIED_OWNER_APPROVAL",
-      "production": "EXPLICIT_VERIFIED_OWNER_APPROVAL",
-      "public_content_reviewed": true,
-      "repository_visibility": "PUBLIC",
-      "secrets": "NEVER_COMMIT",
-      "source_of_truth": "PROJECT_GITHUB_WHEN_CONNECTED"
-    },
-    "product_map": {
-      "status": "DRAFT",
-      "summary": "Multi-tenant SaaS core platform for agriculture-forestry-aquaculture production management: shared Core + Vertical Packs. Baseline scope: 302 functional requirements in 22 groups, 56 NFR, 31 security controls, 11 hardware baselines, 12 compliance rules (CMP-01..12), 115 UAT scenarios, 64 deliverables, 82 minimum reports. Milestones M0-M7 over 240 days; hard day-90 gate M3a; pilot go-live M5; commercial readiness M7."
-    },
-    "releases": [],
-    "risks": [
-      {
-        "id": "R-001",
-        "classification": "PUBLIC",
-        "risk": "GitHub persistence was blocked until the connection and repository existed (resolved 2026-11-02: initial checkpoint pushed and verified on GitHub).",
-        "mitigation": "Every future checkpoint re-reads HEAD and STATE revision after pushing; sync provenance kept in the local snapshot record."
-      },
-      {
-        "id": "R-002",
-        "mitigation": "Classification recorded in policy; .gitignore covers env/keys/credentials; every push is content-reviewed before commit.",
-        "risk": "Public repository: accidental publication of internal documents, pilot data or secrets.",
-        "classification": "PUBLIC"
-      },
-      {
-        "id": "R-003",
-        "classification": "PUBLIC",
-        "risk": "The public repository description currently shows personal email addresses (entered by the Owner at creation). Owner acknowledged on 2026-11-02 and will remove them later.",
-        "mitigation": "Flagged to the Owner at the rev 3 report; no project data is affected; removal is a one-line metadata edit whenever the Owner chooses."
-      }
-    ],
-    "schema": "pcs.solo.project.v1",
-    "slug": "iaict-core-platform",
-    "source_refs": [
-      {
-        "date": "2026-11-02",
-        "id": "IAICT/SRS-CORE/2026/V2.0",
-        "sha256": "3a5d21e1bf34650dd3fdb4af844eccc34823cbaa7a48bc4d2fd0beec66866fe1",
-        "storage": "OWNER_LOCAL_NOT_PUBLISHED",
-        "type": "SRS",
-        "version": "2.0",
-        "classification": "PUBLIC"
-      },
-      {
-        "date": "2026-10-31",
-        "id": "IAICT/SOW-CORE/2026/V2.2.0-R21",
-        "sha256": "3a05a6d7fd03062fad550cccc8557355140cbad46d4842f6c647900eac909ba6",
-        "storage": "OWNER_LOCAL_NOT_PUBLISHED",
-        "type": "SOW",
-        "version": "2.2.0-R21",
-        "classification": "PUBLIC"
-      }
-    ],
-    "tasks": [
-      {
-        "id": "T-030",
-        "title": "Per-table dossier analysis (33 tables, structured extraction) + load-speed round 2 (SWR persistent cache)",
-        "status": "TECH_DONE",
-        "priority": "P1",
-        "phase": "M2",
-        "evidence": "Owner asked 2026-11-04 04:30 for a careful per-table analysis and reported loading still slow. Full structured extraction of the pinned dossier via python-docx: 33 tables / 376 fields with types/constraints/descriptions, diffed field-by-field and FK-by-FK against schemas/SPECS/RECORD_REFS/RecordIn/forms. Minutes: ~/workspace/your_files/iaict-full-audit/phan-tich-tung-bang-ho-so-chuan-04-11-2026.md. Result: all 14 implemented tables confirmed complete for their scope; every dossier FK inside implemented scope has a platform counterpart (REF-table FKs carried as codes by phase design). ONE real field gap found and fixed: Bang 11 owner_consent_doc_url (RecordIn + parcel forms + detail spec). Standing classified items reconfirmed: Q-TX-03 PII encryption (Bang 6), SYS pack (Bang 32 linked_actor_id/account_status; Bang 33 old/new snapshots + IP/device), Bang 13 status-history log, harvest DATE vs DATETIME note, harmless internal name deltas (registered_area_m2, vn_reg_no). PERFORMANCE, measured live 04:35 +07: static assets 0.3-0.9 s; /health 2.4-3.0 s; /api/v1/dashboard 2.3-5.1 s — the remaining latency is entirely free-tier Python Worker cold isolates. Client-side round 2 shipped: persistent stale-while-revalidate cache per tenant on the device (lists + dashboard snapshot render instantly on reopen, background refresh re-renders), boot no longer blocks on /health, sign-in screen fires a warm-up ping. Suite 65+2 (memory). NOT yet deployed: awaiting the Owner's Cloudflare token in-session. Options for eliminating first-hit cold latency entirely (cron keep-warm entry change / always-warm host) are presented in the minutes for an Owner decision. DEPLOYED 2026-11-04 04:51-04:53 +07 (Worker 1ae828e8). Production probe: a parcel created with owner_consent_doc_url round-tripped and was deleted cleanly. Browser test confirmed the SWR behavior end-to-end: the first sign-in still showed skeletons briefly (cold), but both page reloads rendered the dashboard instantly from the persisted snapshot with NO loading placeholders, and the Zones list also appeared immediately; the parcel form shows the new consent-document field.",
-        "blockers": []
-      },
-      {
-        "id": "T-029",
-        "title": "Field & relation consistency (Owner review 2026-11-03 23:10): every displayed field must have an entry path; dossier relationships completed",
-        "status": "TECH_DONE",
-        "priority": "P1",
-        "phase": "M2",
-        "evidence": "Owner caught display-only fields added by T-028 (detail spec without entry forms) - valid criticism, fixed systematically. Scripted entry-vs-detail sweep per kind, then: zones create/edit gained sector/market/scientific name/issuing authority/province/district/ward/declared area/validity/3 VietGAP buffer distances (backend-ready since T-024 but never form-wired) + PUC status as a select with the dossier's 5 states (Bang 7 enum read from the root dossier); plants gained cultivar_code + recognition_no; actors gained gs1_role_ai + is_group_leader/ics_training_completed as bool selects (new 'bool' sheet field type); inputs gained brand_name + qcvn_scheme_id; plans gained the parcel picker (+inline create) + variety_name + seed_origin; zone-parcel link form gained membership_status (Bang 12 enum); the issuance form gained packaging level + SSCC + brand_trademark_serial. RELATIONSHIP completed per Bang 7: zones.owner_actor_code is now a principal validated reference to actors (RECORD_REFS + SPECS + REF_ID_COLUMN + both schemas + D1 ALTER loop; in-place upgrade verified on a pre-T-029 database; invalid owner -> 400 REF_UNKNOWN; owner actor delete -> 409 RECORD_IN_USE). Also fixed wrong detail-spec keys for traceability records (business_name -> business_unit_name etc., matching the backend's dossier names). Suites: 65 passed + 2 skipped in BOTH memory and D1 modes (3 new tests test_t029_consistency.py). NOT yet deployed: awaiting the Owner's Cloudflare token in-session. DEPLOYED 2026-11-03 23:28-23:30 +07 (Worker 920420f7). Production probes ran the full relation cycle: actor created -> zone created with owner_actor_code + PUC status/VSIC/buffer values stored -> ghost owner rejected REF_UNKNOWN -> deleting the owner actor blocked RECORD_IN_USE naming the zone -> probes deleted cleanly. Production D1 upgraded in place (owner columns live). Browser test: zone create form shows 28 fields incl. the PUC status select with all 5 dossier states and the owner picker with inline create; actor form shows the GS1 field + both Co/Khong selects; plan form shows the parcel picker with inline create + variety/seed-origin fields.",
-        "blockers": []
-      },
-      {
-        "id": "T-028",
-        "title": "Field-completeness audit vs the root dossier (Owner research-first rule, 2026-11-03 22:29)",
-        "status": "TECH_DONE",
-        "priority": "P1",
-        "phase": "M2",
-        "evidence": "Extracted every field name from the pinned root dossier DOCX (SHA 3afb2be6...) per table and compared concept-by-concept with the platform schema + detail specs. Minutes: ~/workspace/your_files/iaict-full-audit/doi-chieu-truong-du-lieu-ho-so-chuan-03-11-2026.md. Bang 17 and Bang 29 fully covered (all diffs are name synonyms). Bang 18 had 4 REAL gaps - dosage_concentration, total_quantity_applied, crop_animal_growth_stage, target_pest_disease_reason - now added to the diary form, RecordIn declarations and the field-events detail spec; event cards open details. Detail specs extended (actors gs1_role_ai/is_group_leader/ics_training_completed; zones valid_from/valid_to/initial_declared_area_ha; spatial_units province/commune/validity) and created for field_events, packaging_units, cte_stages. All remaining diffs classified with dispositions: phase-3 sector specializations (timber/fisheries/livestock), Q-TX-03 PII encryption, GIS geometry, PUC administrative intake workflow - nothing silently missing. Suite 62+2; build OK. Deploys together with T-027 (token pending). DEPLOYED 2026-11-03 22:42-22:45 +07 (Worker bf53d3cb). Production probes: PATCH write OK; actor created with the new gs1_role_ai/is_group_leader fields round-tripped and was deleted cleanly. Browser test: zone detail panel shows 30 rows (28 spec fields + created/updated) with empty fields rendered as '-'; all four checked screens rendered content immediately after the dashboard (no loading skeletons observed - prefetch working); the diary form shows the 4 new Bang-18 fields; event cards open their detail sheet.",
-        "blockers": []
-      },
-      {
-        "id": "T-027",
-        "title": "Review pack 2 (Owner 2026-11-03 22:09): complete detail sheets + screen-load latency",
-        "status": "TECH_DONE",
-        "priority": "P1",
-        "phase": "M2",
-        "evidence": "Detail sheets now render the COMPLETE ordered field list per kind (DETAIL_SPECS for 11 kinds; empty fields shown as '-'; extras appended; coded values translated: actor/unit/storage types, PHI outcomes, sync states). Traceability-record and zone-parcel-link cards also open details. Latency: measured live TTFB 0.4-4.8s variance on identical tiny payloads = free-tier Python Worker cold isolates; mitigations shipped: ensure() 60s freshness window, prefetchAll() warms all 14 list caches right after the dashboard loads, keep-warm /health ping every 4 min while the app is open, skeleton only when a view has no cached data, users/audit screens read through the cache (audit invalidated on every successful save; users reload button fixed to invalidate - it previously relied on always-fresh fetches). Suites 62+2 (memory); build + dry-run OK. NOT yet deployed: awaiting the Owner's Cloudflare token in-session; post-deploy browser test still owed. Field completeness of its detail specs was subsequently audited and completed in T-028. DEPLOYED 2026-11-03 22:42-22:45 +07 (Worker bf53d3cb). Production probes: PATCH write OK; actor created with the new gs1_role_ai/is_group_leader fields round-tripped and was deleted cleanly. Browser test: zone detail panel shows 30 rows (28 spec fields + created/updated) with empty fields rendered as '-'; all four checked screens rendered content immediately after the dashboard (no loading skeletons observed - prefetch working); the diary form shows the 4 new Bang-18 fields; event cards open their detail sheet.",
-        "blockers": []
-      },
-      {
-        "id": "T-026",
-        "title": "UX completion pack (Owner feedback 2026-11-03 21:26): full CRUD on master data, Actors catalogue screen, tap-to-view detail, WordPress-style inline create inside reference pickers, remaining date pickers",
-        "status": "TECH_DONE",
-        "priority": "P1",
-        "phase": "M2",
-        "evidence": "DELETE endpoints for the 7 master kinds (TENANT_ADMIN; API-layer reference scan -> 409 RECORD_IN_USE; audit <PREFIX>_DELETE; delete_record in all 4 stores + lazy delegates; tests test_t026_delete.py 3/3). UI: new Actors catalogue view (list/create/edit/delete/detail); tap any card (zones, plants, lots, packing, inputs, parcels, PHI logs, actors) for a read-only detail sheet; delete buttons with confirm sheet on all master cards; '+ Them moi' inline quick-create inside the main reference pickers (zone/plant/actor/input-lot/parcel) — parent form reopens with typed values kept, options refreshed, new record pre-selected; date pickers completed (zone issue/post-inspection dates, plant recognition expiry, actor validity). Also fixed a latent philogs bug (view read v.outcome instead of v.validation_outcome). Suites: memory 62 passed + 2 skipped, D1 62 + 2 skipped; build + wrangler dry-run OK. NOT yet deployed: awaiting the Owner's Cloudflare token in-session (same standing arrangement); post-deploy browser test still owed per the standing rule. DEPLOYED 2026-11-03 21:44-21:52 +07 (first Worker 351e72cd, then 3bddc15e with the cancel-return fix). Production probes: full create->delete cycle on /actors (200, then GET 404); DELETE /zones/Z-TMP refused with 409 RECORD_IN_USE naming the referencing field_events record - the in-use guard works live and explains the long-standing test zone. Browser test: Actors screen present (empty state correct), zone cards have Edit+Delete, tap-to-detail opens, '+ Them moi' opens the quick-create. One UX defect found by that test and fixed same session: cancelling a quick-create closed the whole flow and lost the parent form; quick-create sheets now take an onCancel hook that restores the parent form with typed values intact - browser recheck PASSED (parent form reopened, previously chosen event type retained).",
-        "blockers": []
-      },
-      {
-        "id": "T-001",
-        "status": "TECH_DONE",
-        "title": "Create public GitHub repository for the project and push the initial checkpoint",
-        "classification": "PUBLIC",
-        "evidence": "Repository mihynt/iaict-core-platform-muse-dfalse.home (created by Owner); initial snapshot commit 2b354557f0b4c54eae4740bfb04943ee03cbb836 pushed 2026-11-02; HEAD and pcs/STATE.json revision 2 read back and verified from GitHub"
-      },
-      {
-        "evidence": "Local git repository with initial commit; backend pytest 7/7 passed (2026-11-02); pcs_solo.py verify result recorded in pcs/MOMENT.md",
-        "id": "T-002",
-        "status": "TECH_DONE",
-        "title": "Initialize PCS state, public-safe docs and backend foundation skeleton (local portable checkpoint)",
-        "classification": "PUBLIC"
-      },
-      {
-        "id": "T-003",
-        "status": "TECH_DONE",
-        "title": "M1 foundation: tenancy, identity/access and audit skeleton (SRS TEN/ADM groups, SEC controls)",
-        "classification": "PUBLIC",
-        "evidence": "FastAPI backend: platform tenant registry + lifecycle, registry-aware tenant guard (unknown/suspended denied), tenant users with bootstrap-admin rule and role guards, append-only audit with tenant-scoped views. pytest 24/24 passed locally on 2026-11-02."
-      },
-      {
-        "id": "T-004",
-        "status": "TECH_DONE",
-        "title": "M2: data model (ERD) and core production objects (ZON/MPL/FLD/LOT) with persistence",
-        "classification": "PUBLIC",
-        "note": "Done 2026-11-02. ERD in docs/DATA_MODEL.md grounded in SRS v2.0 group definitions; physical schema backend/app/schema.sql (12 tables). PgStore backend (psycopg, lazy-imported) behind the same store boundary; DATABASE_URL selects it, in-memory stays the default. Composite tenant foreign keys (tenant_id, ref_id) make cross-tenant references impossible at the database level - verified by a rejected cross-tenant INSERT. CRUD APIs for zones, mother-plants, crop-plans, field-events, lots with tenant-scoped code references (400 REF_UNKNOWN / 409 CODE_EXISTS), OPERATOR+ writes, per-create audit. Test evidence: 31/31 pytest pass against a real PostgreSQL 18.6 (binaries via the postgresql-binaries wheel; apt mirrors hang through this VM's proxy), 30 passed + 1 PG-only skip in in-memory mode, including a persistence test proving a second store instance sees API-written data. Schema-ready for later slices: zone boundary versions (ZON-04), plant status history (MPL-04), lot lineage graph (LOT-02). Remaining to production beta: Owner creates the Neon project, then Hyperdrive wiring + redeploy."
-      },
-      {
-        "id": "T-005",
-        "status": "PLANNED",
-        "title": "M3a day-90 hard gate: IoT gateway baseline and device ingestion evidence (UAT-60)",
-        "classification": "PUBLIC"
-      },
-      {
-        "id": "T-006",
-        "status": "PLANNED",
-        "title": "M5 pilot go-live scope per SRS section 9.1 / Q.1 activation rules",
-        "classification": "PUBLIC"
-      },
-      {
-        "id": "T-007",
-        "status": "PLANNED",
-        "title": "M7 commercial readiness: full applicable UAT set and CMP rule-pack enforcement evidence",
-        "classification": "PUBLIC"
-      },
-      {
-        "id": "T-008",
-        "title": "Web UI for the beta (mobile-first, served by the Worker)",
-        "status": "TECH_DONE",
-        "evidence": "Built 2026-11-02: deploy/cloudflare/public/{index.html,styles.css,app.js} - a vanilla SPA (no build step) covering dashboard, zones, mother plants, crop plans + field events, lots, users + audit, platform tenant administration (uses the Owner's own platform key) and connection settings; Vietnamese UI, bottom tab bar + bottom-sheet forms on mobile, sidebar + grid on desktop. Serving: wrangler.jsonc assets block (ASSETS binding, run_worker_first) plus a guarded catch-all route in backend/app/main.py that proxies non-API paths to the assets binding on Workers and returns plain JSON 404 elsewhere (local behavior unchanged, root still 404 without ASSETS). Regression: app.js passes node --check; backend suite green in all three store modes after the change (30 passed + 1 skip in-memory; 31/31 psycopg; 31/31 pg8000). Deployment to the beta is PENDING: wrangler needs the CLOUDFLARE_API_TOKEN, which is only ever held transiently per session and was lost when the environment restarted; the Owner has been asked to re-issue it. DEPLOYED AND VERIFIED LIVE 2026-11-02: the Owner re-issued a Cloudflare API token (used transiently for this deploy only, never stored); pywrangler uploaded the 3 UI assets and the new Worker version. Live checks at https://iaict-core-platform.mihy.workers.dev: GET / -> 200 text/html (the UI, 3310 bytes, correct Vietnamese title), /styles.css -> 200 text/css, /app.js -> 200 text/javascript, /health unchanged (storage postgresql-hyperdrive), beta-pilot real data still served by the API, unknown API paths still JSON 404, /docs still 200. The root URL no longer returns {'detail':'Not Found'}. Note on terminology recorded for the Owner: 'static' describes only how the UI shell files are delivered; every screen reads/writes live API data - nothing is hard-coded."
-      },
-      {
-        "id": "T-009",
-        "title": "Login support: account picker on the sign-in screen + remember-me",
-        "status": "TECH_DONE",
-        "evidence": "Owner reported 2026-11-02 they could not sign in with the type-it-yourself tenant+actor form. Fix built the same day (UI only, no backend change needed): verified in backend/app/identity.py that GET /users requires only the tenant guard, and verified live that GET /api/v1/users with only the beta-pilot tenant header returns its account list (admin / 'Pilot Admin' / TENANT_ADMIN). Login screen now: (1) loads and shows the tenant's accounts as tappable cards (tap = sign in with that account), auto-loads on tenant field change, with a bootstrap note when a tenant has no users yet; (2) validates tenant + actor membership BEFORE entering and shows the translated error on the login card itself; (3) normalizes the tenant slug (trim + lowercase); (4) 'remember me' checkbox - localStorage when on, sessionStorage when off; (5) all storage access is defensive with an in-memory fallback so a browser blocking storage can no longer kill the login silently. Checks: app.js passes node --check; backend suite still green (30 passed + 1 skip in-memory, 31/31 psycopg; backend code untouched). Deployment pending the Owner's Cloudflare API token (transient per deploy, never stored). DEPLOYED AND VERIFIED LIVE 2026-11-02 (token supplied by the Owner in-session, used transiently): GET / serves the new sign-in screen (3918 bytes, up from 3310; contains the account-picker and remember-me markup), the served app.js contains the account-loading and sessionStorage logic, /health unchanged (postgresql-hyperdrive), and the exact request the login page makes returns beta-pilot's account (admin / Pilot Admin / TENANT_ADMIN). Owner flow now: type tenant -> tap the account card -> inside; remember-me defaults on."
-      },
-      {
-        "id": "T-010",
-        "title": "Fix stuck-at-connecting login + tenant picker on the sign-in screen",
-        "status": "TECH_DONE",
-        "evidence": "ROOT CAUSE FOUND 2026-11-02: the Owner reported the sign-in only ever showed the connecting state. The setup overlay is styled .setup{display:flex} in author CSS, which overrides the UA [hidden]{display:none} rule - so setting hidden=true after a successful sign-in never actually hid the overlay, and the button kept its 'connecting' label forever. The same flaw kept the inline error banner permanently displayed. Fix: a global [hidden]{display:none !important} rule. Also added per Owner request: a tenant picker on the sign-in screen (button reads the platform key typed into the form - tenant listing stays platform-privileged - renders tenant cards; tapping one fills the tenant and loads its accounts), and a 20s AbortController timeout on all API calls so a stalled network surfaces an error instead of an endless spinner. DEPLOYED AND VERIFIED LIVE 2026-11-02: sign-in page now 4232 bytes with the tenant-picker markup, served CSS contains the [hidden] fix, served app.js contains loadTenants + AbortController, /health unchanged (postgresql-hyperdrive)."
-      },
-      {
-        "id": "T-011",
-        "title": "Fix intermittent dashboard data failures under parallel load (Hyperdrive/pg8000)",
-        "status": "TECH_DONE",
-        "evidence": "Found by the new browser-test rule (Owner instruction 2026-11-02): the first real-browser test passed sign-in but the dashboard failed with a generic error, although curl checks were green. Diagnosis chain, all evidenced: (1) the dashboard's four parallel list calls intermittently hit Cloudflare 1102 (Worker CPU limit) - crop-plans reproduced returning 503 'error code: 1102' while sibling endpoints returned 200; the old all-or-nothing Promise.all turned one failure into a full-page error. (2) A first fix (cached per-isolate pg8000 connection) exposed a deeper bug in wrangler tail: SQLSTATE 26000 'unnamed prepared statement does not exist' - Hyperdrive rebalances upstream sessions at transaction boundaries and pg8000's PARSE/DESCRIBE split across them. Final fix set: WorkerPgStore reuses one connection per isolate with SELECT 1 health-check + drop-on-error, every operation runs in ONE explicit transaction (autocommit off) so Hyperdrive pins the upstream session, and unique-violation handling moved outside the session (pg8000 refuses statements in a failed transaction - 3 local tests caught this before deploy). UI: GETs retry once on network/5xx; dashboard and plans views load sections independently (allSettled) with a per-section warning instead of a full-page error. Verification: full suite green in all three store modes; live parallel load 14/16 immediate 200 with the rest absorbed by the UI retry and NO 26000/500s; live write flow 201 + duplicate 409 CODE_EXISTS; post-fix real-browser re-test PASSED - dashboard rendered stats 2/1/1/0 (zones/plants/plans/lots), zones page listed Z-01 + Z-TMP, plans page listed PLAN-2026, no error states, and the remembered session persisted across browser restarts. Known leftovers: free-tier latency is still seconds per request and an occasional 503 can appear under parallel load (absorbed by retry); a clearly-labeled test zone Z-TMP created during write verification remains in beta-pilot (no delete endpoint yet). Process note: the browser agent's structural findings (counts, error presence) matched server data, but its decorative text details were partly paraphrased/invented - trust counts and states, verify labels against the API."
-      },
-      {
-        "id": "T-012",
-        "title": "Fix residual dashboard intermittency: UI network-retry gap + WorkerPgStore round-trip diet",
-        "status": "TECH_DONE",
-        "classification": "PUBLIC",
-        "evidence": "Owner chose investigation over a Supabase switch (2026-11-02). Controlled live measurement (read-only, browser-UA probe cross-checked with curl): sequential success only 8/20, dashboard-parallel 15/48; successful DB calls cost 7-10s warm or cold; /health (no DB) 0.3-3.4s bimodal by isolate warmth; failures were Cloudflare 1102 (free-tier resource limit), 1101 (Worker exception) and mid-stream connection drops. Neon scale-to-zero ruled out as the main cause: first call after >10 min idle cost the same 7.8-9.8s as warm calls. Code-verified cost structure: each list request ran >=2 store sessions (tenant guard + list), each with ping + query + COMMIT over Hyperdrive, and every fresh isolate replayed the full schema DDL on its first connection. UI bug found in app.js: api() retried only ApiError (HTTP) failures, never fetch-level network/timeout failures - exactly the failure class that defeated the dashboard retry in the 20:27 recheck. Fixes built: app.js GET retry = 3 attempts with 700/1600ms backoff covering network errors; WorkerPgStore per-isolate tenant/user cache (30s positive / 10s negative, writes invalidate), optimistic reads (no ping, one retry on a fresh connection - self-heal verified by killing the cached backend server-side), schema probe = one SELECT instead of full DDL. Tests: 30 passed + 1 skip (memory), 31/31 (psycopg), 31/31 (pg8000 worker mode) on real PostgreSQL 18.6; app.js passes node --check. Deployment pending the Owner's Cloudflare API token. DEPLOYED 2026-11-02 (Worker version b597ad4f) together with the Supabase switch. Live re-measurement with the same probe design: sequential 8/20 (unchanged), dashboard-parallel 19/48 (was 15/48), successful-call latency 5-6s (was 7-10s). Browser re-test (22:31-22:32 +07): sign-in fast, detail pages fine, dashboard still intermittent per section (first load 2 of 4 stats, one retry recovered zones but plans regressed, lots never rendered its 0). Verdict: the T-012 changes help latency and UI resilience but do NOT resolve the intermittency, whose cause sits in the Workers Python runtime (see DEC-007); follow-up is T-013."
-      },
-      {
-        "id": "T-013",
-        "title": "Relocate the API runtime from Cloudflare Python Workers to a plain always-on host (uvicorn + psycopg), keeping Supabase/Neon as the database",
-        "status": "CANCELLED",
-        "classification": "PUBLIC",
-        "evidence": "Diagnosis: DEC-007 (wrangler tail hang-cancellations + exceededCpu; ~1.2-1.9s CPU per successful request). Local preparation complete 2026-11-02: the app now serves the web UI itself from IAICT_PUBLIC_DIR when no Workers ASSETS binding exists (backend/app/main.py; Workers behavior unchanged); deploy/docker/Dockerfile packages the same app + UI; fly.toml and render.yaml blueprints prepared. Regression suite green in all three store modes after the change (30+1 skip / 31/31 / 31/31). Plain-host smoke proof on this machine (uvicorn + PgStore on local PostgreSQL): UI 200 in 31ms, tenant/bootstrap/zone creates 5-6ms, list calls ~2ms each, 5/5 - versus 5-10s and ~40% success on Workers with identical application code. Remaining: Owner chooses the host (Fly.io always-on ~$2-5/mo vs Render free with sleep-after-idle), creates the account, and sets DATABASE_URL + a fresh PLATFORM_ADMIN_KEY there. CLOSED 2026-11-03: superseded by the Owner's D1 decision (DEC-008 / T-014). The packaging artifacts (Dockerfile, fly.toml, render.yaml, IAICT_PUBLIC_DIR UI serving) stay in the repo as the documented exit path off Cloudflare."
-      },
-      {
-        "id": "T-014",
-        "title": "Adopt D1 as the Workers-side store (async store refactor + SQLite dialect migration), per spike evidence",
-        "status": "TECH_DONE",
-        "classification": "PUBLIC",
-        "evidence": "SPIKE MEASURED 2026-11-02 (separate throwaway Worker 'iaict-d1-spike', same Cloudflare account/runtime, D1 database id 956d373b-5f72-4413-bff0-af5513ded7ee): the /list pattern mirrors the real read path (tenant-guard lookup + list query, two sequential awaited D1 queries, beta-pilot-equivalent data). Results: sequential 20/20 and dashboard-parallel 48/48 succeeded (Postgres-via-Hyperdrive baseline: 8/20 and 19/48); wrangler tail 68/68 outcomes 'ok', zero hang-cancellations, zero exceededCpu; cpuTime median 26ms / max 68ms (baseline: ~1,241ms average, 1,902ms max); server wallTime median 127ms (baseline ~5,097ms); client-observed median ~0.9s including network and cold isolates. Conclusion: the D1 leg removes the failure classes entirely on the same free Python Workers runtime. NOT yet proven: write load, the FastAPI framework overhead on top, D1 foreign-key enforcement (a load-bearing property verified on PostgreSQL), and the real dashboard pattern. Integration cost if adopted: the store boundary must become async (D1 has no synchronous API - the current sync pg8000 store cannot call it), the 12-table schema must be ported to the SQLite dialect, and DEC-006 must be amended (D1 is a Cloudflare-proprietary API; the PostgreSQL stores and the Supabase dataset stay in place as the documented exit path). Spike code lives outside the repo at ~/workspace/projects/iaict-d1-spike (not committed). Awaiting the Owner's choice between T-014 (D1 adoption), T-013 (plain-host relocation) or deferring. COMPLETED 2026-11-03: the whole store interface was made async; new D1Store (backend/app/d1store.py) runs the SQLite port of the 12-table schema (backend/app/schema_d1.sql, same composite FKs); InMemory/PgStore/WorkerPgStore converted with unchanged semantics. Test suite green in all four modes (memory 30+1 skip, D1-over-sqlite3-shim 30+1 skip, psycopg 31, pg8000 31). Deployed to the production D1 database 'iaict-core' (id f4d07d24-3375-4588-affc-f6122c440ca6), Worker version dfdbdfc3; /health reports storage 'd1'. beta-pilot was reseeded through the API with a temporary platform secret (deleted immediately after; platform admin verified back to 503 PLATFORM_DISABLED): tenant, Pilot Admin, Z-01, Z-TMP, MPL-001, PLAN-2026, audit consistent. Live measurement on the real API: sequential 20/20 and dashboard-parallel 48/48 (Postgres baseline: 8/20, 19/48), client median 1.6-1.8s; wrangler tail 8/8 ok, cpuTime median 42ms (baseline avg 1,241ms), wallTime median 157ms (baseline ~5,097ms). Mandatory browser test (2026-11-03 02:29-02:30 +07): sign-in via account card, dashboard FIRST load complete at 2/1/1/0 with no warnings (lots rendered its 0 for the first time), zones and plans pages correct, reload again 2/1/1/0 clean. The multi-evening intermittency is resolved on the beta."
-      },
-      {
-        "id": "T-015",
-        "title": "Apply the national traceability data standard, phase 1 (D-STD-01): PUC identity on zones, actors/spatial-units/zone-parcel links/input lots, PHI gate + mass balance on harvest lots, traceability codes",
-        "status": "TECH_DONE",
-        "classification": "PUBLIC",
-        "evidence": "Owner directive 2026-11-03 with the research dossier (SHA-256 3afb2be6...cfeb1) recorded as delta D-STD-01 in pcs/SRS_CHANGES.md; full 33-table mapping in docs/DATA_MODEL.md (10 tables adopted in phase 1, remainder mapped to phase 2). Implemented: zones gain the PUC block (puc_code, puc_status, sector_category, market_scope, primary_species, scientific_name, issue_date, issuing_authority, post_inspect_due_date); new tenant-scoped kinds actors (ENT_ACTOR_HOUSEHOLD subset), spatial_units (ENT_SPATIAL_UNIT subset), zone_parcel_links (REL_ZONE_SPATIAL_UNIT, unique per tenant+zone+parcel), input_lots (ENT_INPUT_INVENTORY subset), phi_validations (LOG_PHI_VALIDATION); crop plans gain parcel link + variety + seed origin; field events gain input-lot link and computed safe_harvest_date = occurred date + PHI days; harvest lots gain farmer/parcel links + weigh slip, are rejected 400 PHI_VIOLATION when harvested before the plan's latest safe date (every attempt logged to phi_validations) and 400 MASS_BALANCE_EXCEEDED above the plan's target_yield_kg ceiling, and are stamped with traceability_code (plan | zone PUC-or-code | lot | harvest date, TT 02/2024) and data_retention_until (+12 months, TT 17/2021). Suite green in all four store modes: memory 37 passed + 1 skipped, D1-over-sqlite3-shim 37 + 1 skipped, psycopg 38, pg8000 38 (7 new tests in backend/tests/test_m3_traceability.py). D1 in-place upgrade path verified separately against a pre-T-015 schema copy (old data intact, new tables/columns appear, writes work) and then on production: deployed Worker version 871beb1e (2026-11-03), /health storage 'd1', remote D1 inspection shows all 5 new tables in database iaict-core, beta-pilot data intact (2 zones, 1 user, 1 plan, plus 1 lot the Owner created via the UI the same morning), new endpoints /api/v1/actors and /api/v1/phi-validations return 200 with empty lists. Mandatory browser test 2026-11-03 12:54-12:55 +07: sign-in via Pilot Admin card, dashboard 2/1/1/1 with no warnings, zones page 2 cards, lot create form contains the new farmer/parcel/weigh-slip fields, zone create form contains the PUC field, reload clean. UI: zone form/cards show PUC + primary species; lot form gained farmer code, parcel code, weigh slip; lot cards show farmer, weigh slip and traceability code. Phase 2 (packing chain PHC/SKU, national-portal traceability records + CTE stages, transport, recall, market approvals/GACC warnings, certifications, monitoring logs, livestock/fishery specializations) is mapped in docs/DATA_MODEL.md and not yet built."
-      },
-      {
-        "id": "T-016",
-        "title": "Traceability data standard phase 2 (D-STD-01): packing chain (PHC lots, N-N input links, SKU units), national traceability records + CTE stages, packing mass-balance gate",
-        "status": "TECH_DONE",
-        "classification": "PUBLIC",
-        "evidence": "Prepared locally on the Owner's instruction ('lam san') after the rev-21 checkpoint landed (GitHub 982e915c), then deployed in the same window once the Owner supplied the deploy token. Implemented: packing_lots (facility -> actors, PHC code, output weight, yield norm, storage type, packed_at, expiry), packing_inputs (N-N harvest->packing link, unique per tenant+packing+harvest; over-allocation guard rejects 400 HARVEST_LOT_OVER_ALLOCATED beyond the harvest lot's quantity), packaging_units (level, GTIN, SSCC, spec, count), traceability_records (the 10 mandatory TT 02/2024 fields, sync_status PENDING_SYNC; issuance runs the packing mass-balance gate - output above inputs x yield norm is rejected 400 PACKING_MASS_BALANCE_EXCEEDED - then completes the record from the chain, stamps traceability_code GTIN|PHC|packing lot|event time and data_retention_until: expiry +12 months, frozen/processed +24 months from packing), cte_stages (auto-built: one harvest stage per input lot located at the source zone PUC, plus the packing stage; further stages appendable via API). Suite green in all four store modes: memory 42 + 1 skipped, D1-over-sqlite3-shim 42 + 1 skipped, psycopg 43, pg8000 43 (5 new tests in backend/tests/test_m4_packing.py, including the dossier's pomelo case: 2 x 5,000 kg inputs packing to 8,200 kg passes at norm 0.85, 9,000 kg is blocked). D1 phase-2 in-place upgrade verified against a phase-1 database copy (data intact), then on production: deployed Worker version 146e24f2 (2026-11-03), remote D1 inspection shows all 5 phase-2 tables in iaict-core, beta-pilot data intact (2 zones, 1 user, 1 plan, 1 lot), endpoints /api/v1/packing-lots and /api/v1/traceability-records return 200 empty lists. UI: new 'Dong goi' (Packing) view - packing-lot list + create form, per-lot 'Cap ma truy xuat' flow (link input -> create SKU -> issue record), traceability-record list with sync status and retention date; reachable from the sidebar and the Khac quick-access cards. Mandatory browser test 2026-11-03 16:08-16:09 +07: sign-in via Pilot Admin card, dashboard 2/1/1/1 no warnings, packing view loads with both empty states, create form contains the PHC/yield-norm fields, reload clean. Not in scope yet: the national-portal push itself (records wait as PENDING_SYNC), transport/recall/market-approval entities (phase 3 in docs/DATA_MODEL.md)."
-      },
-      {
-        "id": "T-017",
-        "title": "T-016 two-pass review remediation: fix groups S1, M1-M4 and the fresh case of M5 (packing/traceability hardening)",
-        "status": "TECH_DONE",
-        "classification": "PUBLIC",
-        "evidence": "Owner approved fixing all five groups found by the T-016 two-pass review (minutes: bien-ban-ra-soat-2-luot-T016 in the Owner's review folder; the frozen-retention interpretation question in M5 was explicitly left open — only the fresh case was in scope). Fixes: S1 — packing-input links now require both ends (400 REF_REQUIRED) and CTE stage emission tolerates legacy dangling links instead of crashing after the record is written; the UI issue form requires choosing a harvest lot. M1 — issuance is blocked with 400 PACKING_DATA_INCOMPLETE when the packing lot lacks output_weight_kg or yield_norm_ratio (the mass-balance gate can no longer be skipped); the UI form marks both required. M2 — issuance requires packaging_unit_code (400 TRACEABILITY_UNIT_REQUIRED) resolving to a packing lot (400 PACKING_CHAIN_INCOMPLETE). M3 — duplicate traceability codes rejected with 409 TRACEABILITY_CODE_EXISTS plus a partial unique index ux_traceability_records_code (schema files + D1 upgrade-on-init; verified present on production D1). M4 — the issue form collects product_image_url (mandatory field 2 of TT 02/2024) and record cards warn when it is missing. M5 fresh case — retention for produce without an expiry date now anchors to the latest input harvest date + 12 months per the dossier fallback case (2) (was packing date + 12). INCIDENT during this deploy (recorded honestly): the first T-017 build created the M3 index inside D1Store._ensure_schema via self._run, which itself awaits _ensure_schema — unbounded recursion that burned the Workers CPU budget and took down ALL write paths on the beta (1102/500; reads unaffected) while the local suite stayed green (the recursion self-masked behind the guarded try/except and still produced the index on unwind). Detected by live POST probes during deploy verification (the checkpoint was NOT taken on the broken build), root-caused, and fixed by creating the index through the raw binding with the ready flag set first, plus a regression test (tests/test_d1_schema_guard.py) that counts binding prepare calls during cold-start schema setup and fails if they are not bounded. Fixed Worker version 75f69cfb. Verification: suite green in all four store modes (memory 47 + 2 skipped, D1 48 + 1 skipped incl. the new guard test, psycopg 48, pg8000 48; 5 new T-017 regression tests in test_m4_packing.py); the original 8-case probe now returns the intended results (A 400, B 400, C link 400 with no crash and no orphan records, D second issuance 409 with a single CTE chain, G retention 2027-10-14 harvest-anchored; E/F frozen behavior unchanged per scope). Production probes after the fixed deploy: health ok, REF_REQUIRED / TRACEABILITY_UNIT_REQUIRED / CODE_EXISTS / REF_UNKNOWN all returned as clean JSON in seconds, index confirmed on production D1. Mandatory browser test 2026-11-03 16:51-16:52 +07: sign-in via Pilot Admin card, dashboard 2/1/1/1 no warnings, packing view loads with both empty states, create form contains the now-required output/norm fields, reload clean. Still open by design: the frozen-retention interpretation (dossier states it two ways) awaits an Owner decision; L1-L4 minor items from the review (GTIN check digit, CTE audit entries, cross-store duplicate-link consistency, per-SKU issued-volume accounting) remain recorded in the review minutes."
-      },
-      {
-        "id": "T-018",
-        "title": "Consolidate the traceability data standard into the SRS (SRS v2.1, Appendix F)",
-        "status": "TECH_DONE",
-        "classification": "PUBLIC",
-        "evidence": "SRS v2.1 built from SRS v2.0 (hash-verified source): file IAICT_SRS_MUSE_v2.1_03-11-2026.docx, SHA-256 eb33a23d84e1283ee3f22ec0d502954ad45332bf6d499ec461d56c7891d6f6f1, delivered with its changelog next to the v2.0 files in the Owner's document folder (full texts stay out of the public repo per DEC-001; hashes recorded here). Contents: Appendix F (F.1 adoption principles + phase status; F.2 the full 33-entity + 3-view standard-to-platform mapping with corrected live statuses for phases 1-2; F.3 business-rule requirements TX-01..TX-12 reflecting the implemented and T-017-hardened behavior; F.4 the TT 02/2024 mandatory-field table with platform fill sources + the TT 17/2021 retention fallback with the case (1)/(3) overlap called out; F.5 open decisions Q-TX-01..03); a §1.4 reference + precedence clause; cover and version history updated to 2.1; TOC extended with Appendix F and page numbers re-verified against a LibreOffice render of v2.1 itself (150 pages; Sec.5-9 and Appendices A-E shifted +1 by table reflow and were corrected to measured values, F = p.144, approval block = p.150; Sec.1-4 verified unchanged). Machine verification: requirement-ID population identical v2.0 vs v2.1 (385 distinct IDs, none lost or renumbered); only additions are TX-01..12 and Q-TX-01..03. SRS v2.1 remains a DRAFT pending IAICT approval (INT-01..06 still open)."
-      },
-      {
-        "id": "T-019",
-        "title": "SRS v2.1.1 errata: Appendix F re-grounded on the dossier as root",
-        "status": "TECH_DONE",
-        "evidence": "SRS v2.1.1 DOCX SHA-256 16fdbdf8f79c9e51cd9a511b9237548a8f23618bf2a947feaba83daaa8eb02c9 (final hash after the T-020 five-round review loop; pre-loop hash was 5313daa7...), 156 pages (LibreOffice render, TOC re-measured). F.2 = the dossier's own 33 tables + 3 views with platform mapping, status and pre-existing-requirement cross-references; F.3 entries carry dossier-table provenance; TX-01 narrowed to the dossier's additions over ZON-09/ZON-10/CMP-10; TX-03 narrowed to the Bang 24 record model over FLD-16/FLD-17, with the FLD-17 per-parcel implementation gap recorded in the requirement text. ID population verified: nothing lost vs v2.0/v2.1, additions confined to the TX/Q-TX family. Full text stays out of the public repo (DEC-001).",
-        "notes": "Owner-caught defect in T-018's consolidation: F.3 presented TX rules without mapping overlaps with the baseline SRS. Errata issued same day per Owner directive 'cac bang lay theo file toi gui (lam goc)'."
-      },
-      {
-        "id": "T-020",
-        "title": "Five-round review loop over SRS v2.1.1 (fix-and-re-review per round)",
-        "status": "TECH_DONE",
-        "evidence": "Loop minutes: bien-ban-vong-lap-ra-soat-5-lan-v2.1.1.md (kept with the SRS files, outside the public repo). Rounds: (1) dossier-as-root - inventory complete, 1 minor fix (F.4 field-numbering note); (2) baseline SRS/SOW - 16/16 cross-references verified, 0 errors; (3) implementation - statuses match schema, DATA_MODEL.md phase labels fixed (5 rows); (4) internal consistency - 2 minor fixes (SOW Appendix F name collision clarified, DEC-012 basis); (5) fresh-eyes + final render - stale V1.0 footer fixed to V2.1.1. Final file: 156 pages, TOC re-verified at all checkpoints, SHA-256 16fdbdf8f79c9e51cd9a511b9237548a8f23618bf2a947feaba83daaa8eb02c9.",
-        "notes": "Owner directive 2026-11-03: 'Tao vong lap ra soat 5 lan, sau moi lan co loi thi sua va ra soat lai'. All 4 findings (1 medium, 3 minor) fixed and re-verified; no serious findings; no requirement/threshold/scope changes."
-      },
-      {
-        "id": "T-021",
-        "title": "Full-project audit: tables/fields vs the standard, backend, UI, performance",
-        "status": "TECH_DONE",
-        "evidence": "Minutes: bien-ban-ra-soat-toan-du-an-03-11-2026.md (kept with the audit files, outside the public repo). Data: 16/33 dossier tables implemented + 2/3 view rules; genuine field gaps at concept level: traceability_records lacks synced_at (TX-12 needs it), phi_validations lacks the last-treatment link (Bang 24), actors PII encryption = Q-TX-03, audit lacks old/new snapshots + IP/device, users lack account status/actor link. Backend: suite re-run 47 passed + 2 skipped (memory mode), no TODO/FIXME; NO update/delete endpoints for master data; no list pagination. UI: 5 API resources have no UI (spatial_units, zone_parcel_links, input_lots, phi_validations, cte_stages). Performance (measured live 2026-11-03): payloads tiny (156-1360 B); latency is TTFB-bound - run_worker_first routes even static assets through the Python Worker and app.js is served max-age=0/must-revalidate; the dashboard costs 7 Worker invocations (health + 6 full lists counted client-side); audit list unbounded. Fix plan P1 (assets bypass + /api/v1/dashboard summary endpoint), P2 (per-session view caching, list limits), P3 (GET timeout 20s -> ~8s, optional warm-up ping).",
-        "notes": "Owner directive 2026-11-03: full re-audit from the start of the project, report per part, focus on optimization because loading still feels slow. Fixes await the Owner's pick of a work pack."
-      },
-      {
-        "id": "T-022",
-        "title": "Performance pack P1: static assets bypass the Worker + /api/v1/dashboard summary endpoint",
-        "status": "TECH_DONE",
-        "evidence": "wrangler.jsonc: run_worker_first limited to [/api/*, /health, /docs, /openapi.json]; build.sh assembles public_dist with content-stamped app.<hash>.js / styles.<hash>.css + _headers (immutable, 1y) — validated by wrangler deploy --dry-run (4 asset files, bindings OK). Backend: count_records added to all 4 stores + lazy delegates; GET /api/v1/dashboard returns counts + last-5 audit + storage/env/version in one call; UI dashboard rewritten to the single call; GET timeout 20s -> 8s. Tests: test_dashboard.py (counts, isolation, tenant required); suite green memory 49+2 skipped, D1 50+1 skipped. Deploy pending — ships together with T-023. DEPLOYED 2026-11-03 ~20:30 +07 (Worker 40a5cbf5, superseded same session by 0bbaac5b with the dashboard path fix). Production verification: /health ok (d1); stamped assets served at the edge with immutable cache; GET /api/v1/dashboard returns real beta-pilot counts (2/1/1/1/1); PATCH /zones/Z-TMP succeeded on production D1 (in-place schema upgrade + update path healthy, ZON_UPDATE audit visible in the UI); duplicate POST returns clean 409; browser test: new views render, zone edit sheet opens with the VSIC field, field-event form shows the input-lot picker + application method. POST-DEPLOY BUG (found by the mandatory browser test, fixed same session): the rewritten dashboard called api(\"/dashboard\") instead of T(\"/dashboard\"), so the Overview rendered 'Chua ket noi duoc du lieu' while the API itself was healthy (curl probe passed). One-line fix, redeployed as Worker 0bbaac5b; browser recheck PASSED (4 stat cards 2/1/1/1, recent activity incl. the ZON_UPDATE probe, no error banner). Lesson recorded: API probes do not cover UI path wiring — the browser test is the gate, as the Owner's standing rule says.",
-        "notes": "Audit T-021 fix plan P1-a/P1-b (+P3 timeout pulled forward)."
-      },
-      {
-        "id": "T-023",
-        "title": "Functional pack: UI for the 5 API-only resources + PATCH master-data updates + synced_at/last-treatment fields",
-        "status": "TECH_DONE",
-        "evidence": "Backend: update_record in all 4 stores + lazy delegates; PATCH routes for zones/mother_plants/actors/spatial_units/input_lots/packing_lots/packaging_units (OPERATOR+, CODE_IMMUTABLE, refs revalidated, PREFIX_UPDATE audit); traceability_records.synced_at + phi_validations.last_treatment_ref added to both schemas + SPECS, D1 in-place ALTER upgrade verified against a pre-T-023 schema copy (columns added, create+update work); _prepare_lot records the field event whose PHI ends last. UI: new views inputs (list/create/edit), parcels (spatial units list/create/edit + zone-parcel links list/create), philogs (read-only, shows last treatment); field-event form gains the input-lot picker + PHI days; edit buttons on zones/plants/packing cards; CTE stage toggle on traceability cards; synced_at shown when set; NAV + settings quick-access entries. Tests: test_updates.py (5 tests); suite green memory 54+2 skipped, D1 55+1 skipped; app.js node --check OK; build stamp assembled; wrangler dry-run OK. Deploy pending with T-022 (needs the Owner token + a fresh push approval — the rev-29 push was declined by the Owner on 2026-11-03 and has NOT been retried). DEPLOYED 2026-11-03 ~20:30 +07 (Worker 40a5cbf5, superseded same session by 0bbaac5b with the dashboard path fix). Production verification: /health ok (d1); stamped assets served at the edge with immutable cache; GET /api/v1/dashboard returns real beta-pilot counts (2/1/1/1/1); PATCH /zones/Z-TMP succeeded on production D1 (in-place schema upgrade + update path healthy, ZON_UPDATE audit visible in the UI); duplicate POST returns clean 409; browser test: new views render, zone edit sheet opens with the VSIC field, field-event form shows the input-lot picker + application method.",
-        "notes": "Audit T-021 gaps: spatial_units, zone_parcel_links, input_lots (+ picker in the field-event form), phi_validations, cte_stages views; PATCH for non-gated master kinds with audit; traceability_records.synced_at; phi_validations last-treatment reference."
-      },
-      {
-        "id": "T-024",
-        "title": "Phase-by-phase review supplements: missing principal fields, duplicate-link parity, CTE audit, GTIN format discipline",
-        "status": "TECH_DONE",
-        "evidence": "Review minutes: ~/workspace/your_files/iaict-full-audit/bien-ban-ra-soat-tung-giai-doan-03-11-2026.md. Fields added to SPECS + schema.sql + schema_d1.sql + D1 in-place ALTER list (verified on a pre-T-023 schema copy: all 12 T-023/T-024 columns added, create+update work); actors descriptive fields accepted via RecordIn (data payload). InMemory LINK_UNIQUE_FIELDS parity for zone_parcel_links + packing_inputs (409 like SQL stores). _emit_cte_stages writes CTE_CREATE audit rows per stage with the issuing actor. GTIN: digits-only enforcement (400 GTIN_INVALID) — length/check-digit deliberately deferred with evidence (both circulating sample GTINs fail GS1 mod-10; T-017 tests use numeric placeholders). Tests: test_t024_supplements.py (5 tests); suite green memory 59+2 skipped, D1 60+1 skipped; build + wrangler dry-run OK. Deploy pending (Owner token) together with T-022/T-023. DEPLOYED 2026-11-03 ~20:30 +07 (Worker 40a5cbf5, superseded same session by 0bbaac5b with the dashboard path fix). Production verification: /health ok (d1); stamped assets served at the edge with immutable cache; GET /api/v1/dashboard returns real beta-pilot counts (2/1/1/1/1); PATCH /zones/Z-TMP succeeded on production D1 (in-place schema upgrade + update path healthy, ZON_UPDATE audit visible in the UI); duplicate POST returns clean 409; browser test: new views render, zone edit sheet opens with the VSIC field, field-event form shows the input-lot picker + application method.",
-        "notes": "Open items recorded in the minutes: Q-TX-01..03, FLD-17 per-parcel PHI (GĐ3), L4 per-SKU volume accounting (needs unit_weight_kg decision), users account_status + audit snapshots (hardening design), performance P2 (not in the chosen pack), phase 3 + T-005 roadmap choice."
-      },
-      {
-        "id": "T-025",
-        "title": "Mobile navigation fix: the Khac tab opens an all-functions menu",
-        "status": "TECH_DONE",
-        "evidence": "Owner reported a function not showing on mobile. Diagnosis (code + CSS + live browser at desktop width): under 1024px the sidebar is display:none and the bottom tab bar holds only 6 views + a Khac button that jumped straight to Settings; Packing (live build) and Inputs/Parcels/PHI-check/Tenants (new builds) had no entry of their own — Packing was reachable only via a quick-access card inside Settings (verified live: exactly 3 quick-access cards). Fix: the Khac tab now opens VIEWS.more, an all-functions menu listing every NAV view with full titles + descriptions; the tab stays highlighted for all menu-reached views. app.js syntax OK; build stamped. Narrow-viewport visual verification could not run pre-deploy (the browser tool cannot resize to 390px and rejects loopback) — it runs on the beta right after deployment. Deploy pending with T-022..T-024 (Owner token). DEPLOYED 2026-11-03 ~20:30 +07 (Worker 40a5cbf5, superseded same session by 0bbaac5b with the dashboard path fix). Production verification: /health ok (d1); stamped assets served at the edge with immutable cache; GET /api/v1/dashboard returns real beta-pilot counts (2/1/1/1/1); PATCH /zones/Z-TMP succeeded on production D1 (in-place schema upgrade + update path healthy, ZON_UPDATE audit visible in the UI); duplicate POST returns clean 409; browser test: new views render, zone edit sheet opens with the VSIC field, field-event form shows the input-lot picker + application method.",
-        "notes": "Stacks on STATE rev 31 (T-024), whose push was approved but failed twice on GitHub auth 503; both revisions push together."
-      },
-      {
-        "id": "T-031",
-        "title": "Field conformance completion per DEC-013 (close F2-F7, Bang 12/13, SYS pack, Q-TX-03)",
-        "status": "TECH_DONE",
-        "srs_refs": [
-          "D-STD-06",
-          "DEC-013"
-        ],
-        "evidence": "Owner directive 2026-11-04 05:05 +07 'Chot sua theo 33 bang, sua luon'. Batch A: every remaining dossier field of Bang 6/7/11/15/25/27 entry-able (RecordIn declarations + create/edit forms + detail specs + enum option lists taken verbatim from the dossier: farm tiers TT 23/2019, submission channels NQ 36/2026, forest origins, aqua water types, forestry classes TT 26/2025) + harvest_time for Bang 23. Batch D: Bang 13 zone_status_history table (both schemas + guarded D1 create) auto-logged on zone create and PUC status changes with reason/decision/remediation metadata popped out of the zone payload, ZON_STATUS_CHANGE audit, GET /zone-status-history, UI history toggle on zone cards + metadata fields in the zone edit form; Bang 12 withdraw flow: POST /zone-parcel-links/{id}/withdraw sets WITHDRAWN_FROM_ZONE + left_date (new store primitive update_record_by_id in all 4 stores + both lazy wrappers; double-withdraw 409 ALREADY_WITHDRAWN) + UI action. Batch B: Bang 32 users (linked_actor_code validated against actors, account_status ACTIVE/LOCKED/REVOKED enforced in require_actor with 403 ACCOUNT_INACTIVE and a LAST_ADMIN guard on PATCH /users/{username}, jurisdiction_admin_code, auth_provider_type; User dataclass + all stores + schemas + 8 guarded D1 ALTERs; users UI shows status/link and an admin sheet) and Bang 33 audit (old/new snapshots on create/update/delete record writes via _snap, client IP + user agent captured by middleware contextvars into every record_audit in all 4 stores). Batch C / Q-TX-03 CLOSED by implementation: app/pii.py (stdlib HMAC-SHA256 hash always; optional IAICT_PII_KEY activates at-rest encryption - HMAC keystream encrypt-then-MAC 'enc1.' tokens - with plaintext wiped at rest and transparent restore on actor reads; audit snapshots keep the stored/encrypted form). Also fixed in passing: actor legal_id had a detail-spec entry but NO form entry (found by the consistency sweep) - added to create/edit forms + declared in RecordIn; sweep now clean except phi_validations.lot_code (system-generated, classified T-029). SERIOUS latent defect found and fixed: since T-029 both SQL schemas placed zones.owner_actor_id/owner_actor_code AFTER the table constraints (invalid DDL - fresh installs / disaster recovery would have failed; production unaffected, its table predates T-029 and upgrades via ALTER). Columns moved into the column list in schema_d1.sql and schema.sql (PG owner_actor_id typed BIGINT); full D1 schema now executes cleanly on a fresh database (24 tables). Verification: suites 71 passed + 2 skipped in BOTH memory and D1 modes (6 new tests: test_t031_history_withdraw, test_t031_sys, test_t031_pii); D1 in-place upgrade verifier v4 PASSED (pre-T-031 DB gains audit/users columns + history table, existing admin reads account_status ACTIVE, snapshots round-trip); UI build OK; node --check OK. NOT deployed - needs the Owner's Cloudflare token in-session; PII encryption activates when the Owner sets the IAICT_PII_KEY secret in the dashboard. DEPLOYED 2026-11-04 (Owner pasted the token in-session; combined deploy with T-032 slices 1-2). Production probes PASSED: PATCH Z-TMP puc_status -> zone_status_history row created on production D1 (zone_code, new_status, trigger_reason_code, changed_by all stored; visible in the UI history toggle per the browser test) and the audit row carries old/new JSON snapshots + user_agent; actor created with legal_id returned legal_id_hash (64 hex chars, HMAC) and was deleted cleanly. PII encryption at rest stays inactive until the Owner sets IAICT_PII_KEY in the dashboard.",
-        "blockers": []
-      },
-      {
-        "id": "T-032",
-        "title": "Change-in-one-place architecture (research-backed): slice 1 lazy delegation done; slices 2-4 proposed",
-        "status": "IN_PROGRESS",
-        "srs_refs": [],
-        "evidence": "Owner asked 2026-11-04 05:18 +07 to research how big companies structure code so changes do not scatter, and apply it. Deep web research completed (report in research notes 'big-tech-evolvable-architecture', 41 KB, sourced; Amazon API mandate flagged secondary-only). Core finding: one authoritative artefact + everything else generated + machine checks on the boundary (Protobuf/codegen, Stripe's single canonical spec, Shopify modular monolith + Packwerk, schema-generated UI with an 80/20 limit, Fowler expand-migrate-contract + versioned migrations, dialect/adapter isolation). Internal audit measured our own scatter: one new field = 7 files; one new store method = 4 store files + 44 hand-written delegate lines in the two lazy wrappers; one new record kind = ~10 touch points. Proposal document delivered to the Owner (de-an-thay-doi-mot-noi-04-11-2026.md): 4 independent slices. SLICE 1 APPLIED same day: LazyWorkerStore/LazyD1Store now forward via __getattr__ - all 44 delegate one-liners removed, new store methods need no wrapper edits; suites 71 passed + 2 skipped in both memory and D1 modes after the change. Slices 2 (single field registry + code generation for SPECS/DDL/RecordIn/UI meta + drift test), 3 (numbered migrations replacing ad-hoc ALTER lists), 4 (dialect-unified SQL store core) are PLANNED pending the Owner's choice. SLICE 2 APPLIED 2026-11-04 per the Owner's follow-up directive (keep the microservices/GraphQL/Protobuf direction; build one more slice as proposed): backend/app/fields.py is now the single field registry (16 kinds, 241 fields, bootstrapped by extraction from the live sources so behavior is unchanged; labels/inputs/enums/refs/PII/dossier provenance declared once per field). tools/gen_fields.py generates: backend/app/records_spec.py (SPECS + RECORD_REFS + REF_ID_COLUMN + conv; store.py now re-exports RECORD_REFS from the generated module - verified byte-equal to the hand-kept original before rewiring), deploy/cloudflare/public/fields.js (window.IAICT_META: 151 labels incl. EXTRA_LABELS for system/extra keys, 14 detail specs, 8 enum lists; app.js literals replaced by references; build.sh stamps and ships fields.<stamp>.js; index.html loads it before app.js), contracts/iaict.proto (Protobuf, field numbers pinned append-only in contracts/field_numbers.json) and contracts/iaict.graphql (SDL) - the generated contracts are the kept path to microservices/GraphQL/Protobuf: a future split consumes them instead of re-deriving shapes; runtime stays a modular monolith (Shopify position recorded in the proposal). Drift guard test_fields_codegen.py (3 tests): regeneration byte-equality, registry principal columns present in BOTH SQL schemas, registry api fields declared on RecordIn. End-to-end proof on a scratch copy: one demo field added to the registry propagated to fields.js + .proto (new pinned number) + .graphql with --check green. Suites: 74 passed + 2 skipped in BOTH memory and D1 modes; UI build OK. Slices 3 (numbered migrations) and 4 (dialect-unified store) remain PLANNED. DEPLOYED 2026-11-04 with T-031. The mandatory browser test caught three UI defects the backend suite could not see (fixed same session, final Worker 8039239a, stamp 9a68ca557d): (1) T-031's users view read ensure() results as envelopes while ensure returns item arrays - users screen crashed; fixed to array semantics. (2) T-031 had added ~23 fields to forms and detail specs without DETAIL_LABELS entries - details rendered raw keys; labels recovered from the form definitions into the registry (EXTRA_LABELS + per-field labels) so label is now defined once. (3) SLICE-2 BOOTSTRAP BUG: the one-off extraction script matched the wrong bracket for array constants, truncating all 8 enum lists to their first element as an object; every create form then died silently in openSheet ((f.options||[]).map is not a function). Root-caused by replaying the full sign-in -> zones -> fab flow in a local jsdom simulation with error capture; fixed by re-extracting the enums correctly into the registry and hardening the drift suite (test_enums_are_option_lists, test_detail_fields_have_labels) - suites now 76 passed + 2 skipped in both modes. Final browser round PASSED all items: zone create form opens with 31 fields and the PUC status select; actor form shows the legal_id field and the forestry-class select; users screen renders the admin card, account-admin button and audit list; the Z-TMP status-history entry renders in the zone card toggle. Incident write-up appended to the architecture proposal document.",
-        "blockers": [
-          "Slices 3-4 not yet requested."
-        ]
-      },
-      {
-        "id": "T-033",
-        "title": "Field audit vs the 33 tables + trim 4 excess zone fields",
-        "status": "TECH_DONE",
-        "srs_refs": [
-          "DEC-013"
-        ],
-        "evidence": "Audit (minutes: ra-soat-truong-thua-04-11-2026.md): every registry field diffed against its dossier table and the SRS baseline - most diffs are verified synonyms (puc_code<->puc_national_code etc.) or SRS-baseline fields; genuine excess concentrated in zones. Owner approved cutting 4: managing_entity (duplicate of the FK-validated owner_actor_code), season (belongs to crop_plans/Bang 15; held probe junk on Z-TMP), crop_group (duplicated by primary_species/scientific_name + plan crop), water_source (no Bang 7 home; empty everywhere). No backend logic read any of them. Cut executed at the registry + both zone forms + zone card template + RecordIn declarations; regeneration propagated it (Protobuf contract now reserves numbers 7-10 for Zone, never reused). Suites 76 passed + 2 skipped in both modes; jsdom simulation: zone form down to 27 fields, zero errors. DEPLOYED Worker 050aa146: API no longer returns the 4 fields; verified directly on production D1 that stored values are untouched (Z-01 crop_group still 'rau cu' in the zones table - display/API cut only, expand-contract discipline). Browser test PASSED: 27-field form without the 4 fields, Z-01 detail and card clean, main fields intact. Two mild duplicates elsewhere (crop_plans seed_origin vs seed_origin_doc; traceability_records generic status vs sync_status) were reported but NOT cut - awaiting the Owner.",
-        "blockers": []
-      },
-      {
-        "id": "T-034",
-        "title": "Full field conformance: only the 33 dossier tables' fields remain",
-        "status": "TECH_DONE",
-        "srs_refs": [
-          "DEC-013"
-        ],
-        "evidence": "Owner directive superseded the T-033 classification: SRS-baseline fields are also cut when the 33 tables lack the concept. Minutes: ra-soat-toan-bo-33-bang-04-11-2026.md. 34 fields cut across 12 kinds: zones name/area_ha/address/lat/lon/status/province/district/ward; actors status; spatial_units name/status; zone_parcel_links status (dup of membership_status); crop_plans seed_origin (dup of seed_origin_doc); field_events lat/lon/device/notes/materials + the 4 legacy duplicate names (growth_stage/target_pest/dosage/quantity_applied) shadowed by their dossier names; input_lots unit/brand_name/status; lots quality_grade/status/harvested_by; packing_lots product_name (moved to the issuance step, where Bang 29 puts it) + status; packaging_units status; traceability_records status; phi_validations outcome RENAMED to the dossier's validation_outcome at the write path - which also fixed a latent bug: the PHI screen had been reading validation_outcome while the backend wrote outcome, so outcome chips could never render (invisible with zero PHI rows). Documented structural exceptions kept (relations and gate parameters, listed in the minutes): plan/event/lot zone+plant+parcel relations, farmer/parcel on lots (TX-02), phi_days (from Bang 17), packing output_weight_kg/packed_at/expiry_date (TX-04/TX-10 gate inputs), lot traceability_code/data_retention_until, and the mother_plants kind (SRS MPL entity, no dossier table). UI fallout handled: zone/parcel option labels now code+PUC/parcel-number, zone card area reads initial_declared_area_ha, issue form collects product_name for the record, quick input-lot form fixed to write the real name field. Suites 76 passed + 2 skipped in both modes; jsdom sims clean (zone form 21 fields; issue form has the Bang 29 product name). DEPLOYED Worker a7932088: API no longer surfaces the cut fields (first probe raced Worker propagation; recheck + raw D1 read confirmed - stored column values untouched, as always). Pilot data care: Z-01's 10.5 ha moved into initial_declared_area_ha via PATCH so the zone card keeps its area line. Browser test PASSED all 4 items (card shows code only + area, 21-field zone form, diary form without notes/device, input form without brand/unit).",
-        "blockers": []
-      },
-      {
-        "id": "T-035",
-        "title": "Core + Vertical forms: sector-conditional field blocks",
-        "status": "TECH_DONE",
-        "srs_refs": [
-          "DEC-013"
-        ],
-        "evidence": "Triggered by the Owner's verification question on the zone table's livestock fields (farm_scale_tier + the TT 23/2019 distances + bee-site distance). Verified first: both source documents carry them identically, and TT 23/2019/TT-BNNPTNT (livestock circular, in force) Dieu 5 (farm safety distances by scale tier: 100/150, 200/300, 400/500 m) and Dieu 6.1 (bee-site spacing 1-2 km) match the dossier's constraint text number for number - the block is a LIVESTOCK_FARMING-conditional block inside the multi-sector zone entity, not an error. Owner directed the forms be organized Core + Vertical accordingly. Built: (1) a visIf mechanism in openSheet - a field may declare visIf {k, in:[...]}; wrappers carry data-k; visibility re-evaluates on driver change; the submit handler skips hidden fields so editing a record of another sector never touches the hidden block's stored values. (2) Zone create/edit: sector_category is now a select with the dossier's 4 sectors (new SECTORS enum in the registry, generated to the UI); the 4 livestock fields show only for LIVESTOCK_FARMING. (3) Parcel create/edit: unit_type values aligned to Bang 11's six (AGRICULTURAL_LAND_PARCEL, FOREST_PLOT_STAND, LIVESTOCK_BARN_HOUSE, BEEKEEPING_SITE, AQUACULTURE_POND_CAGE, FISHING_VESSEL - zero live parcels, so no data migration; legacy values keep display labels); forest block (subzone/compartment/plot codes + origin) shows only for FOREST_PLOT_STAND, terrain block (slope + terrace) for land/forest, water type for AQUACULTURE_POND_CAGE, vessel block for FISHING_VESSEL. (4) Consistency repair found en route: the 4 forest-code/slope fields had no labels, no detail entries and no form fields anywhere - labels and detail entries added in the registry, form fields added inside the gated blocks. Suites 76+2 green; jsdom simulation verified every toggle (zone 17 visible -> 21 for livestock -> 17 for crop; parcel blocks per type) with zero errors. DEPLOYED Worker 2484be83; live asset verified to carry the new unit types; browser test PASSED all 3 items (sector dropdown with 4 sectors, livestock block show/hide both ways, forest block on Lô rừng with vessel field absent).",
-        "blockers": []
-      }
-    ],
-    "version": "0.1.0"
+ "revision": 51,
+ "schema": "pcs.solo.v1",
+ "state": {
+  "architecture_map": {
+   "status": "DRAFT",
+   "summary": "API-first modular monolith (Python 3.12 + FastAPI, versioned OpenAPI /api/v1) with deny-by-default tenant isolation on every tenant-scoped resource. Android offline-first field client, IoT device ingestion and a public traceability page follow the SRS milestone order. Persistence layer arrives at M2 without changing the tenant-isolation contract."
   },
-  "updated_at": "2026-11-03T23:53:42Z"
+  "artifacts": [
+   {
+    "name": "SRS v2.0 — requirements baseline (document file)",
+    "published": false,
+    "ref": "IAICT/SRS-CORE/2026/V2.0",
+    "sha256": "3a5d21e1bf34650dd3fdb4af844eccc34823cbaa7a48bc4d2fd0beec66866fe1",
+    "classification": "PUBLIC"
+   },
+   {
+    "name": "Requirement-level traceability matrix for SRS v2.0 (CSV/XLSX)",
+    "published": false,
+    "ref": "ma-tran-truy-vet-muc-ma-SRS-v2.0",
+    "classification": "PUBLIC"
+   },
+   {
+    "name": "Project GitHub repository",
+    "classification": "PUBLIC",
+    "ref": "https://github.com/mihynt/iaict-core-platform-muse-dfalse.home",
+    "published": true
+   }
+  ],
+  "current": {
+   "active_task": "T-005",
+   "last_completed_step": "T-036 DONE (rev 51): Core+Vertical review for all 16 kinds + plan/event sector gating + zone-creation 500 incident fixed (legacy zones.name NOT NULL; store guard live on Worker a439d46e). Suites: memory 77+3; D1 legacy tests pass standalone; full D1 suite in one process is broken on the pristine tree too (pre-existing harness issue).",
+   "next_action": "Owner picks the next track: D-STD-01 phase 3 (17 tables + views) vs T-005 (M3a IoT gate) vs T-032 slices 3-4. Note: existing zones need sector_category set (edit each zone, pick its sector) for the vertical form blocks to open on current data.",
+   "blockers": []
+  },
+  "decisions": [
+   {
+    "date": "2026-11-02",
+    "decision": "Repository visibility PUBLIC for dungnt-mhy/iaict-core-platform, chosen by the Owner in chat on 2026-11-02. Full SOW/SRS documents are NOT classified for publication: only hashes and public-safe summaries are recorded in this repository.",
+    "id": "DEC-001",
+    "classification": "PUBLIC"
+   },
+   {
+    "date": "2026-11-02",
+    "decision": "Backend stack for the first milestones: Python 3.12 + FastAPI modular monolith; Android client and IoT ingestion follow the SRS milestone order.",
+    "id": "DEC-002",
+    "classification": "PUBLIC"
+   },
+   {
+    "date": "2026-11-02",
+    "decision": "Requirements baseline is SRS v2.0 (IAICT/SRS-CORE/2026/V2.0) derived from SOW R21. Requirement changes are appended to pcs/SRS_CHANGES.md as deltas; the baseline itself is never edited.",
+    "id": "DEC-003",
+    "classification": "PUBLIC"
+   },
+   {
+    "id": "DEC-004",
+    "date": "2026-11-02",
+    "classification": "PUBLIC",
+    "decision": "Correction by Owner (2026-11-02): the connected GitHub account is mihynt (verified via get_me, account id 351337042), not dungnt-mhy. Repository target corrected to mihynt/iaict-core-platform. DEC-001 is otherwise unchanged: visibility PUBLIC, full SOW/SRS not published."
+   },
+   {
+    "id": "DEC-005",
+    "date": "2026-11-02",
+    "classification": "PUBLIC",
+    "decision": "Repository created by the Owner as mihynt/iaict-core-platform-muse-dfalse.home (PUBLIC) because the Muse GitHub App lacks repository-creation permission (403). This actual repository is the project's canonical GitHub home; it supersedes the proposed name in DEC-004."
+   },
+   {
+    "id": "DEC-006",
+    "date": "2026-11-02",
+    "classification": "PUBLIC",
+    "decision": "Beta hosting decided by Owner (2026-11-02): Cloudflare Workers Free runs the API and web UI; Neon Free provides PostgreSQL, reached from Workers through Hyperdrive Free; Supabase was evaluated and kept as a fully compatible alternative. Portability rules are binding: (1) only deploy/cloudflare/src/entry.py knows about Cloudflare - no Cloudflare-proprietary APIs (D1/KV/Durable Objects) in core logic; (2) persistence uses standard SQL and widely-available PostgreSQL extensions only, no Neon/Supabase platform extras (their Auth/Storage/Realtime) in the product core; (3) the app stays stateless, all durable state in PostgreSQL; daily development and tests use a local database, Neon is reserved for the shared beta/staging environments (separate Neon project per environment, compute kept at the 0.25 CU minimum). Rationale: the whole beta stack costs 0; PostgreSQL-to-PostgreSQL migration between Neon and Supabase, or out to a VPS/AWS/Azure/GCP running the same ASGI app under uvicorn, stays a pg_dump/pg_restore operation. Deployment packaging prepared in deploy/cloudflare/ with runbook docs/DEPLOY_CLOUDFLARE_NEON.md; actual deployment awaits the Owner's Cloudflare and Neon accounts. DEPLOYED 2026-11-02: the API is live at https://iaict-core-platform.iaict-coreplatform-mhy.workers.dev (Cloudflare account subdomain iaict-coreplatform-mhy; deployed via uv run pywrangler deploy after the browser-OAuth route failed on wrangler's ~2-minute authorization window and the Owner chose the one-time API-token route; the token was used transiently and never stored). Live verification: /health 200 with env=beta, deny-by-default 400/403/503 responses, tenant creation 201 with a temporary platform secret that was deleted right after the check (platform administration stays disabled at 503 until the Owner sets their own PLATFORM_ADMIN_KEY secret). Verified platform constraint: in-memory state is per-isolate and is not shared between Worker requests, so multi-request flows only become meaningful when the T-004 PostgreSQL layer lands - as planned. PERSISTENCE WIRING (2026-11-02): the Owner created the Neon project (ap-southeast-1, PostgreSQL 18.6) and shared the direct connection string transiently (never stored). Verified from this environment over Neon's HTTPS SQL endpoint (the VM proxy intercepts raw TCP/5432): credentials valid, all 12 schema tables applied, cross-tenant FK rejection reproduced on Neon itself (SQLSTATE 23503). Worker-side driver settled by spike tests against Cloudflare's official Python+Hyperdrive guidance: asyncpg is recommended but its Pyodide wheel is served from a CDN unreachable from this build environment, and direct-to-Neon connections from Python Workers fail on TLS over the socket shim - which is exactly what Hyperdrive exists to solve (plaintext local leg, ssl=False). Chosen driver: pg8000 (pure Python, on Cloudflare's supported list). app/workerstore.py implements the store contract on pg8000; app/store.py gained a LazyWorkerStore selected by the Workers entrypoint (IAICT_BACKEND=hyperdrive) that binds the Hyperdrive config from the first request env and otherwise falls back to in-memory storage, reported openly by /health (storage field). Full suite passes 31/31 in all three modes (memory, psycopg, pg8000) against real PostgreSQL. The updated app is deployed to the beta (currently storage: memory). ONE step remains, with the Owner: create the Hyperdrive configuration - the current API token is denied Hyperdrive access (error 10000), so the Owner creates it in the dashboard (Workers & Pages -> Hyperdrive -> Create, name iaict-neon, direct Neon connection string) and shares the config id; then the binding is uncommented in wrangler.jsonc, the beta redeployed, and durable multi-request flows verified live. COMPLETED 2026-11-02: the Owner created the Hyperdrive config 'iaict-neon' (id 3cdbf0e61cfc4a078ea1f4790200a65f; direct connection string without channel_binding, caching disabled) in the dashboard; the binding is active in wrangler.jsonc and the beta now runs DURABLE: /health reports storage 'postgresql-hyperdrive'. Live verification with a temporary platform secret (deleted afterwards): tenant beta-pilot created in one request was fully usable in later requests - bootstrap admin, zone Z-01, mother plant MPL-001 referencing the zone, crop plan PLAN-2026 - with 5 audit entries readable through the API; records cross-checked present in Neon. One transient 500 on a list call was traced to the cached per-isolate connection pattern; WorkerPgStore now opens a fresh connection per operation (Cloudflare's prescribed Hyperdrive pattern) and repeated spaced calls all return 200. Seed records (beta-pilot tenant with its zone/plant/plan) intentionally remain in Neon as the beta's first real data. Platform administration stays disabled until the Owner sets their own PLATFORM_ADMIN_KEY secret. URL CHANGE + ADMIN KEY (2026-11-02): the Owner renamed the account workers.dev subdomain from 'iaict-coreplatform-mhy' to 'mihy' - the canonical beta URL is now https://iaict-core-platform.mihy.workers.dev and the old URL no longer resolves; all data was unaffected (it lives in Neon, verified: beta-pilot records intact at the new address). The Owner also set their own PLATFORM_ADMIN_KEY secret (verified active from outside: a wrong key now returns 401 PLATFORM_KEY_INVALID instead of 503)."
+   },
+   {
+    "id": "DEC-007",
+    "date": "2026-11-02",
+    "classification": "PUBLIC",
+    "decision": "Supabase trial executed at the Owner's direction (2026-11-02): the beta's Hyperdrive binding now points at a Supabase PostgreSQL project (Singapore, direct connection, config 'iaict-supabase' id 4ee90fdeba69436493d69e11fd7a870b); the schema was auto-created by the Worker on first request and the beta-pilot dataset was rebuilt from an API snapshot (tenant, Pilot Admin, zones Z-01 + Z-TMP, plant MPL-001, plan PLAN-2026). Neon (config 'iaict-neon') is untouched and remains the instant rollback. Measured result: latency improved (successful calls 5-6s vs 7-10s) but the failure rate did NOT improve (sequential 8/20, dashboard-parallel 19/48 - same class as Neon: 1101/1102/dropped connections). wrangler tail evidence (14 sampled requests: 9 ok, 4 canceled by the runtime's hang detector, 1 exceededCpu; successful requests burn ~1.2-1.9s CPU each) identifies the bottleneck as the Cloudflare Python Workers runtime itself (Pyodide + synchronous pg8000), not the database. DEC-006 is therefore amended in part: the database may be Neon or Supabase interchangeably, but the API runtime is expected to move to a plain always-on host (T-013) running the same ASGI app under uvicorn with the psycopg backend - the portability rules of DEC-006 are what make this a packaging change, not a rewrite. The Owner also forgot their PLATFORM_ADMIN_KEY; a temporary secret was used to create the tenant on Supabase and deleted immediately after, so platform administration is disabled (503) until the Owner sets a fresh key of their own choosing."
+   },
+   {
+    "id": "DEC-008",
+    "date": "2026-11-03",
+    "classification": "PUBLIC",
+    "decision": "Owner decision 2026-11-03: adopt Cloudflare D1 as the beta's store on Workers (T-014), superseding the T-013 plain-host relocation. This AMENDS DEC-006 in one respect: a Cloudflare-proprietary API (D1) now sits behind the store boundary. The rest of DEC-006's portability discipline is kept and is what bounds the lock-in: the store interface is storage-agnostic, the PostgreSQL backends (psycopg + pg8000/Hyperdrive) remain in the tree and green in tests, the datasets on Supabase and Neon are untouched, and wrangler.jsonc documents the rollback (restore the Hyperdrive binding + IAICT_BACKEND=hyperdrive + redeploy). Rationale is measured, not preferential: on the same free Python Workers runtime, D1 scored sequential 20/20 + parallel 48/48 with cpuTime median ~26-42ms per request, versus 8/20 + 19/48 at ~1,241ms CPU on PostgreSQL via Hyperdrive; the hang-cancellations and exceededCpu failures disappeared entirely. D1 was also verified to enforce the composite (tenant_id, ref_id) foreign keys the tenant isolation model relies on (cross-tenant INSERT rejected, SQLITE_CONSTRAINT_FOREIGNKEY)."
+   },
+   {
+    "id": "DEC-009",
+    "date": "2026-11-03",
+    "classification": "PUBLIC",
+    "decision": "Owner decision 2026-11-03: adopt the Vietnamese agri-forestry-fishery traceability data standard (research dossier, 33 tables + 3 views; ND 38/2026, NQ 36/2026, TCVN 11892-1:2026, TT 02/2024/TT-BKHCN, TCVN 12850:2019, GS1) as the platform's data-model reference, recorded as SRS delta D-STD-01. Adoption is phased: phase 1 (T-015) covers the crop-chain core that maps onto the SRS ZON/MPL/FLD/LOT groups; the packing chain, national-portal sync, transport/recall and the forestry/livestock/fishery specializations are phase 2, sequenced with the pilot milestones. The standard's PostgreSQL/PostGIS/bitemporal forms are adapted to the platform's tenant-scoped composite-FK model behind the existing store boundary; enforcement rules (PHI gate, mass balance) live at the API layer so they hold identically on every backend."
+   },
+   {
+    "id": "DEC-010",
+    "date": "2026-11-03",
+    "decision": "Consolidate the traceability data standard into the SRS baseline as SRS v2.1 (Appendix F + TX-01..TX-12 requirements + §1.4 precedence clause), superseding the delta-only handling of D-STD-01 for documentation purposes; implementation deltas continue to be recorded in pcs/SRS_CHANGES.md.",
+    "rationale": "Owner directive 2026-11-03: 'Ghi nho va hop nhat voi srs, dieu chinh theo tai lieu nay'. The re-uploaded dossier is byte-identical to the adopted D-STD-01 source (SHA-256 verified), so v2.1 is a consolidation of already-adopted content, not a scope change: no existing requirement ID, threshold or definition changes (385/385 IDs preserved, machine-checked). Open items are carried explicitly as Q-TX-01..03 instead of being silently decided.",
+    "status": "ACTIVE"
+   },
+   {
+    "id": "DEC-011",
+    "date": "2026-11-03",
+    "decision": "The Owner-supplied traceability-standard dossier (SHA-256 3afb2be6baf68765e80be68513f84736d94bca1b51a445a59bc59829668cfeb1) is the foundational baseline for the platform's data standard. Precedence: the dossier is the ultimate source for traceability data definitions; SRS v2.1 Appendix F is its consolidated normative form; implementation follows Appendix F. Deviations require a recorded delta with rationale (D-STD-03).",
+    "rationale": "Owner directive 2026-11-03: 'Lay tai lieu toi vua gui lam nen tang' (take the document I just sent as the foundation), following the adoption (DEC-009) and the SRS consolidation (DEC-010). A pinned reference copy is kept outside the public repo (workspace/projects/iaict-references/) per DEC-001; only the hash is recorded in the repo.",
+    "status": "ACTIVE"
+   },
+   {
+    "id": "DEC-012",
+    "date": "2026-11-03",
+    "decision": "In SRS Appendix F, tables follow the Owner-supplied dossier as the root: the dossier's own table numbers and names are reproduced without grouping or renaming, every consolidated rule cites its source dossier table, and overlaps with pre-existing SRS requirements are cross-referenced in place (the pre-existing requirement governs; a TX code records only the dossier's addition). Applied in SRS v2.1.1 (delta D-STD-04).",
+    "rationale": "Owner directive 2026-11-03 after catching that TX-01/TX-03 duplicated ZON-09/CMP-10 and FLD-16/FLD-17: 'Cac bang lay theo file toi gui (lam goc)'. Implements DEC-011's foundation designation at document level.",
+    "status": "ACTIVE"
+   },
+   {
+    "id": "DEC-013",
+    "date": "2026-11-04",
+    "title": "Field baseline: the 33 dossier tables, provisionally",
+    "detail": "Owner ruling 2026-11-04 04:55 +07: 'Cac truong tam thoi lay theo 33 bang' — for the time being, the platform's field set follows the 33-table traceability dossier as extracted and analysed in T-030. This ratifies DEC-011/DEC-012 in operational terms: any new build (phase-3 tables, the SYS pack for Bang 32/33, portal sync) takes its fields from the dossier tables field-by-field; platform deviations remain recorded deltas, never silent. 'Provisionally' = until IAICT locks INT-01..06 / Q-TX-01..03, which may amend the baseline through the SRS delta process."
+   }
+  ],
+  "features": [
+   {
+    "evidence": "backend/tests/test_api.py — 7 tests passed locally on 2026-11-02 (health open; tenant header required; invalid tenant rejected; cross-tenant isolation verified)",
+    "id": "F-001",
+    "name": "Tenant-scoped API foundation: /health, tenant context enforcement, tenant-isolated workspaces",
+    "srs_refs": [
+     "TEN-01",
+     "GEN-07"
+    ],
+    "status": "TECH_DONE",
+    "classification": "PUBLIC"
+   },
+   {
+    "id": "F-002",
+    "name": "Compliance Rule Pack CMP-01..12 enforcement for Vertical Pack 01",
+    "srs_refs": [
+     "CMP-01..CMP-12",
+     "FLD-15",
+     "FLD-16",
+     "LOT-11",
+     "LOT-12",
+     "MPL-11"
+    ],
+    "status": "TECH_DONE",
+    "classification": "PUBLIC",
+    "note": "PostgreSQL persistence delivered with T-004 (schema + PgStore behind the store boundary); Neon/Hyperdrive wiring for the shared beta is the remaining deployment step."
+   },
+   {
+    "id": "F-003",
+    "classification": "PUBLIC",
+    "status": "TECH_DONE",
+    "name": "Tenant registry and lifecycle: create/list/get, ACTIVE/SUSPENDED, platform-key administration",
+    "srs_refs": [
+     "TEN-01",
+     "TEN-02",
+     "ADM-01"
+    ],
+    "evidence": "backend/tests/test_m1.py registry/lifecycle tests within the 24/24 passing suite"
+   },
+   {
+    "id": "F-004",
+    "classification": "PUBLIC",
+    "status": "TECH_DONE",
+    "name": "Tenant identity skeleton and append-only audit: bootstrap TENANT_ADMIN, role guards (VIEWER/OPERATOR/TENANT_ADMIN), per-tenant audit views without cross-tenant leakage",
+    "srs_refs": [
+     "ADM-02",
+     "SEC-05",
+     "NFR-36"
+    ],
+    "evidence": "backend/tests/test_m1.py identity/audit tests within the 24/24 passing suite"
+   },
+   {
+    "id": "F-005",
+    "name": "Mobile-first web UI served by the Worker",
+    "status": "TECH_DONE",
+    "evidence": "Live at https://iaict-core-platform.mihy.workers.dev (verified 2026-11-02: HTML/CSS/JS served with correct content types; API and Neon data unaffected). All screens operate on live API data."
+   },
+   {
+    "id": "F-006",
+    "name": "Traceability data standard - phase 1 (PUC identity, actors & parcels, PHI + mass-balance gates, traceability codes)",
+    "status": "TECH_DONE",
+    "evidence": "Live on the beta 2026-11-03 (Worker 871beb1e, D1 upgraded in place, browser-verified). See T-015 evidence."
+   },
+   {
+    "id": "F-007",
+    "name": "Traceability data standard - phase 2 (packing chain PHC/SKU, national traceability records, CTE stages)",
+    "status": "TECH_DONE",
+    "evidence": "Live on the beta 2026-11-03 (Worker 146e24f2, D1 upgraded in place, browser-verified). See T-016 evidence."
+   },
+   {
+    "id": "F-008",
+    "name": "Performance pack P1 + functional pack (audit T-021 follow-up)",
+    "status": "TECH_DONE",
+    "notes": "Both packs (T-022 performance + T-023 functional) complete locally at STATE rev 30; deployment to beta pending Owner token + push approval. Deployed live 2026-11-03 (Worker 0bbaac5b)."
+   },
+   {
+    "id": "F-009",
+    "name": "Phase-review supplements (T-024)",
+    "status": "TECH_DONE",
+    "notes": "Principal fields (zones VSIC/buffers, input-lot invoice/QCVN, field-event application method/bagging, plan density/seed doc), duplicate-link parity, CTE audit, GTIN digits discipline. Deploy pending with T-022/T-023. Deployed live 2026-11-03 (Worker 0bbaac5b)."
+   },
+   {
+    "id": "F-010",
+    "name": "UX completion: delete + detail view + actors catalogue + inline create in pickers",
+    "priority": "P1",
+    "status": "TECH_DONE",
+    "notes": "Owner feedback 2026-11-03: CRUD completeness, inline create like WordPress, date pickers, do not be rigid about the SRS for interaction design. Built in T-026; deploy pending token. Deployed live 2026-11-03 (Worker 3bddc15e)."
+   },
+   {
+    "id": "F-011",
+    "name": "Complete detail sheets + latency pack (prefetch, freshness window, keep-warm)",
+    "priority": "P1",
+    "status": "TECH_DONE",
+    "notes": "Owner review 2026-11-03 22:09: detail must show full information; screens still delayed. Built in T-027; deploy pending token. Deployed live 2026-11-03 (Worker bf53d3cb)."
+   },
+   {
+    "id": "F-012",
+    "name": "Entry/detail field consistency + zone-owner actor relationship",
+    "priority": "P1",
+    "status": "TECH_DONE",
+    "notes": "Owner review 2026-11-03 23:10. Built in T-029; deploy pending token. Deployed live 2026-11-03 (Worker 920420f7)."
+   },
+   {
+    "id": "F-013",
+    "name": "Load speed round 2: persistent SWR cache + non-blocking boot + sign-in warm-up",
+    "priority": "P1",
+    "status": "TECH_DONE",
+    "notes": "Owner report 2026-11-04 (load still slow). Built in T-030; deploy pending token. Deployed live 2026-11-04 (Worker 1ae828e8); reload-instant behavior browser-verified."
+   },
+   {
+    "id": "F-014",
+    "name": "33-table field conformance completion (T-031)",
+    "status": "TECH_DONE",
+    "notes": "All classified field gaps of the implemented scope closed per DEC-013; Q-TX-03 resolved (hash always, encryption with IAICT_PII_KEY). Awaiting deploy."
+   },
+   {
+    "id": "F-015",
+    "name": "Core + Vertical forms across all kinds (T-036)",
+    "status": "TECH_DONE",
+    "notes": "Plan/event sector gating by the selected zone's sector; cycle_status aligned to Bang 15; zone-creation legacy NOT NULL incident fixed (store guard + schema relaxation + regression tests); Worker a439d46e; browser-verified."
+   }
+  ],
+  "flows": [],
+  "name": "IAICT Core Platform",
+  "phase": "DISCOVERY",
+  "policy": {
+   "content_classification": "PUBLIC",
+   "destructive": "EXPLICIT_VERIFIED_OWNER_APPROVAL",
+   "production": "EXPLICIT_VERIFIED_OWNER_APPROVAL",
+   "public_content_reviewed": true,
+   "repository_visibility": "PUBLIC",
+   "secrets": "NEVER_COMMIT",
+   "source_of_truth": "PROJECT_GITHUB_WHEN_CONNECTED"
+  },
+  "product_map": {
+   "status": "DRAFT",
+   "summary": "Multi-tenant SaaS core platform for agriculture-forestry-aquaculture production management: shared Core + Vertical Packs. Baseline scope: 302 functional requirements in 22 groups, 56 NFR, 31 security controls, 11 hardware baselines, 12 compliance rules (CMP-01..12), 115 UAT scenarios, 64 deliverables, 82 minimum reports. Milestones M0-M7 over 240 days; hard day-90 gate M3a; pilot go-live M5; commercial readiness M7."
+  },
+  "releases": [],
+  "risks": [
+   {
+    "id": "R-001",
+    "classification": "PUBLIC",
+    "risk": "GitHub persistence was blocked until the connection and repository existed (resolved 2026-11-02: initial checkpoint pushed and verified on GitHub).",
+    "mitigation": "Every future checkpoint re-reads HEAD and STATE revision after pushing; sync provenance kept in the local snapshot record."
+   },
+   {
+    "id": "R-002",
+    "mitigation": "Classification recorded in policy; .gitignore covers env/keys/credentials; every push is content-reviewed before commit.",
+    "risk": "Public repository: accidental publication of internal documents, pilot data or secrets.",
+    "classification": "PUBLIC"
+   },
+   {
+    "id": "R-003",
+    "classification": "PUBLIC",
+    "risk": "The public repository description currently shows personal email addresses (entered by the Owner at creation). Owner acknowledged on 2026-11-02 and will remove them later.",
+    "mitigation": "Flagged to the Owner at the rev 3 report; no project data is affected; removal is a one-line metadata edit whenever the Owner chooses."
+   }
+  ],
+  "schema": "pcs.solo.project.v1",
+  "slug": "iaict-core-platform",
+  "source_refs": [
+   {
+    "date": "2026-11-02",
+    "id": "IAICT/SRS-CORE/2026/V2.0",
+    "sha256": "3a5d21e1bf34650dd3fdb4af844eccc34823cbaa7a48bc4d2fd0beec66866fe1",
+    "storage": "OWNER_LOCAL_NOT_PUBLISHED",
+    "type": "SRS",
+    "version": "2.0",
+    "classification": "PUBLIC"
+   },
+   {
+    "date": "2026-10-31",
+    "id": "IAICT/SOW-CORE/2026/V2.2.0-R21",
+    "sha256": "3a05a6d7fd03062fad550cccc8557355140cbad46d4842f6c647900eac909ba6",
+    "storage": "OWNER_LOCAL_NOT_PUBLISHED",
+    "type": "SOW",
+    "version": "2.2.0-R21",
+    "classification": "PUBLIC"
+   }
+  ],
+  "tasks": [
+   {
+    "id": "T-030",
+    "title": "Per-table dossier analysis (33 tables, structured extraction) + load-speed round 2 (SWR persistent cache)",
+    "status": "TECH_DONE",
+    "priority": "P1",
+    "phase": "M2",
+    "evidence": "Owner asked 2026-11-04 04:30 for a careful per-table analysis and reported loading still slow. Full structured extraction of the pinned dossier via python-docx: 33 tables / 376 fields with types/constraints/descriptions, diffed field-by-field and FK-by-FK against schemas/SPECS/RECORD_REFS/RecordIn/forms. Minutes: ~/workspace/your_files/iaict-full-audit/phan-tich-tung-bang-ho-so-chuan-04-11-2026.md. Result: all 14 implemented tables confirmed complete for their scope; every dossier FK inside implemented scope has a platform counterpart (REF-table FKs carried as codes by phase design). ONE real field gap found and fixed: Bang 11 owner_consent_doc_url (RecordIn + parcel forms + detail spec). Standing classified items reconfirmed: Q-TX-03 PII encryption (Bang 6), SYS pack (Bang 32 linked_actor_id/account_status; Bang 33 old/new snapshots + IP/device), Bang 13 status-history log, harvest DATE vs DATETIME note, harmless internal name deltas (registered_area_m2, vn_reg_no). PERFORMANCE, measured live 04:35 +07: static assets 0.3-0.9 s; /health 2.4-3.0 s; /api/v1/dashboard 2.3-5.1 s — the remaining latency is entirely free-tier Python Worker cold isolates. Client-side round 2 shipped: persistent stale-while-revalidate cache per tenant on the device (lists + dashboard snapshot render instantly on reopen, background refresh re-renders), boot no longer blocks on /health, sign-in screen fires a warm-up ping. Suite 65+2 (memory). NOT yet deployed: awaiting the Owner's Cloudflare token in-session. Options for eliminating first-hit cold latency entirely (cron keep-warm entry change / always-warm host) are presented in the minutes for an Owner decision. DEPLOYED 2026-11-04 04:51-04:53 +07 (Worker 1ae828e8). Production probe: a parcel created with owner_consent_doc_url round-tripped and was deleted cleanly. Browser test confirmed the SWR behavior end-to-end: the first sign-in still showed skeletons briefly (cold), but both page reloads rendered the dashboard instantly from the persisted snapshot with NO loading placeholders, and the Zones list also appeared immediately; the parcel form shows the new consent-document field.",
+    "blockers": []
+   },
+   {
+    "id": "T-029",
+    "title": "Field & relation consistency (Owner review 2026-11-03 23:10): every displayed field must have an entry path; dossier relationships completed",
+    "status": "TECH_DONE",
+    "priority": "P1",
+    "phase": "M2",
+    "evidence": "Owner caught display-only fields added by T-028 (detail spec without entry forms) - valid criticism, fixed systematically. Scripted entry-vs-detail sweep per kind, then: zones create/edit gained sector/market/scientific name/issuing authority/province/district/ward/declared area/validity/3 VietGAP buffer distances (backend-ready since T-024 but never form-wired) + PUC status as a select with the dossier's 5 states (Bang 7 enum read from the root dossier); plants gained cultivar_code + recognition_no; actors gained gs1_role_ai + is_group_leader/ics_training_completed as bool selects (new 'bool' sheet field type); inputs gained brand_name + qcvn_scheme_id; plans gained the parcel picker (+inline create) + variety_name + seed_origin; zone-parcel link form gained membership_status (Bang 12 enum); the issuance form gained packaging level + SSCC + brand_trademark_serial. RELATIONSHIP completed per Bang 7: zones.owner_actor_code is now a principal validated reference to actors (RECORD_REFS + SPECS + REF_ID_COLUMN + both schemas + D1 ALTER loop; in-place upgrade verified on a pre-T-029 database; invalid owner -> 400 REF_UNKNOWN; owner actor delete -> 409 RECORD_IN_USE). Also fixed wrong detail-spec keys for traceability records (business_name -> business_unit_name etc., matching the backend's dossier names). Suites: 65 passed + 2 skipped in BOTH memory and D1 modes (3 new tests test_t029_consistency.py). NOT yet deployed: awaiting the Owner's Cloudflare token in-session. DEPLOYED 2026-11-03 23:28-23:30 +07 (Worker 920420f7). Production probes ran the full relation cycle: actor created -> zone created with owner_actor_code + PUC status/VSIC/buffer values stored -> ghost owner rejected REF_UNKNOWN -> deleting the owner actor blocked RECORD_IN_USE naming the zone -> probes deleted cleanly. Production D1 upgraded in place (owner columns live). Browser test: zone create form shows 28 fields incl. the PUC status select with all 5 dossier states and the owner picker with inline create; actor form shows the GS1 field + both Co/Khong selects; plan form shows the parcel picker with inline create + variety/seed-origin fields.",
+    "blockers": []
+   },
+   {
+    "id": "T-028",
+    "title": "Field-completeness audit vs the root dossier (Owner research-first rule, 2026-11-03 22:29)",
+    "status": "TECH_DONE",
+    "priority": "P1",
+    "phase": "M2",
+    "evidence": "Extracted every field name from the pinned root dossier DOCX (SHA 3afb2be6...) per table and compared concept-by-concept with the platform schema + detail specs. Minutes: ~/workspace/your_files/iaict-full-audit/doi-chieu-truong-du-lieu-ho-so-chuan-03-11-2026.md. Bang 17 and Bang 29 fully covered (all diffs are name synonyms). Bang 18 had 4 REAL gaps - dosage_concentration, total_quantity_applied, crop_animal_growth_stage, target_pest_disease_reason - now added to the diary form, RecordIn declarations and the field-events detail spec; event cards open details. Detail specs extended (actors gs1_role_ai/is_group_leader/ics_training_completed; zones valid_from/valid_to/initial_declared_area_ha; spatial_units province/commune/validity) and created for field_events, packaging_units, cte_stages. All remaining diffs classified with dispositions: phase-3 sector specializations (timber/fisheries/livestock), Q-TX-03 PII encryption, GIS geometry, PUC administrative intake workflow - nothing silently missing. Suite 62+2; build OK. Deploys together with T-027 (token pending). DEPLOYED 2026-11-03 22:42-22:45 +07 (Worker bf53d3cb). Production probes: PATCH write OK; actor created with the new gs1_role_ai/is_group_leader fields round-tripped and was deleted cleanly. Browser test: zone detail panel shows 30 rows (28 spec fields + created/updated) with empty fields rendered as '-'; all four checked screens rendered content immediately after the dashboard (no loading skeletons observed - prefetch working); the diary form shows the 4 new Bang-18 fields; event cards open their detail sheet.",
+    "blockers": []
+   },
+   {
+    "id": "T-027",
+    "title": "Review pack 2 (Owner 2026-11-03 22:09): complete detail sheets + screen-load latency",
+    "status": "TECH_DONE",
+    "priority": "P1",
+    "phase": "M2",
+    "evidence": "Detail sheets now render the COMPLETE ordered field list per kind (DETAIL_SPECS for 11 kinds; empty fields shown as '-'; extras appended; coded values translated: actor/unit/storage types, PHI outcomes, sync states). Traceability-record and zone-parcel-link cards also open details. Latency: measured live TTFB 0.4-4.8s variance on identical tiny payloads = free-tier Python Worker cold isolates; mitigations shipped: ensure() 60s freshness window, prefetchAll() warms all 14 list caches right after the dashboard loads, keep-warm /health ping every 4 min while the app is open, skeleton only when a view has no cached data, users/audit screens read through the cache (audit invalidated on every successful save; users reload button fixed to invalidate - it previously relied on always-fresh fetches). Suites 62+2 (memory); build + dry-run OK. NOT yet deployed: awaiting the Owner's Cloudflare token in-session; post-deploy browser test still owed. Field completeness of its detail specs was subsequently audited and completed in T-028. DEPLOYED 2026-11-03 22:42-22:45 +07 (Worker bf53d3cb). Production probes: PATCH write OK; actor created with the new gs1_role_ai/is_group_leader fields round-tripped and was deleted cleanly. Browser test: zone detail panel shows 30 rows (28 spec fields + created/updated) with empty fields rendered as '-'; all four checked screens rendered content immediately after the dashboard (no loading skeletons observed - prefetch working); the diary form shows the 4 new Bang-18 fields; event cards open their detail sheet.",
+    "blockers": []
+   },
+   {
+    "id": "T-026",
+    "title": "UX completion pack (Owner feedback 2026-11-03 21:26): full CRUD on master data, Actors catalogue screen, tap-to-view detail, WordPress-style inline create inside reference pickers, remaining date pickers",
+    "status": "TECH_DONE",
+    "priority": "P1",
+    "phase": "M2",
+    "evidence": "DELETE endpoints for the 7 master kinds (TENANT_ADMIN; API-layer reference scan -> 409 RECORD_IN_USE; audit <PREFIX>_DELETE; delete_record in all 4 stores + lazy delegates; tests test_t026_delete.py 3/3). UI: new Actors catalogue view (list/create/edit/delete/detail); tap any card (zones, plants, lots, packing, inputs, parcels, PHI logs, actors) for a read-only detail sheet; delete buttons with confirm sheet on all master cards; '+ Them moi' inline quick-create inside the main reference pickers (zone/plant/actor/input-lot/parcel) — parent form reopens with typed values kept, options refreshed, new record pre-selected; date pickers completed (zone issue/post-inspection dates, plant recognition expiry, actor validity). Also fixed a latent philogs bug (view read v.outcome instead of v.validation_outcome). Suites: memory 62 passed + 2 skipped, D1 62 + 2 skipped; build + wrangler dry-run OK. NOT yet deployed: awaiting the Owner's Cloudflare token in-session (same standing arrangement); post-deploy browser test still owed per the standing rule. DEPLOYED 2026-11-03 21:44-21:52 +07 (first Worker 351e72cd, then 3bddc15e with the cancel-return fix). Production probes: full create->delete cycle on /actors (200, then GET 404); DELETE /zones/Z-TMP refused with 409 RECORD_IN_USE naming the referencing field_events record - the in-use guard works live and explains the long-standing test zone. Browser test: Actors screen present (empty state correct), zone cards have Edit+Delete, tap-to-detail opens, '+ Them moi' opens the quick-create. One UX defect found by that test and fixed same session: cancelling a quick-create closed the whole flow and lost the parent form; quick-create sheets now take an onCancel hook that restores the parent form with typed values intact - browser recheck PASSED (parent form reopened, previously chosen event type retained).",
+    "blockers": []
+   },
+   {
+    "id": "T-001",
+    "status": "TECH_DONE",
+    "title": "Create public GitHub repository for the project and push the initial checkpoint",
+    "classification": "PUBLIC",
+    "evidence": "Repository mihynt/iaict-core-platform-muse-dfalse.home (created by Owner); initial snapshot commit 2b354557f0b4c54eae4740bfb04943ee03cbb836 pushed 2026-11-02; HEAD and pcs/STATE.json revision 2 read back and verified from GitHub"
+   },
+   {
+    "evidence": "Local git repository with initial commit; backend pytest 7/7 passed (2026-11-02); pcs_solo.py verify result recorded in pcs/MOMENT.md",
+    "id": "T-002",
+    "status": "TECH_DONE",
+    "title": "Initialize PCS state, public-safe docs and backend foundation skeleton (local portable checkpoint)",
+    "classification": "PUBLIC"
+   },
+   {
+    "id": "T-003",
+    "status": "TECH_DONE",
+    "title": "M1 foundation: tenancy, identity/access and audit skeleton (SRS TEN/ADM groups, SEC controls)",
+    "classification": "PUBLIC",
+    "evidence": "FastAPI backend: platform tenant registry + lifecycle, registry-aware tenant guard (unknown/suspended denied), tenant users with bootstrap-admin rule and role guards, append-only audit with tenant-scoped views. pytest 24/24 passed locally on 2026-11-02."
+   },
+   {
+    "id": "T-004",
+    "status": "TECH_DONE",
+    "title": "M2: data model (ERD) and core production objects (ZON/MPL/FLD/LOT) with persistence",
+    "classification": "PUBLIC",
+    "note": "Done 2026-11-02. ERD in docs/DATA_MODEL.md grounded in SRS v2.0 group definitions; physical schema backend/app/schema.sql (12 tables). PgStore backend (psycopg, lazy-imported) behind the same store boundary; DATABASE_URL selects it, in-memory stays the default. Composite tenant foreign keys (tenant_id, ref_id) make cross-tenant references impossible at the database level - verified by a rejected cross-tenant INSERT. CRUD APIs for zones, mother-plants, crop-plans, field-events, lots with tenant-scoped code references (400 REF_UNKNOWN / 409 CODE_EXISTS), OPERATOR+ writes, per-create audit. Test evidence: 31/31 pytest pass against a real PostgreSQL 18.6 (binaries via the postgresql-binaries wheel; apt mirrors hang through this VM's proxy), 30 passed + 1 PG-only skip in in-memory mode, including a persistence test proving a second store instance sees API-written data. Schema-ready for later slices: zone boundary versions (ZON-04), plant status history (MPL-04), lot lineage graph (LOT-02). Remaining to production beta: Owner creates the Neon project, then Hyperdrive wiring + redeploy."
+   },
+   {
+    "id": "T-005",
+    "status": "PLANNED",
+    "title": "M3a day-90 hard gate: IoT gateway baseline and device ingestion evidence (UAT-60)",
+    "classification": "PUBLIC"
+   },
+   {
+    "id": "T-006",
+    "status": "PLANNED",
+    "title": "M5 pilot go-live scope per SRS section 9.1 / Q.1 activation rules",
+    "classification": "PUBLIC"
+   },
+   {
+    "id": "T-007",
+    "status": "PLANNED",
+    "title": "M7 commercial readiness: full applicable UAT set and CMP rule-pack enforcement evidence",
+    "classification": "PUBLIC"
+   },
+   {
+    "id": "T-008",
+    "title": "Web UI for the beta (mobile-first, served by the Worker)",
+    "status": "TECH_DONE",
+    "evidence": "Built 2026-11-02: deploy/cloudflare/public/{index.html,styles.css,app.js} - a vanilla SPA (no build step) covering dashboard, zones, mother plants, crop plans + field events, lots, users + audit, platform tenant administration (uses the Owner's own platform key) and connection settings; Vietnamese UI, bottom tab bar + bottom-sheet forms on mobile, sidebar + grid on desktop. Serving: wrangler.jsonc assets block (ASSETS binding, run_worker_first) plus a guarded catch-all route in backend/app/main.py that proxies non-API paths to the assets binding on Workers and returns plain JSON 404 elsewhere (local behavior unchanged, root still 404 without ASSETS). Regression: app.js passes node --check; backend suite green in all three store modes after the change (30 passed + 1 skip in-memory; 31/31 psycopg; 31/31 pg8000). Deployment to the beta is PENDING: wrangler needs the CLOUDFLARE_API_TOKEN, which is only ever held transiently per session and was lost when the environment restarted; the Owner has been asked to re-issue it. DEPLOYED AND VERIFIED LIVE 2026-11-02: the Owner re-issued a Cloudflare API token (used transiently for this deploy only, never stored); pywrangler uploaded the 3 UI assets and the new Worker version. Live checks at https://iaict-core-platform.mihy.workers.dev: GET / -> 200 text/html (the UI, 3310 bytes, correct Vietnamese title), /styles.css -> 200 text/css, /app.js -> 200 text/javascript, /health unchanged (storage postgresql-hyperdrive), beta-pilot real data still served by the API, unknown API paths still JSON 404, /docs still 200. The root URL no longer returns {'detail':'Not Found'}. Note on terminology recorded for the Owner: 'static' describes only how the UI shell files are delivered; every screen reads/writes live API data - nothing is hard-coded."
+   },
+   {
+    "id": "T-009",
+    "title": "Login support: account picker on the sign-in screen + remember-me",
+    "status": "TECH_DONE",
+    "evidence": "Owner reported 2026-11-02 they could not sign in with the type-it-yourself tenant+actor form. Fix built the same day (UI only, no backend change needed): verified in backend/app/identity.py that GET /users requires only the tenant guard, and verified live that GET /api/v1/users with only the beta-pilot tenant header returns its account list (admin / 'Pilot Admin' / TENANT_ADMIN). Login screen now: (1) loads and shows the tenant's accounts as tappable cards (tap = sign in with that account), auto-loads on tenant field change, with a bootstrap note when a tenant has no users yet; (2) validates tenant + actor membership BEFORE entering and shows the translated error on the login card itself; (3) normalizes the tenant slug (trim + lowercase); (4) 'remember me' checkbox - localStorage when on, sessionStorage when off; (5) all storage access is defensive with an in-memory fallback so a browser blocking storage can no longer kill the login silently. Checks: app.js passes node --check; backend suite still green (30 passed + 1 skip in-memory, 31/31 psycopg; backend code untouched). Deployment pending the Owner's Cloudflare API token (transient per deploy, never stored). DEPLOYED AND VERIFIED LIVE 2026-11-02 (token supplied by the Owner in-session, used transiently): GET / serves the new sign-in screen (3918 bytes, up from 3310; contains the account-picker and remember-me markup), the served app.js contains the account-loading and sessionStorage logic, /health unchanged (postgresql-hyperdrive), and the exact request the login page makes returns beta-pilot's account (admin / Pilot Admin / TENANT_ADMIN). Owner flow now: type tenant -> tap the account card -> inside; remember-me defaults on."
+   },
+   {
+    "id": "T-010",
+    "title": "Fix stuck-at-connecting login + tenant picker on the sign-in screen",
+    "status": "TECH_DONE",
+    "evidence": "ROOT CAUSE FOUND 2026-11-02: the Owner reported the sign-in only ever showed the connecting state. The setup overlay is styled .setup{display:flex} in author CSS, which overrides the UA [hidden]{display:none} rule - so setting hidden=true after a successful sign-in never actually hid the overlay, and the button kept its 'connecting' label forever. The same flaw kept the inline error banner permanently displayed. Fix: a global [hidden]{display:none !important} rule. Also added per Owner request: a tenant picker on the sign-in screen (button reads the platform key typed into the form - tenant listing stays platform-privileged - renders tenant cards; tapping one fills the tenant and loads its accounts), and a 20s AbortController timeout on all API calls so a stalled network surfaces an error instead of an endless spinner. DEPLOYED AND VERIFIED LIVE 2026-11-02: sign-in page now 4232 bytes with the tenant-picker markup, served CSS contains the [hidden] fix, served app.js contains loadTenants + AbortController, /health unchanged (postgresql-hyperdrive)."
+   },
+   {
+    "id": "T-011",
+    "title": "Fix intermittent dashboard data failures under parallel load (Hyperdrive/pg8000)",
+    "status": "TECH_DONE",
+    "evidence": "Found by the new browser-test rule (Owner instruction 2026-11-02): the first real-browser test passed sign-in but the dashboard failed with a generic error, although curl checks were green. Diagnosis chain, all evidenced: (1) the dashboard's four parallel list calls intermittently hit Cloudflare 1102 (Worker CPU limit) - crop-plans reproduced returning 503 'error code: 1102' while sibling endpoints returned 200; the old all-or-nothing Promise.all turned one failure into a full-page error. (2) A first fix (cached per-isolate pg8000 connection) exposed a deeper bug in wrangler tail: SQLSTATE 26000 'unnamed prepared statement does not exist' - Hyperdrive rebalances upstream sessions at transaction boundaries and pg8000's PARSE/DESCRIBE split across them. Final fix set: WorkerPgStore reuses one connection per isolate with SELECT 1 health-check + drop-on-error, every operation runs in ONE explicit transaction (autocommit off) so Hyperdrive pins the upstream session, and unique-violation handling moved outside the session (pg8000 refuses statements in a failed transaction - 3 local tests caught this before deploy). UI: GETs retry once on network/5xx; dashboard and plans views load sections independently (allSettled) with a per-section warning instead of a full-page error. Verification: full suite green in all three store modes; live parallel load 14/16 immediate 200 with the rest absorbed by the UI retry and NO 26000/500s; live write flow 201 + duplicate 409 CODE_EXISTS; post-fix real-browser re-test PASSED - dashboard rendered stats 2/1/1/0 (zones/plants/plans/lots), zones page listed Z-01 + Z-TMP, plans page listed PLAN-2026, no error states, and the remembered session persisted across browser restarts. Known leftovers: free-tier latency is still seconds per request and an occasional 503 can appear under parallel load (absorbed by retry); a clearly-labeled test zone Z-TMP created during write verification remains in beta-pilot (no delete endpoint yet). Process note: the browser agent's structural findings (counts, error presence) matched server data, but its decorative text details were partly paraphrased/invented - trust counts and states, verify labels against the API."
+   },
+   {
+    "id": "T-012",
+    "title": "Fix residual dashboard intermittency: UI network-retry gap + WorkerPgStore round-trip diet",
+    "status": "TECH_DONE",
+    "classification": "PUBLIC",
+    "evidence": "Owner chose investigation over a Supabase switch (2026-11-02). Controlled live measurement (read-only, browser-UA probe cross-checked with curl): sequential success only 8/20, dashboard-parallel 15/48; successful DB calls cost 7-10s warm or cold; /health (no DB) 0.3-3.4s bimodal by isolate warmth; failures were Cloudflare 1102 (free-tier resource limit), 1101 (Worker exception) and mid-stream connection drops. Neon scale-to-zero ruled out as the main cause: first call after >10 min idle cost the same 7.8-9.8s as warm calls. Code-verified cost structure: each list request ran >=2 store sessions (tenant guard + list), each with ping + query + COMMIT over Hyperdrive, and every fresh isolate replayed the full schema DDL on its first connection. UI bug found in app.js: api() retried only ApiError (HTTP) failures, never fetch-level network/timeout failures - exactly the failure class that defeated the dashboard retry in the 20:27 recheck. Fixes built: app.js GET retry = 3 attempts with 700/1600ms backoff covering network errors; WorkerPgStore per-isolate tenant/user cache (30s positive / 10s negative, writes invalidate), optimistic reads (no ping, one retry on a fresh connection - self-heal verified by killing the cached backend server-side), schema probe = one SELECT instead of full DDL. Tests: 30 passed + 1 skip (memory), 31/31 (psycopg), 31/31 (pg8000 worker mode) on real PostgreSQL 18.6; app.js passes node --check. Deployment pending the Owner's Cloudflare API token. DEPLOYED 2026-11-02 (Worker version b597ad4f) together with the Supabase switch. Live re-measurement with the same probe design: sequential 8/20 (unchanged), dashboard-parallel 19/48 (was 15/48), successful-call latency 5-6s (was 7-10s). Browser re-test (22:31-22:32 +07): sign-in fast, detail pages fine, dashboard still intermittent per section (first load 2 of 4 stats, one retry recovered zones but plans regressed, lots never rendered its 0). Verdict: the T-012 changes help latency and UI resilience but do NOT resolve the intermittency, whose cause sits in the Workers Python runtime (see DEC-007); follow-up is T-013."
+   },
+   {
+    "id": "T-013",
+    "title": "Relocate the API runtime from Cloudflare Python Workers to a plain always-on host (uvicorn + psycopg), keeping Supabase/Neon as the database",
+    "status": "CANCELLED",
+    "classification": "PUBLIC",
+    "evidence": "Diagnosis: DEC-007 (wrangler tail hang-cancellations + exceededCpu; ~1.2-1.9s CPU per successful request). Local preparation complete 2026-11-02: the app now serves the web UI itself from IAICT_PUBLIC_DIR when no Workers ASSETS binding exists (backend/app/main.py; Workers behavior unchanged); deploy/docker/Dockerfile packages the same app + UI; fly.toml and render.yaml blueprints prepared. Regression suite green in all three store modes after the change (30+1 skip / 31/31 / 31/31). Plain-host smoke proof on this machine (uvicorn + PgStore on local PostgreSQL): UI 200 in 31ms, tenant/bootstrap/zone creates 5-6ms, list calls ~2ms each, 5/5 - versus 5-10s and ~40% success on Workers with identical application code. Remaining: Owner chooses the host (Fly.io always-on ~$2-5/mo vs Render free with sleep-after-idle), creates the account, and sets DATABASE_URL + a fresh PLATFORM_ADMIN_KEY there. CLOSED 2026-11-03: superseded by the Owner's D1 decision (DEC-008 / T-014). The packaging artifacts (Dockerfile, fly.toml, render.yaml, IAICT_PUBLIC_DIR UI serving) stay in the repo as the documented exit path off Cloudflare."
+   },
+   {
+    "id": "T-014",
+    "title": "Adopt D1 as the Workers-side store (async store refactor + SQLite dialect migration), per spike evidence",
+    "status": "TECH_DONE",
+    "classification": "PUBLIC",
+    "evidence": "SPIKE MEASURED 2026-11-02 (separate throwaway Worker 'iaict-d1-spike', same Cloudflare account/runtime, D1 database id 956d373b-5f72-4413-bff0-af5513ded7ee): the /list pattern mirrors the real read path (tenant-guard lookup + list query, two sequential awaited D1 queries, beta-pilot-equivalent data). Results: sequential 20/20 and dashboard-parallel 48/48 succeeded (Postgres-via-Hyperdrive baseline: 8/20 and 19/48); wrangler tail 68/68 outcomes 'ok', zero hang-cancellations, zero exceededCpu; cpuTime median 26ms / max 68ms (baseline: ~1,241ms average, 1,902ms max); server wallTime median 127ms (baseline ~5,097ms); client-observed median ~0.9s including network and cold isolates. Conclusion: the D1 leg removes the failure classes entirely on the same free Python Workers runtime. NOT yet proven: write load, the FastAPI framework overhead on top, D1 foreign-key enforcement (a load-bearing property verified on PostgreSQL), and the real dashboard pattern. Integration cost if adopted: the store boundary must become async (D1 has no synchronous API - the current sync pg8000 store cannot call it), the 12-table schema must be ported to the SQLite dialect, and DEC-006 must be amended (D1 is a Cloudflare-proprietary API; the PostgreSQL stores and the Supabase dataset stay in place as the documented exit path). Spike code lives outside the repo at ~/workspace/projects/iaict-d1-spike (not committed). Awaiting the Owner's choice between T-014 (D1 adoption), T-013 (plain-host relocation) or deferring. COMPLETED 2026-11-03: the whole store interface was made async; new D1Store (backend/app/d1store.py) runs the SQLite port of the 12-table schema (backend/app/schema_d1.sql, same composite FKs); InMemory/PgStore/WorkerPgStore converted with unchanged semantics. Test suite green in all four modes (memory 30+1 skip, D1-over-sqlite3-shim 30+1 skip, psycopg 31, pg8000 31). Deployed to the production D1 database 'iaict-core' (id f4d07d24-3375-4588-affc-f6122c440ca6), Worker version dfdbdfc3; /health reports storage 'd1'. beta-pilot was reseeded through the API with a temporary platform secret (deleted immediately after; platform admin verified back to 503 PLATFORM_DISABLED): tenant, Pilot Admin, Z-01, Z-TMP, MPL-001, PLAN-2026, audit consistent. Live measurement on the real API: sequential 20/20 and dashboard-parallel 48/48 (Postgres baseline: 8/20, 19/48), client median 1.6-1.8s; wrangler tail 8/8 ok, cpuTime median 42ms (baseline avg 1,241ms), wallTime median 157ms (baseline ~5,097ms). Mandatory browser test (2026-11-03 02:29-02:30 +07): sign-in via account card, dashboard FIRST load complete at 2/1/1/0 with no warnings (lots rendered its 0 for the first time), zones and plans pages correct, reload again 2/1/1/0 clean. The multi-evening intermittency is resolved on the beta."
+   },
+   {
+    "id": "T-015",
+    "title": "Apply the national traceability data standard, phase 1 (D-STD-01): PUC identity on zones, actors/spatial-units/zone-parcel links/input lots, PHI gate + mass balance on harvest lots, traceability codes",
+    "status": "TECH_DONE",
+    "classification": "PUBLIC",
+    "evidence": "Owner directive 2026-11-03 with the research dossier (SHA-256 3afb2be6...cfeb1) recorded as delta D-STD-01 in pcs/SRS_CHANGES.md; full 33-table mapping in docs/DATA_MODEL.md (10 tables adopted in phase 1, remainder mapped to phase 2). Implemented: zones gain the PUC block (puc_code, puc_status, sector_category, market_scope, primary_species, scientific_name, issue_date, issuing_authority, post_inspect_due_date); new tenant-scoped kinds actors (ENT_ACTOR_HOUSEHOLD subset), spatial_units (ENT_SPATIAL_UNIT subset), zone_parcel_links (REL_ZONE_SPATIAL_UNIT, unique per tenant+zone+parcel), input_lots (ENT_INPUT_INVENTORY subset), phi_validations (LOG_PHI_VALIDATION); crop plans gain parcel link + variety + seed origin; field events gain input-lot link and computed safe_harvest_date = occurred date + PHI days; harvest lots gain farmer/parcel links + weigh slip, are rejected 400 PHI_VIOLATION when harvested before the plan's latest safe date (every attempt logged to phi_validations) and 400 MASS_BALANCE_EXCEEDED above the plan's target_yield_kg ceiling, and are stamped with traceability_code (plan | zone PUC-or-code | lot | harvest date, TT 02/2024) and data_retention_until (+12 months, TT 17/2021). Suite green in all four store modes: memory 37 passed + 1 skipped, D1-over-sqlite3-shim 37 + 1 skipped, psycopg 38, pg8000 38 (7 new tests in backend/tests/test_m3_traceability.py). D1 in-place upgrade path verified separately against a pre-T-015 schema copy (old data intact, new tables/columns appear, writes work) and then on production: deployed Worker version 871beb1e (2026-11-03), /health storage 'd1', remote D1 inspection shows all 5 new tables in database iaict-core, beta-pilot data intact (2 zones, 1 user, 1 plan, plus 1 lot the Owner created via the UI the same morning), new endpoints /api/v1/actors and /api/v1/phi-validations return 200 with empty lists. Mandatory browser test 2026-11-03 12:54-12:55 +07: sign-in via Pilot Admin card, dashboard 2/1/1/1 with no warnings, zones page 2 cards, lot create form contains the new farmer/parcel/weigh-slip fields, zone create form contains the PUC field, reload clean. UI: zone form/cards show PUC + primary species; lot form gained farmer code, parcel code, weigh slip; lot cards show farmer, weigh slip and traceability code. Phase 2 (packing chain PHC/SKU, national-portal traceability records + CTE stages, transport, recall, market approvals/GACC warnings, certifications, monitoring logs, livestock/fishery specializations) is mapped in docs/DATA_MODEL.md and not yet built."
+   },
+   {
+    "id": "T-016",
+    "title": "Traceability data standard phase 2 (D-STD-01): packing chain (PHC lots, N-N input links, SKU units), national traceability records + CTE stages, packing mass-balance gate",
+    "status": "TECH_DONE",
+    "classification": "PUBLIC",
+    "evidence": "Prepared locally on the Owner's instruction ('lam san') after the rev-21 checkpoint landed (GitHub 982e915c), then deployed in the same window once the Owner supplied the deploy token. Implemented: packing_lots (facility -> actors, PHC code, output weight, yield norm, storage type, packed_at, expiry), packing_inputs (N-N harvest->packing link, unique per tenant+packing+harvest; over-allocation guard rejects 400 HARVEST_LOT_OVER_ALLOCATED beyond the harvest lot's quantity), packaging_units (level, GTIN, SSCC, spec, count), traceability_records (the 10 mandatory TT 02/2024 fields, sync_status PENDING_SYNC; issuance runs the packing mass-balance gate - output above inputs x yield norm is rejected 400 PACKING_MASS_BALANCE_EXCEEDED - then completes the record from the chain, stamps traceability_code GTIN|PHC|packing lot|event time and data_retention_until: expiry +12 months, frozen/processed +24 months from packing), cte_stages (auto-built: one harvest stage per input lot located at the source zone PUC, plus the packing stage; further stages appendable via API). Suite green in all four store modes: memory 42 + 1 skipped, D1-over-sqlite3-shim 42 + 1 skipped, psycopg 43, pg8000 43 (5 new tests in backend/tests/test_m4_packing.py, including the dossier's pomelo case: 2 x 5,000 kg inputs packing to 8,200 kg passes at norm 0.85, 9,000 kg is blocked). D1 phase-2 in-place upgrade verified against a phase-1 database copy (data intact), then on production: deployed Worker version 146e24f2 (2026-11-03), remote D1 inspection shows all 5 phase-2 tables in iaict-core, beta-pilot data intact (2 zones, 1 user, 1 plan, 1 lot), endpoints /api/v1/packing-lots and /api/v1/traceability-records return 200 empty lists. UI: new 'Dong goi' (Packing) view - packing-lot list + create form, per-lot 'Cap ma truy xuat' flow (link input -> create SKU -> issue record), traceability-record list with sync status and retention date; reachable from the sidebar and the Khac quick-access cards. Mandatory browser test 2026-11-03 16:08-16:09 +07: sign-in via Pilot Admin card, dashboard 2/1/1/1 no warnings, packing view loads with both empty states, create form contains the PHC/yield-norm fields, reload clean. Not in scope yet: the national-portal push itself (records wait as PENDING_SYNC), transport/recall/market-approval entities (phase 3 in docs/DATA_MODEL.md)."
+   },
+   {
+    "id": "T-017",
+    "title": "T-016 two-pass review remediation: fix groups S1, M1-M4 and the fresh case of M5 (packing/traceability hardening)",
+    "status": "TECH_DONE",
+    "classification": "PUBLIC",
+    "evidence": "Owner approved fixing all five groups found by the T-016 two-pass review (minutes: bien-ban-ra-soat-2-luot-T016 in the Owner's review folder; the frozen-retention interpretation question in M5 was explicitly left open — only the fresh case was in scope). Fixes: S1 — packing-input links now require both ends (400 REF_REQUIRED) and CTE stage emission tolerates legacy dangling links instead of crashing after the record is written; the UI issue form requires choosing a harvest lot. M1 — issuance is blocked with 400 PACKING_DATA_INCOMPLETE when the packing lot lacks output_weight_kg or yield_norm_ratio (the mass-balance gate can no longer be skipped); the UI form marks both required. M2 — issuance requires packaging_unit_code (400 TRACEABILITY_UNIT_REQUIRED) resolving to a packing lot (400 PACKING_CHAIN_INCOMPLETE). M3 — duplicate traceability codes rejected with 409 TRACEABILITY_CODE_EXISTS plus a partial unique index ux_traceability_records_code (schema files + D1 upgrade-on-init; verified present on production D1). M4 — the issue form collects product_image_url (mandatory field 2 of TT 02/2024) and record cards warn when it is missing. M5 fresh case — retention for produce without an expiry date now anchors to the latest input harvest date + 12 months per the dossier fallback case (2) (was packing date + 12). INCIDENT during this deploy (recorded honestly): the first T-017 build created the M3 index inside D1Store._ensure_schema via self._run, which itself awaits _ensure_schema — unbounded recursion that burned the Workers CPU budget and took down ALL write paths on the beta (1102/500; reads unaffected) while the local suite stayed green (the recursion self-masked behind the guarded try/except and still produced the index on unwind). Detected by live POST probes during deploy verification (the checkpoint was NOT taken on the broken build), root-caused, and fixed by creating the index through the raw binding with the ready flag set first, plus a regression test (tests/test_d1_schema_guard.py) that counts binding prepare calls during cold-start schema setup and fails if they are not bounded. Fixed Worker version 75f69cfb. Verification: suite green in all four store modes (memory 47 + 2 skipped, D1 48 + 1 skipped incl. the new guard test, psycopg 48, pg8000 48; 5 new T-017 regression tests in test_m4_packing.py); the original 8-case probe now returns the intended results (A 400, B 400, C link 400 with no crash and no orphan records, D second issuance 409 with a single CTE chain, G retention 2027-10-14 harvest-anchored; E/F frozen behavior unchanged per scope). Production probes after the fixed deploy: health ok, REF_REQUIRED / TRACEABILITY_UNIT_REQUIRED / CODE_EXISTS / REF_UNKNOWN all returned as clean JSON in seconds, index confirmed on production D1. Mandatory browser test 2026-11-03 16:51-16:52 +07: sign-in via Pilot Admin card, dashboard 2/1/1/1 no warnings, packing view loads with both empty states, create form contains the now-required output/norm fields, reload clean. Still open by design: the frozen-retention interpretation (dossier states it two ways) awaits an Owner decision; L1-L4 minor items from the review (GTIN check digit, CTE audit entries, cross-store duplicate-link consistency, per-SKU issued-volume accounting) remain recorded in the review minutes."
+   },
+   {
+    "id": "T-018",
+    "title": "Consolidate the traceability data standard into the SRS (SRS v2.1, Appendix F)",
+    "status": "TECH_DONE",
+    "classification": "PUBLIC",
+    "evidence": "SRS v2.1 built from SRS v2.0 (hash-verified source): file IAICT_SRS_MUSE_v2.1_03-11-2026.docx, SHA-256 eb33a23d84e1283ee3f22ec0d502954ad45332bf6d499ec461d56c7891d6f6f1, delivered with its changelog next to the v2.0 files in the Owner's document folder (full texts stay out of the public repo per DEC-001; hashes recorded here). Contents: Appendix F (F.1 adoption principles + phase status; F.2 the full 33-entity + 3-view standard-to-platform mapping with corrected live statuses for phases 1-2; F.3 business-rule requirements TX-01..TX-12 reflecting the implemented and T-017-hardened behavior; F.4 the TT 02/2024 mandatory-field table with platform fill sources + the TT 17/2021 retention fallback with the case (1)/(3) overlap called out; F.5 open decisions Q-TX-01..03); a §1.4 reference + precedence clause; cover and version history updated to 2.1; TOC extended with Appendix F and page numbers re-verified against a LibreOffice render of v2.1 itself (150 pages; Sec.5-9 and Appendices A-E shifted +1 by table reflow and were corrected to measured values, F = p.144, approval block = p.150; Sec.1-4 verified unchanged). Machine verification: requirement-ID population identical v2.0 vs v2.1 (385 distinct IDs, none lost or renumbered); only additions are TX-01..12 and Q-TX-01..03. SRS v2.1 remains a DRAFT pending IAICT approval (INT-01..06 still open)."
+   },
+   {
+    "id": "T-019",
+    "title": "SRS v2.1.1 errata: Appendix F re-grounded on the dossier as root",
+    "status": "TECH_DONE",
+    "evidence": "SRS v2.1.1 DOCX SHA-256 16fdbdf8f79c9e51cd9a511b9237548a8f23618bf2a947feaba83daaa8eb02c9 (final hash after the T-020 five-round review loop; pre-loop hash was 5313daa7...), 156 pages (LibreOffice render, TOC re-measured). F.2 = the dossier's own 33 tables + 3 views with platform mapping, status and pre-existing-requirement cross-references; F.3 entries carry dossier-table provenance; TX-01 narrowed to the dossier's additions over ZON-09/ZON-10/CMP-10; TX-03 narrowed to the Bang 24 record model over FLD-16/FLD-17, with the FLD-17 per-parcel implementation gap recorded in the requirement text. ID population verified: nothing lost vs v2.0/v2.1, additions confined to the TX/Q-TX family. Full text stays out of the public repo (DEC-001).",
+    "notes": "Owner-caught defect in T-018's consolidation: F.3 presented TX rules without mapping overlaps with the baseline SRS. Errata issued same day per Owner directive 'cac bang lay theo file toi gui (lam goc)'."
+   },
+   {
+    "id": "T-020",
+    "title": "Five-round review loop over SRS v2.1.1 (fix-and-re-review per round)",
+    "status": "TECH_DONE",
+    "evidence": "Loop minutes: bien-ban-vong-lap-ra-soat-5-lan-v2.1.1.md (kept with the SRS files, outside the public repo). Rounds: (1) dossier-as-root - inventory complete, 1 minor fix (F.4 field-numbering note); (2) baseline SRS/SOW - 16/16 cross-references verified, 0 errors; (3) implementation - statuses match schema, DATA_MODEL.md phase labels fixed (5 rows); (4) internal consistency - 2 minor fixes (SOW Appendix F name collision clarified, DEC-012 basis); (5) fresh-eyes + final render - stale V1.0 footer fixed to V2.1.1. Final file: 156 pages, TOC re-verified at all checkpoints, SHA-256 16fdbdf8f79c9e51cd9a511b9237548a8f23618bf2a947feaba83daaa8eb02c9.",
+    "notes": "Owner directive 2026-11-03: 'Tao vong lap ra soat 5 lan, sau moi lan co loi thi sua va ra soat lai'. All 4 findings (1 medium, 3 minor) fixed and re-verified; no serious findings; no requirement/threshold/scope changes."
+   },
+   {
+    "id": "T-021",
+    "title": "Full-project audit: tables/fields vs the standard, backend, UI, performance",
+    "status": "TECH_DONE",
+    "evidence": "Minutes: bien-ban-ra-soat-toan-du-an-03-11-2026.md (kept with the audit files, outside the public repo). Data: 16/33 dossier tables implemented + 2/3 view rules; genuine field gaps at concept level: traceability_records lacks synced_at (TX-12 needs it), phi_validations lacks the last-treatment link (Bang 24), actors PII encryption = Q-TX-03, audit lacks old/new snapshots + IP/device, users lack account status/actor link. Backend: suite re-run 47 passed + 2 skipped (memory mode), no TODO/FIXME; NO update/delete endpoints for master data; no list pagination. UI: 5 API resources have no UI (spatial_units, zone_parcel_links, input_lots, phi_validations, cte_stages). Performance (measured live 2026-11-03): payloads tiny (156-1360 B); latency is TTFB-bound - run_worker_first routes even static assets through the Python Worker and app.js is served max-age=0/must-revalidate; the dashboard costs 7 Worker invocations (health + 6 full lists counted client-side); audit list unbounded. Fix plan P1 (assets bypass + /api/v1/dashboard summary endpoint), P2 (per-session view caching, list limits), P3 (GET timeout 20s -> ~8s, optional warm-up ping).",
+    "notes": "Owner directive 2026-11-03: full re-audit from the start of the project, report per part, focus on optimization because loading still feels slow. Fixes await the Owner's pick of a work pack."
+   },
+   {
+    "id": "T-022",
+    "title": "Performance pack P1: static assets bypass the Worker + /api/v1/dashboard summary endpoint",
+    "status": "TECH_DONE",
+    "evidence": "wrangler.jsonc: run_worker_first limited to [/api/*, /health, /docs, /openapi.json]; build.sh assembles public_dist with content-stamped app.<hash>.js / styles.<hash>.css + _headers (immutable, 1y) — validated by wrangler deploy --dry-run (4 asset files, bindings OK). Backend: count_records added to all 4 stores + lazy delegates; GET /api/v1/dashboard returns counts + last-5 audit + storage/env/version in one call; UI dashboard rewritten to the single call; GET timeout 20s -> 8s. Tests: test_dashboard.py (counts, isolation, tenant required); suite green memory 49+2 skipped, D1 50+1 skipped. Deploy pending — ships together with T-023. DEPLOYED 2026-11-03 ~20:30 +07 (Worker 40a5cbf5, superseded same session by 0bbaac5b with the dashboard path fix). Production verification: /health ok (d1); stamped assets served at the edge with immutable cache; GET /api/v1/dashboard returns real beta-pilot counts (2/1/1/1/1); PATCH /zones/Z-TMP succeeded on production D1 (in-place schema upgrade + update path healthy, ZON_UPDATE audit visible in the UI); duplicate POST returns clean 409; browser test: new views render, zone edit sheet opens with the VSIC field, field-event form shows the input-lot picker + application method. POST-DEPLOY BUG (found by the mandatory browser test, fixed same session): the rewritten dashboard called api(\"/dashboard\") instead of T(\"/dashboard\"), so the Overview rendered 'Chua ket noi duoc du lieu' while the API itself was healthy (curl probe passed). One-line fix, redeployed as Worker 0bbaac5b; browser recheck PASSED (4 stat cards 2/1/1/1, recent activity incl. the ZON_UPDATE probe, no error banner). Lesson recorded: API probes do not cover UI path wiring — the browser test is the gate, as the Owner's standing rule says.",
+    "notes": "Audit T-021 fix plan P1-a/P1-b (+P3 timeout pulled forward)."
+   },
+   {
+    "id": "T-023",
+    "title": "Functional pack: UI for the 5 API-only resources + PATCH master-data updates + synced_at/last-treatment fields",
+    "status": "TECH_DONE",
+    "evidence": "Backend: update_record in all 4 stores + lazy delegates; PATCH routes for zones/mother_plants/actors/spatial_units/input_lots/packing_lots/packaging_units (OPERATOR+, CODE_IMMUTABLE, refs revalidated, PREFIX_UPDATE audit); traceability_records.synced_at + phi_validations.last_treatment_ref added to both schemas + SPECS, D1 in-place ALTER upgrade verified against a pre-T-023 schema copy (columns added, create+update work); _prepare_lot records the field event whose PHI ends last. UI: new views inputs (list/create/edit), parcels (spatial units list/create/edit + zone-parcel links list/create), philogs (read-only, shows last treatment); field-event form gains the input-lot picker + PHI days; edit buttons on zones/plants/packing cards; CTE stage toggle on traceability cards; synced_at shown when set; NAV + settings quick-access entries. Tests: test_updates.py (5 tests); suite green memory 54+2 skipped, D1 55+1 skipped; app.js node --check OK; build stamp assembled; wrangler dry-run OK. Deploy pending with T-022 (needs the Owner token + a fresh push approval — the rev-29 push was declined by the Owner on 2026-11-03 and has NOT been retried). DEPLOYED 2026-11-03 ~20:30 +07 (Worker 40a5cbf5, superseded same session by 0bbaac5b with the dashboard path fix). Production verification: /health ok (d1); stamped assets served at the edge with immutable cache; GET /api/v1/dashboard returns real beta-pilot counts (2/1/1/1/1); PATCH /zones/Z-TMP succeeded on production D1 (in-place schema upgrade + update path healthy, ZON_UPDATE audit visible in the UI); duplicate POST returns clean 409; browser test: new views render, zone edit sheet opens with the VSIC field, field-event form shows the input-lot picker + application method.",
+    "notes": "Audit T-021 gaps: spatial_units, zone_parcel_links, input_lots (+ picker in the field-event form), phi_validations, cte_stages views; PATCH for non-gated master kinds with audit; traceability_records.synced_at; phi_validations last-treatment reference."
+   },
+   {
+    "id": "T-024",
+    "title": "Phase-by-phase review supplements: missing principal fields, duplicate-link parity, CTE audit, GTIN format discipline",
+    "status": "TECH_DONE",
+    "evidence": "Review minutes: ~/workspace/your_files/iaict-full-audit/bien-ban-ra-soat-tung-giai-doan-03-11-2026.md. Fields added to SPECS + schema.sql + schema_d1.sql + D1 in-place ALTER list (verified on a pre-T-023 schema copy: all 12 T-023/T-024 columns added, create+update work); actors descriptive fields accepted via RecordIn (data payload). InMemory LINK_UNIQUE_FIELDS parity for zone_parcel_links + packing_inputs (409 like SQL stores). _emit_cte_stages writes CTE_CREATE audit rows per stage with the issuing actor. GTIN: digits-only enforcement (400 GTIN_INVALID) — length/check-digit deliberately deferred with evidence (both circulating sample GTINs fail GS1 mod-10; T-017 tests use numeric placeholders). Tests: test_t024_supplements.py (5 tests); suite green memory 59+2 skipped, D1 60+1 skipped; build + wrangler dry-run OK. Deploy pending (Owner token) together with T-022/T-023. DEPLOYED 2026-11-03 ~20:30 +07 (Worker 40a5cbf5, superseded same session by 0bbaac5b with the dashboard path fix). Production verification: /health ok (d1); stamped assets served at the edge with immutable cache; GET /api/v1/dashboard returns real beta-pilot counts (2/1/1/1/1); PATCH /zones/Z-TMP succeeded on production D1 (in-place schema upgrade + update path healthy, ZON_UPDATE audit visible in the UI); duplicate POST returns clean 409; browser test: new views render, zone edit sheet opens with the VSIC field, field-event form shows the input-lot picker + application method.",
+    "notes": "Open items recorded in the minutes: Q-TX-01..03, FLD-17 per-parcel PHI (GĐ3), L4 per-SKU volume accounting (needs unit_weight_kg decision), users account_status + audit snapshots (hardening design), performance P2 (not in the chosen pack), phase 3 + T-005 roadmap choice."
+   },
+   {
+    "id": "T-025",
+    "title": "Mobile navigation fix: the Khac tab opens an all-functions menu",
+    "status": "TECH_DONE",
+    "evidence": "Owner reported a function not showing on mobile. Diagnosis (code + CSS + live browser at desktop width): under 1024px the sidebar is display:none and the bottom tab bar holds only 6 views + a Khac button that jumped straight to Settings; Packing (live build) and Inputs/Parcels/PHI-check/Tenants (new builds) had no entry of their own — Packing was reachable only via a quick-access card inside Settings (verified live: exactly 3 quick-access cards). Fix: the Khac tab now opens VIEWS.more, an all-functions menu listing every NAV view with full titles + descriptions; the tab stays highlighted for all menu-reached views. app.js syntax OK; build stamped. Narrow-viewport visual verification could not run pre-deploy (the browser tool cannot resize to 390px and rejects loopback) — it runs on the beta right after deployment. Deploy pending with T-022..T-024 (Owner token). DEPLOYED 2026-11-03 ~20:30 +07 (Worker 40a5cbf5, superseded same session by 0bbaac5b with the dashboard path fix). Production verification: /health ok (d1); stamped assets served at the edge with immutable cache; GET /api/v1/dashboard returns real beta-pilot counts (2/1/1/1/1); PATCH /zones/Z-TMP succeeded on production D1 (in-place schema upgrade + update path healthy, ZON_UPDATE audit visible in the UI); duplicate POST returns clean 409; browser test: new views render, zone edit sheet opens with the VSIC field, field-event form shows the input-lot picker + application method.",
+    "notes": "Stacks on STATE rev 31 (T-024), whose push was approved but failed twice on GitHub auth 503; both revisions push together."
+   },
+   {
+    "id": "T-031",
+    "title": "Field conformance completion per DEC-013 (close F2-F7, Bang 12/13, SYS pack, Q-TX-03)",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "D-STD-06",
+     "DEC-013"
+    ],
+    "evidence": "Owner directive 2026-11-04 05:05 +07 'Chot sua theo 33 bang, sua luon'. Batch A: every remaining dossier field of Bang 6/7/11/15/25/27 entry-able (RecordIn declarations + create/edit forms + detail specs + enum option lists taken verbatim from the dossier: farm tiers TT 23/2019, submission channels NQ 36/2026, forest origins, aqua water types, forestry classes TT 26/2025) + harvest_time for Bang 23. Batch D: Bang 13 zone_status_history table (both schemas + guarded D1 create) auto-logged on zone create and PUC status changes with reason/decision/remediation metadata popped out of the zone payload, ZON_STATUS_CHANGE audit, GET /zone-status-history, UI history toggle on zone cards + metadata fields in the zone edit form; Bang 12 withdraw flow: POST /zone-parcel-links/{id}/withdraw sets WITHDRAWN_FROM_ZONE + left_date (new store primitive update_record_by_id in all 4 stores + both lazy wrappers; double-withdraw 409 ALREADY_WITHDRAWN) + UI action. Batch B: Bang 32 users (linked_actor_code validated against actors, account_status ACTIVE/LOCKED/REVOKED enforced in require_actor with 403 ACCOUNT_INACTIVE and a LAST_ADMIN guard on PATCH /users/{username}, jurisdiction_admin_code, auth_provider_type; User dataclass + all stores + schemas + 8 guarded D1 ALTERs; users UI shows status/link and an admin sheet) and Bang 33 audit (old/new snapshots on create/update/delete record writes via _snap, client IP + user agent captured by middleware contextvars into every record_audit in all 4 stores). Batch C / Q-TX-03 CLOSED by implementation: app/pii.py (stdlib HMAC-SHA256 hash always; optional IAICT_PII_KEY activates at-rest encryption - HMAC keystream encrypt-then-MAC 'enc1.' tokens - with plaintext wiped at rest and transparent restore on actor reads; audit snapshots keep the stored/encrypted form). Also fixed in passing: actor legal_id had a detail-spec entry but NO form entry (found by the consistency sweep) - added to create/edit forms + declared in RecordIn; sweep now clean except phi_validations.lot_code (system-generated, classified T-029). SERIOUS latent defect found and fixed: since T-029 both SQL schemas placed zones.owner_actor_id/owner_actor_code AFTER the table constraints (invalid DDL - fresh installs / disaster recovery would have failed; production unaffected, its table predates T-029 and upgrades via ALTER). Columns moved into the column list in schema_d1.sql and schema.sql (PG owner_actor_id typed BIGINT); full D1 schema now executes cleanly on a fresh database (24 tables). Verification: suites 71 passed + 2 skipped in BOTH memory and D1 modes (6 new tests: test_t031_history_withdraw, test_t031_sys, test_t031_pii); D1 in-place upgrade verifier v4 PASSED (pre-T-031 DB gains audit/users columns + history table, existing admin reads account_status ACTIVE, snapshots round-trip); UI build OK; node --check OK. NOT deployed - needs the Owner's Cloudflare token in-session; PII encryption activates when the Owner sets the IAICT_PII_KEY secret in the dashboard. DEPLOYED 2026-11-04 (Owner pasted the token in-session; combined deploy with T-032 slices 1-2). Production probes PASSED: PATCH Z-TMP puc_status -> zone_status_history row created on production D1 (zone_code, new_status, trigger_reason_code, changed_by all stored; visible in the UI history toggle per the browser test) and the audit row carries old/new JSON snapshots + user_agent; actor created with legal_id returned legal_id_hash (64 hex chars, HMAC) and was deleted cleanly. PII encryption at rest stays inactive until the Owner sets IAICT_PII_KEY in the dashboard.",
+    "blockers": []
+   },
+   {
+    "id": "T-032",
+    "title": "Change-in-one-place architecture (research-backed): slice 1 lazy delegation done; slices 2-4 proposed",
+    "status": "IN_PROGRESS",
+    "srs_refs": [],
+    "evidence": "Owner asked 2026-11-04 05:18 +07 to research how big companies structure code so changes do not scatter, and apply it. Deep web research completed (report in research notes 'big-tech-evolvable-architecture', 41 KB, sourced; Amazon API mandate flagged secondary-only). Core finding: one authoritative artefact + everything else generated + machine checks on the boundary (Protobuf/codegen, Stripe's single canonical spec, Shopify modular monolith + Packwerk, schema-generated UI with an 80/20 limit, Fowler expand-migrate-contract + versioned migrations, dialect/adapter isolation). Internal audit measured our own scatter: one new field = 7 files; one new store method = 4 store files + 44 hand-written delegate lines in the two lazy wrappers; one new record kind = ~10 touch points. Proposal document delivered to the Owner (de-an-thay-doi-mot-noi-04-11-2026.md): 4 independent slices. SLICE 1 APPLIED same day: LazyWorkerStore/LazyD1Store now forward via __getattr__ - all 44 delegate one-liners removed, new store methods need no wrapper edits; suites 71 passed + 2 skipped in both memory and D1 modes after the change. Slices 2 (single field registry + code generation for SPECS/DDL/RecordIn/UI meta + drift test), 3 (numbered migrations replacing ad-hoc ALTER lists), 4 (dialect-unified SQL store core) are PLANNED pending the Owner's choice. SLICE 2 APPLIED 2026-11-04 per the Owner's follow-up directive (keep the microservices/GraphQL/Protobuf direction; build one more slice as proposed): backend/app/fields.py is now the single field registry (16 kinds, 241 fields, bootstrapped by extraction from the live sources so behavior is unchanged; labels/inputs/enums/refs/PII/dossier provenance declared once per field). tools/gen_fields.py generates: backend/app/records_spec.py (SPECS + RECORD_REFS + REF_ID_COLUMN + conv; store.py now re-exports RECORD_REFS from the generated module - verified byte-equal to the hand-kept original before rewiring), deploy/cloudflare/public/fields.js (window.IAICT_META: 151 labels incl. EXTRA_LABELS for system/extra keys, 14 detail specs, 8 enum lists; app.js literals replaced by references; build.sh stamps and ships fields.<stamp>.js; index.html loads it before app.js), contracts/iaict.proto (Protobuf, field numbers pinned append-only in contracts/field_numbers.json) and contracts/iaict.graphql (SDL) - the generated contracts are the kept path to microservices/GraphQL/Protobuf: a future split consumes them instead of re-deriving shapes; runtime stays a modular monolith (Shopify position recorded in the proposal). Drift guard test_fields_codegen.py (3 tests): regeneration byte-equality, registry principal columns present in BOTH SQL schemas, registry api fields declared on RecordIn. End-to-end proof on a scratch copy: one demo field added to the registry propagated to fields.js + .proto (new pinned number) + .graphql with --check green. Suites: 74 passed + 2 skipped in BOTH memory and D1 modes; UI build OK. Slices 3 (numbered migrations) and 4 (dialect-unified store) remain PLANNED. DEPLOYED 2026-11-04 with T-031. The mandatory browser test caught three UI defects the backend suite could not see (fixed same session, final Worker 8039239a, stamp 9a68ca557d): (1) T-031's users view read ensure() results as envelopes while ensure returns item arrays - users screen crashed; fixed to array semantics. (2) T-031 had added ~23 fields to forms and detail specs without DETAIL_LABELS entries - details rendered raw keys; labels recovered from the form definitions into the registry (EXTRA_LABELS + per-field labels) so label is now defined once. (3) SLICE-2 BOOTSTRAP BUG: the one-off extraction script matched the wrong bracket for array constants, truncating all 8 enum lists to their first element as an object; every create form then died silently in openSheet ((f.options||[]).map is not a function). Root-caused by replaying the full sign-in -> zones -> fab flow in a local jsdom simulation with error capture; fixed by re-extracting the enums correctly into the registry and hardening the drift suite (test_enums_are_option_lists, test_detail_fields_have_labels) - suites now 76 passed + 2 skipped in both modes. Final browser round PASSED all items: zone create form opens with 31 fields and the PUC status select; actor form shows the legal_id field and the forestry-class select; users screen renders the admin card, account-admin button and audit list; the Z-TMP status-history entry renders in the zone card toggle. Incident write-up appended to the architecture proposal document.",
+    "blockers": [
+     "Slices 3-4 not yet requested."
+    ]
+   },
+   {
+    "id": "T-033",
+    "title": "Field audit vs the 33 tables + trim 4 excess zone fields",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "DEC-013"
+    ],
+    "evidence": "Audit (minutes: ra-soat-truong-thua-04-11-2026.md): every registry field diffed against its dossier table and the SRS baseline - most diffs are verified synonyms (puc_code<->puc_national_code etc.) or SRS-baseline fields; genuine excess concentrated in zones. Owner approved cutting 4: managing_entity (duplicate of the FK-validated owner_actor_code), season (belongs to crop_plans/Bang 15; held probe junk on Z-TMP), crop_group (duplicated by primary_species/scientific_name + plan crop), water_source (no Bang 7 home; empty everywhere). No backend logic read any of them. Cut executed at the registry + both zone forms + zone card template + RecordIn declarations; regeneration propagated it (Protobuf contract now reserves numbers 7-10 for Zone, never reused). Suites 76 passed + 2 skipped in both modes; jsdom simulation: zone form down to 27 fields, zero errors. DEPLOYED Worker 050aa146: API no longer returns the 4 fields; verified directly on production D1 that stored values are untouched (Z-01 crop_group still 'rau cu' in the zones table - display/API cut only, expand-contract discipline). Browser test PASSED: 27-field form without the 4 fields, Z-01 detail and card clean, main fields intact. Two mild duplicates elsewhere (crop_plans seed_origin vs seed_origin_doc; traceability_records generic status vs sync_status) were reported but NOT cut - awaiting the Owner.",
+    "blockers": []
+   },
+   {
+    "id": "T-034",
+    "title": "Full field conformance: only the 33 dossier tables' fields remain",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "DEC-013"
+    ],
+    "evidence": "Owner directive superseded the T-033 classification: SRS-baseline fields are also cut when the 33 tables lack the concept. Minutes: ra-soat-toan-bo-33-bang-04-11-2026.md. 34 fields cut across 12 kinds: zones name/area_ha/address/lat/lon/status/province/district/ward; actors status; spatial_units name/status; zone_parcel_links status (dup of membership_status); crop_plans seed_origin (dup of seed_origin_doc); field_events lat/lon/device/notes/materials + the 4 legacy duplicate names (growth_stage/target_pest/dosage/quantity_applied) shadowed by their dossier names; input_lots unit/brand_name/status; lots quality_grade/status/harvested_by; packing_lots product_name (moved to the issuance step, where Bang 29 puts it) + status; packaging_units status; traceability_records status; phi_validations outcome RENAMED to the dossier's validation_outcome at the write path - which also fixed a latent bug: the PHI screen had been reading validation_outcome while the backend wrote outcome, so outcome chips could never render (invisible with zero PHI rows). Documented structural exceptions kept (relations and gate parameters, listed in the minutes): plan/event/lot zone+plant+parcel relations, farmer/parcel on lots (TX-02), phi_days (from Bang 17), packing output_weight_kg/packed_at/expiry_date (TX-04/TX-10 gate inputs), lot traceability_code/data_retention_until, and the mother_plants kind (SRS MPL entity, no dossier table). UI fallout handled: zone/parcel option labels now code+PUC/parcel-number, zone card area reads initial_declared_area_ha, issue form collects product_name for the record, quick input-lot form fixed to write the real name field. Suites 76 passed + 2 skipped in both modes; jsdom sims clean (zone form 21 fields; issue form has the Bang 29 product name). DEPLOYED Worker a7932088: API no longer surfaces the cut fields (first probe raced Worker propagation; recheck + raw D1 read confirmed - stored column values untouched, as always). Pilot data care: Z-01's 10.5 ha moved into initial_declared_area_ha via PATCH so the zone card keeps its area line. Browser test PASSED all 4 items (card shows code only + area, 21-field zone form, diary form without notes/device, input form without brand/unit).",
+    "blockers": []
+   },
+   {
+    "id": "T-035",
+    "title": "Core + Vertical forms: sector-conditional field blocks",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "DEC-013"
+    ],
+    "evidence": "Triggered by the Owner's verification question on the zone table's livestock fields (farm_scale_tier + the TT 23/2019 distances + bee-site distance). Verified first: both source documents carry them identically, and TT 23/2019/TT-BNNPTNT (livestock circular, in force) Dieu 5 (farm safety distances by scale tier: 100/150, 200/300, 400/500 m) and Dieu 6.1 (bee-site spacing 1-2 km) match the dossier's constraint text number for number - the block is a LIVESTOCK_FARMING-conditional block inside the multi-sector zone entity, not an error. Owner directed the forms be organized Core + Vertical accordingly. Built: (1) a visIf mechanism in openSheet - a field may declare visIf {k, in:[...]}; wrappers carry data-k; visibility re-evaluates on driver change; the submit handler skips hidden fields so editing a record of another sector never touches the hidden block's stored values. (2) Zone create/edit: sector_category is now a select with the dossier's 4 sectors (new SECTORS enum in the registry, generated to the UI); the 4 livestock fields show only for LIVESTOCK_FARMING. (3) Parcel create/edit: unit_type values aligned to Bang 11's six (AGRICULTURAL_LAND_PARCEL, FOREST_PLOT_STAND, LIVESTOCK_BARN_HOUSE, BEEKEEPING_SITE, AQUACULTURE_POND_CAGE, FISHING_VESSEL - zero live parcels, so no data migration; legacy values keep display labels); forest block (subzone/compartment/plot codes + origin) shows only for FOREST_PLOT_STAND, terrain block (slope + terrace) for land/forest, water type for AQUACULTURE_POND_CAGE, vessel block for FISHING_VESSEL. (4) Consistency repair found en route: the 4 forest-code/slope fields had no labels, no detail entries and no form fields anywhere - labels and detail entries added in the registry, form fields added inside the gated blocks. Suites 76+2 green; jsdom simulation verified every toggle (zone 17 visible -> 21 for livestock -> 17 for crop; parcel blocks per type) with zero errors. DEPLOYED Worker 2484be83; live asset verified to carry the new unit types; browser test PASSED all 3 items (sector dropdown with 4 sectors, livestock block show/hide both ways, forest block on Lô rừng with vessel field absent).",
+    "blockers": []
+   },
+   {
+    "id": "T-036",
+    "title": "Core + Vertical review across all kinds + zone-creation hotfix",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "DEC-013"
+    ],
+    "evidence": "Owner directive 2026-11-04 06:58: extend the T-035 Core+Vertical organization to the whole platform and review carefully. Minutes: iaict-full-audit/ra-soat-core-vertical-04-11-2026.md (Core/Vertical classification for all 16 kinds). APPLIED: crop_plans form - forest_harvest_plan_no only for FORESTRY_PLANTATION zones, departure/arrival_port_code only for AQUACULTURE zones (driver = the chosen zone's sector_category); field-event form - fruit_bagging_count only for CROP_FARMING zones; plan cycle-status select aligned to Bang 15 cycle_status (IN_PROGRESS/HARVESTING/COMPLETED_CLOSED/ABORTED_BY_DISASTER_DISEASE; stored PLAN-2026 value RUNNING untouched). Kept visible with recorded rationale: actors forestry_enterprise_class and packing cert fields (no sector driver in their dossier tables); lots timber block stays phase-3 scope. jsdom sim + live browser verified the gating. INCIDENT found by the mandatory browser test: zone CREATION on production returned 500 since T-034 - the live D1 zones table still carries name TEXT NOT NULL (no default) from the original schema era and T-034 cut name from SPECS, so inserts stopped supplying it (PATCH/GET unaffected, which is why earlier probes missed it; audit confirmed the only trap of its class). FIX (Worker a439d46e): legacy-schema guard in all three SQL stores (out-of-model NOT NULL columns with no default are satisfied with a neutral value at insert; never read back), schema files relax zones.name to nullable, regression tests in test_legacy_schema.py. Suites: memory 77 passed + 3 skipped; D1 legacy tests pass standalone. HONEST NOTE: the full D1-mode suite in one process errors on the PRISTINE tree too (git-stash verified; test_m3 standalone fails unmodified) - pre-existing harness isolation issue in this environment, follow-up. Post-fix production probes: POST /zones 201, probes deleted; final browser round PASSED (create forestry zone Z-FTEST, plan form shows the forestry field, delete Z-FTEST; pilot back to Z-01 + Z-TMP).",
+    "blockers": []
+   }
+  ],
+  "version": "0.1.0"
+ },
+ "updated_at": "2026-11-04T00:15:00Z"
 }

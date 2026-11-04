@@ -26,6 +26,7 @@ class PgStore:
 
     def __init__(self, dsn: str) -> None:
         self._lock = threading.Lock()
+        self._legacy_cols: dict[str, list] = {}
         self._conn = psycopg.connect(dsn, autocommit=True, row_factory=dict_row)
         with self._lock, self._conn.cursor() as cur:
             cur.execute(_SCHEMA)
@@ -204,6 +205,25 @@ class PgStore:
         row = cur.fetchone()
         return None if row is None else row["id"]
 
+    def _legacy_required_columns(self, cur, table: str) -> list:
+        """(column, neutral value) for NOT NULL columns with no default that
+        sit outside the standard write set — legacy-schema guard, see
+        D1Store.create_record. Cached per table."""
+        if table in self._legacy_cols:
+            return self._legacy_cols[table]
+        cur.execute(
+            "SELECT column_name AS name, data_type AS type FROM information_schema.columns "
+            "WHERE table_name = %s AND is_nullable = 'NO' AND column_default IS NULL",
+            (table,))
+        system = {"id", "tenant_id", "code", "data", "created_at", "updated_at"}
+        found = []
+        for r in cur.fetchall():
+            if r["name"] not in system:
+                t = (r["type"] or "").upper()
+                found.append((r["name"], 0 if any(x in t for x in ("INT", "REAL", "NUM", "DEC", "DOUBLE")) else ""))
+        self._legacy_cols[table] = found
+        return found
+
     async def create_record(self, tenant: str, kind: str, fields: dict) -> dict | None:
         table, columns = SPECS[kind]
         refs = RECORD_REFS[kind]
@@ -224,6 +244,10 @@ class PgStore:
                     values[col] = Jsonb(fields[col]) if ckind == "json" else fields[col]
             names = ["tenant_id", "data", *values.keys()]
             params = [tenant, Jsonb(extra), *values.values()]
+            for col, neutral in self._legacy_required_columns(cur, table):
+                if col not in names:
+                    names.append(col)
+                    params.append(neutral)
             if kind in CODED_KINDS:
                 names.insert(1, "code")
                 params.insert(1, fields.get("code"))

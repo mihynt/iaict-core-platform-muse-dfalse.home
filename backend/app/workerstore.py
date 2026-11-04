@@ -72,6 +72,7 @@ class WorkerPgStore:
         self._params = dict(host=host, port=int(port), user=user,
                             password=password, database=database)
         self._schema_done = False
+        self._legacy_cols: dict[str, list] = {}
         self._conn = None
         # Per-isolate lookup caches (T-012, see module docstring).
         self._tenant_cache: dict[str, tuple[float, Tenant | None]] = {}
@@ -418,6 +419,25 @@ class WorkerPgStore:
                 return None
             raise
 
+    def _legacy_required_columns(self, cur, table: str) -> list:
+        """(column, neutral value) for NOT NULL columns with no default that
+        sit outside the standard write set — legacy-schema guard, see
+        D1Store.create_record. Cached per table."""
+        if table in self._legacy_cols:
+            return self._legacy_cols[table]
+        cur.execute(
+            "SELECT column_name AS name, data_type AS type FROM information_schema.columns "
+            "WHERE table_name = %s AND is_nullable = 'NO' AND column_default IS NULL",
+            (table,))
+        system = {"id", "tenant_id", "code", "data", "created_at", "updated_at"}
+        found = []
+        for r in self._rows(cur):
+            if r["name"] not in system:
+                t = (r["type"] or "").upper()
+                found.append((r["name"], 0 if any(x in t for x in ("INT", "REAL", "NUM", "DEC", "DOUBLE")) else ""))
+        self._legacy_cols[table] = found
+        return found
+
     def _create_record_inner(self, tenant: str, kind: str, fields: dict) -> dict | None:
         table, columns = SPECS[kind]
         refs = RECORD_REFS[kind]
@@ -441,6 +461,10 @@ class WorkerPgStore:
             if kind in CODED_KINDS:
                 names.insert(1, "code")
                 params.insert(1, fields.get("code"))
+            for col, neutral in self._legacy_required_columns(cur, table):
+                if col not in names:
+                    names.append(col)
+                    params.append(neutral)
             placeholders = ", ".join(["%s"] * len(names))
             cur.execute(
                 f"INSERT INTO {table} ({', '.join(names)}) VALUES ({placeholders})"

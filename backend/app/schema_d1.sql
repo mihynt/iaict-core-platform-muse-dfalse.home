@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS zones (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
     code            TEXT NOT NULL,
-    name            TEXT NOT NULL,
+    name            TEXT,
     area_ha         REAL,
     address         TEXT,
     lat             REAL,

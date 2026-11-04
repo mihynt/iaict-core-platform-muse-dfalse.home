@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS zones (
     id              BIGSERIAL,
     tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
     code            TEXT NOT NULL,
-    name            TEXT NOT NULL,
+    name            TEXT,
     area_ha         NUMERIC,
     address         TEXT,
     lat             DOUBLE PRECISION,
