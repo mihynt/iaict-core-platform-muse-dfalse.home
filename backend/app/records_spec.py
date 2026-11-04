@@ -276,7 +276,10 @@ SPECS = {'actors': ('actors',
                    'recirculation_approval_doc': 'text',
                    'repurpose_or_reexport_doc': 'text'}),
  'iot_devices': ('iot_devices',
-                 {'device_type': 'text', 'firmware_version': 'text', 'installed_at': 'date'})}
+                 {'device_type': 'text',
+                  'firmware_version': 'text',
+                  'installed_at': 'date',
+                  'key_hash': 'text'})}
 
 RECORD_REFS = {'actors': {'parent_code': 'actors'},
  'crop_plans': {'zone_code': 'zones',

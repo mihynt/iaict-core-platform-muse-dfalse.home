@@ -182,6 +182,10 @@ _MIGRATIONS: list[tuple[int, list[str]]] = [
         # T-045/T-005: IoT device registry (simulation ingestion slice).
         "CREATE TABLE IF NOT EXISTS iot_devices (\n    id              INTEGER PRIMARY KEY AUTOINCREMENT,\n    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,\n    code            TEXT NOT NULL,\n    device_type     TEXT,\n    zone_id         INTEGER,\n    zone_code       TEXT,\n    parcel_id       INTEGER,\n    parcel_code     TEXT,\n    firmware_version TEXT,\n    installed_at    TEXT,\n    data            TEXT NOT NULL DEFAULT '{}',\n    created_at      TEXT NOT NULL,\n    updated_at      TEXT NOT NULL,\n    UNIQUE (tenant_id, code),\n    UNIQUE (tenant_id, id),\n    FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id),\n    FOREIGN KEY (tenant_id, parcel_id) REFERENCES spatial_units (tenant_id, id)\n)",
     ]),
+    (10, [
+        # T-046: per-device IoT keys - only the hash is stored.
+        "ALTER TABLE iot_devices ADD COLUMN key_hash TEXT",
+    ]),
 ]
 
 

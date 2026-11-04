@@ -277,6 +277,7 @@ window.IAICT_META = {
   "device_type": "Loại thiết bị",
   "firmware_version": "Phiên bản firmware",
   "installed_at": "Ngày lắp đặt",
+  "key_hash": "Băm khóa thiết bị (chỉ lưu bản băm)",
   "registration_no": "Số đăng ký",
   "active_ingredient": "Hoạt chất",
   "quantity_received": "Số lượng nhập",

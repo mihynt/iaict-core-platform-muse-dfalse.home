@@ -219,4 +219,4 @@ FKs).
 
 | Kind | Purpose |
 |---|---|
-| `iot_devices` | T-005 gate slice (T-045): device registry (type / zone / parcel / firmware). Telemetry lands in the dossier's own tables - water metrics in Bang 20, trap counts in Bang 19 - via `POST /api/v1/iot/readings` (key-gated, closed by default). See `docs/IOT_GATE_T005.md`. |
+| `iot_devices` | T-005 gate slice (T-045): device registry (type / zone / parcel / firmware). Telemetry lands in the dossier's own tables - water metrics in Bang 20, trap counts in Bang 19 - via `POST /api/v1/iot/readings` (per-device keys since T-046: hash-only storage, one-time display, rotation + revocation; devices without an active key are refused). See `docs/IOT_GATE_T005.md`. |

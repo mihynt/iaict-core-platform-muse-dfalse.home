@@ -4,12 +4,14 @@
 Sends plausible telemetry for a registered device to the platform's
 ingestion endpoint, the way a field gateway would. Usage:
 
-    IAICT_IOT_KEY=<tenant ingest key> python tools/simulate_iot.py \
+    IAICT_DEVICE_KEY=<the device key shown once at issue time> \
+    python tools/simulate_iot.py \
         --base https://iaict-core-platform.mihy.workers.dev \
         --tenant beta-pilot --device WQ-01 --count 3
 
-Without IAICT_IOT_KEY in the environment the platform keeps the gate
-closed (503 IOT_DISABLED) — set the same value as a Worker secret.
+Each device has its own key (T-046), shown exactly once when the
+device is created or its key is rotated in the admin UI; the platform
+stores only a hash. A device without an active key is refused (403).
 """
 from __future__ import annotations
 
@@ -28,9 +30,9 @@ def main() -> None:
     ap.add_argument("--device", required=True)
     ap.add_argument("--count", type=int, default=1)
     args = ap.parse_args()
-    key = os.environ.get("IAICT_IOT_KEY")
+    key = os.environ.get("IAICT_DEVICE_KEY")
     if not key:
-        raise SystemExit("IAICT_IOT_KEY is not set in the environment")
+        raise SystemExit("IAICT_DEVICE_KEY is not set in the environment")
     url = args.base.rstrip("/") + "/api/v1/iot/readings"
     for i in range(args.count):
         reading = {

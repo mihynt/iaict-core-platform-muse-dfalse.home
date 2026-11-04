@@ -875,6 +875,7 @@ CREATE TABLE IF NOT EXISTS iot_devices (
     parcel_code     TEXT,
     firmware_version TEXT,
     installed_at    TEXT,
+    key_hash        TEXT,
     data            JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),

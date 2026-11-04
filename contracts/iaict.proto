@@ -469,4 +469,5 @@ message IotDevice {
   string parcel_code = 4;  // Thửa / ao lắp đặt
   string firmware_version = 5;  // Phiên bản firmware
   string installed_at = 6;  // Ngày lắp đặt
+  string key_hash = 7;  // Băm khóa thiết bị (chỉ lưu bản băm)
 }

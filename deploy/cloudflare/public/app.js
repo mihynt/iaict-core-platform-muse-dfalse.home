@@ -1784,6 +1784,13 @@ Object.assign(GD3A_TARGETS, {
   spatial_units: { path: "/spatial-units", fmt: fmtParcelOpt, addNew: (d, b) => quickParcel(d, b) },
 });
 let gd3bTab = "iot_devices";
+let pendingDeviceKey = null;
+function showDeviceKey(code, key) {
+  openSheet("🔑 Khóa thiết bị " + code, [
+    { k: "note1", type: "note", label: "Khóa này chỉ hiện MỘT LẦN — hệ thống chỉ lưu bản băm nên không xem lại được. Hãy sao chép và cấu hình ngay vào thiết bị / gateway; thiết bị gửi số đo kèm tiêu đề X-Iot-Key với khóa này." },
+    { k: "_device_key", label: "Khóa thiết bị", def: key },
+  ], async () => {});
+}
 VIEWS.monitor = async () => {
   const el = $("#view");
   el.innerHTML = `<div class="section-head"><h2>🔬 Giám sát & kê khai</h2>
@@ -1801,6 +1808,7 @@ VIEWS.monitor = async () => {
         <div class="title">${esc(cfg.titleOf(r))}</div>
         <div class="sub">${esc(cfg.subOf(r))}</div>
         ${cfg.editable ? `<div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-gd3b="${r.id}">✏️ Sửa</button></div>` : ""}
+        ${gd3bTab === "iot_devices" ? `<div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-iot-rotate="${esc(r.code)}">🔑 Cấp / đổi khóa</button> <button class="btn btn-ghost btn-sm" data-iot-revoke="${esc(r.code)}">🚫 Thu hồi khóa</button></div>` : ""}
       </div></div>`).join("")}</div>`
       : emptyState("🔬", "Chưa có bản ghi nào", "Bấm nút + để thêm " + cfg.title.toLowerCase() + ".");
     if (cfg.editable) body.querySelectorAll("[data-edit-gd3b]").forEach((b) => b.onclick = async () => {
@@ -1810,11 +1818,30 @@ VIEWS.monitor = async () => {
         invalidate(gd3bTab);
       });
     });
+    if (gd3bTab === "iot_devices") {
+      body.querySelectorAll("[data-iot-rotate]").forEach((b) => b.onclick = () => {
+        const code = b.dataset.iotRotate;
+        openSheet("Cấp / đổi khóa cho " + code, [
+          { k: "note", type: "note", label: "Khóa mới sẽ thay thế khóa hiện tại ngay lập tức — thiết bị đang dùng khóa cũ sẽ bị từ chối cho tới khi được cấu hình khóa mới." },
+        ], async () => {
+          const res = await T(`/iot-devices/${code}/rotate-key`, { method: "POST" });
+          pendingDeviceKey = { code, key: res.device_key };
+        });
+      });
+      body.querySelectorAll("[data-iot-revoke]").forEach((b) => b.onclick = () => {
+        const code = b.dataset.iotRevoke;
+        openSheet("Thu hồi khóa của " + code, [
+          { k: "note", type: "note", label: "Thiết bị sẽ không gửi được số đo nữa cho tới khi được cấp khóa mới." },
+        ], async () => { await T(`/iot-devices/${code}/revoke-key`, { method: "POST" }); });
+      });
+    }
     wireCardDetails(body, items, (r) => cfg.titleOf(r), gd3bTab);
+    if (pendingDeviceKey) { const pk = pendingDeviceKey; pendingDeviceKey = null; showDeviceKey(pk.code, pk.key); }
   } catch (err) { body.innerHTML = banner(err); }
   fab("Thêm " + cfg.title.toLowerCase(), async () => {
     openSheet("Thêm " + cfg.title.toLowerCase(), await gd3FormFields(gd3bTab, null, GD3B_KINDS), async (p) => {
-      await T(cfg.path, { method: "POST", body: p }); invalidate(gd3bTab);
+      const res = await T(cfg.path, { method: "POST", body: p }); invalidate(gd3bTab);
+      if (gd3bTab === "iot_devices" && res && res.device_key) pendingDeviceKey = { code: p.code, key: res.device_key };
     });
   });
 };

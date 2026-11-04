@@ -123,6 +123,7 @@
   "device_type": 2,
   "firmware_version": 5,
   "installed_at": 6,
+  "key_hash": 7,
   "parcel_code": 4,
   "zone_code": 3
  },

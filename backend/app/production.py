@@ -19,6 +19,9 @@ the caller's tenant. Field definitions: docs/DATA_MODEL.md.
 from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+import hashlib
+import hmac
+import secrets
 from pydantic import BaseModel, ConfigDict, Field
 
 from .config import settings
@@ -1362,6 +1365,24 @@ async def report_packing_mass_balance(tenant: str = Depends(require_tenant)) -> 
 
 
 # ---- IoT ingestion slice (T-045, T-005 preparation) ---------------------------
+# T-046: per-device keys. Each device gets a random key at creation
+# (and on rotation); only an HMAC hash is stored (key_hash), the raw
+# key is returned exactly once. Revoking clears the hash. A leaked
+# database therefore yields no usable device key, and one compromised
+# device does not open the tenant's gate.
+
+def _new_device_key() -> str:
+    return "iotk_" + secrets.token_hex(20)
+
+
+def _device_key_hash(tenant: str, code: str, raw: str) -> str:
+    from . import auditctx
+    msg = f"{tenant}:{code}:{raw}".encode()
+    secret = auditctx.pii_key()
+    if secret:
+        return hmac.new(secret.encode(), msg, hashlib.sha256).hexdigest()
+    return hashlib.sha256(msg).hexdigest()
+
 
 class IotReadingIn(BaseModel):
     model_config = ConfigDict(extra="allow")
@@ -1369,20 +1390,6 @@ class IotReadingIn(BaseModel):
     measured_at: str | None = None
     water: dict | None = None
     trap: dict | None = None
-
-
-def _configured_iot_key(request: Request) -> str | None:
-    """Tenant ingest key: process env first, ASGI scope env on Workers
-    (same pattern as the platform key in deps.py). Unset means the IoT
-    gate stays closed (503), exactly like platform administration."""
-    import os
-    key = os.environ.get("IAICT_IOT_KEY")
-    if key:
-        return key
-    env = request.scope.get("env") if request is not None else None
-    if env is not None:
-        return getattr(env, "IAICT_IOT_KEY", None)
-    return None
 
 
 _WATER_METRICS = ("water_salinity_permille", "ph_value", "dissolved_oxygen_mg_l",
@@ -1393,38 +1400,85 @@ _WATER_METRICS = ("water_salinity_permille", "ph_value", "dissolved_oxygen_mg_l"
 @router.post("/iot-devices", status_code=status.HTTP_201_CREATED)
 async def create_iot_device(body: RecordIn, tenant: str = Depends(require_tenant),
                             actor: User = Depends(require_role("OPERATOR"))) -> dict:
-    return await _create(tenant, actor, "iot_devices", "IOT", body)
+    raw = _new_device_key()
+    payload = body.model_dump(mode="json", exclude_none=True)
+    payload["key_hash"] = _device_key_hash(tenant, payload.get("code") or "", raw)
+    rec = await _create(tenant, actor, "iot_devices", "IOT", RecordIn(**payload))
+    rec = dict(rec)  # copy: the in-memory store returns its live record
+    rec.pop("key_hash", None)
+    rec["device_key"] = raw  # shown exactly once, never stored
+    return rec
 
 
 @router.get("/iot-devices")
 async def list_iot_devices(tenant: str = Depends(require_tenant)) -> dict:
-    return await _list(tenant, "iot_devices")
+    out = await _list(tenant, "iot_devices")
+    out["items"] = [{k: v for k, v in item.items() if k != "key_hash"}
+                    for item in out["items"]]
+    return out
+
+
+async def _iot_device_or_404(tenant: str, code: str) -> dict:
+    rec = await store.get_record_by_code(tenant, "iot_devices", code)
+    if rec is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "NOT_FOUND", "message": f"No iot_devices record with code {code}"})
+    return rec
+
+
+@router.post("/iot-devices/{code}/rotate-key")
+async def rotate_iot_key(code: str, tenant: str = Depends(require_tenant),
+                         actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
+    await _iot_device_or_404(tenant, code)
+    raw = _new_device_key()
+    await store.update_record(tenant, "iot_devices", code,
+                              {"key_hash": _device_key_hash(tenant, code, raw)})
+    await store.record_audit(scope="tenant", tenant_id=tenant, actor=actor.username,
+                             action="IOT_KEY_ROTATE", target=code, outcome="OK")
+    return {"tenant_id": tenant, "device_code": code, "device_key": raw}
+
+
+@router.post("/iot-devices/{code}/revoke-key")
+async def revoke_iot_key(code: str, tenant: str = Depends(require_tenant),
+                         actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
+    await _iot_device_or_404(tenant, code)
+    await store.update_record(tenant, "iot_devices", code, {"key_hash": None})
+    await store.record_audit(scope="tenant", tenant_id=tenant, actor=actor.username,
+                             action="IOT_KEY_REVOKE", target=code, outcome="OK")
+    return {"tenant_id": tenant, "device_code": code, "revoked": True}
 
 
 @router.post("/iot/readings", status_code=status.HTTP_201_CREATED)
 async def ingest_iot_reading(body: IotReadingIn, request: Request,
                              tenant: str = Depends(require_tenant),
                              x_iot_key: str | None = Header(default=None)) -> dict:
-    """Device telemetry landing zone (simulation slice): water metrics
-    become Bang 20 water-quality records on the device's parcel; trap
-    counts become Bang 19 monitoring records of type
-    AI_INSECT_TRAP_REALTIME on the device's zone."""
-    configured = _configured_iot_key(request)
-    if not configured:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"code": "IOT_DISABLED",
-                    "message": "IoT ingestion is not configured (IAICT_IOT_KEY unset)"})
-    if x_iot_key != configured:
+    """Device telemetry landing zone: water metrics become Bang 20
+    water-quality records on the device's parcel; trap counts become
+    Bang 19 monitoring records of type AI_INSECT_TRAP_REALTIME on the
+    device's zone. Authenticated by the device's own key (T-046)."""
+    if not x_iot_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "IOT_KEY_INVALID", "message": "Invalid IoT ingest key"})
+            detail={"code": "IOT_KEY_REQUIRED",
+                    "message": "X-Iot-Key header with the device key is required"})
     device = await store.get_record_by_code(tenant, "iot_devices", body.device_code)
     if device is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": "DEVICE_UNKNOWN",
                     "message": f"No IoT device with code {body.device_code}"})
+    stored = device.get("key_hash")
+    if not stored:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "DEVICE_KEY_INACTIVE",
+                    "message": "This device has no active key (not issued or revoked)"})
+    expected = _device_key_hash(tenant, body.device_code, x_iot_key)
+    if not hmac.compare_digest(stored, expected):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"code": "IOT_KEY_INVALID", "message": "Invalid device key"})
     from datetime import datetime, timezone
     ts = body.measured_at or datetime.now(timezone.utc).isoformat()
     created: dict = {}

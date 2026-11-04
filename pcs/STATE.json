@@ -1,5 +1,5 @@
 {
- "revision": 60,
+ "revision": 61,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -29,8 +29,8 @@
   ],
   "current": {
    "active_task": null,
-   "last_completed_step": "FULL programme COMPLETE (rev 60): all 7 stages TECH_DONE and live - migrations, 33/33 dossier tables + 3 views, store-core unification, IoT gate package.",
-   "next_action": "Owner decisions: (1) T-005 go/no-go + the 3 IoT decisions in docs/IOT_GATE_T005.md; (2) Q-TX-01 frozen-retention precedence; (3) Q-TX-02 national portal scope. Optional engineering follow-ups: list pagination (P2-b); the pre-existing PG-mode null-key test.",
+   "last_completed_step": "T-046 per-device IoT keys TECH_DONE and live (rev 61, Worker 08863dcb).",
+   "next_action": "Owner decisions still open: IoT ownership (0 FTE in KH v3.1) and the day-90 timeline anchor; Q-TX-01; Q-TX-02. Real-device onboarding is now unblocked platform-side whenever hardware/vendors are chosen.",
    "blockers": []
   },
   "decisions": [
@@ -290,6 +290,12 @@
     "name": "IoT gate package + simulation ingestion (T-045)",
     "status": "TECH_DONE",
     "notes": "iot_devices registry + key-gated ingestion into Bang 19/20; gate closed by default; decisions in docs/IOT_GATE_T005.md."
+   },
+   {
+    "id": "F-025",
+    "name": "Per-device IoT keys (T-046)",
+    "status": "TECH_DONE",
+    "notes": "Issue/rotate/revoke per device; HMAC hash only at rest; one-time display in UI."
    }
   ],
   "flows": [],
@@ -727,9 +733,19 @@
     ],
     "evidence": "New kind iot_devices (registry kind #33; code, device_type enum WATER_QUALITY_SENSOR/INSECT_TRAP_AI/WEATHER_STATION, zone_code, parcel_code, firmware_version, installed_at; migration v9; UI tab in the monitoring view). POST /api/v1/iot/readings lands telemetry in the dossier's own tables (water metrics -> Bang 20 water_quality_tests on the device's parcel; trap counts -> Bang 19 monitoring_declarations AI_INSECT_TRAP_REALTIME on the device's zone), gated by the IAICT_IOT_KEY secret: unset -> 503 IOT_DISABLED (closed by default), wrong key -> 401, unknown device -> 404, empty reading -> 400, each accepted reading writes an IOT_READING audit row. tools/simulate_iot.py simulates a field gateway. Gate package: docs/IOT_GATE_T005.md (readiness evidence, what real devices still need, the 3 open Owner decisions). Verification: memory suite 94 passed + 4 skipped; D1 subset incl. schema guard 5 passed; production end-to-end with a temporary key: device+parcel created (201), keyless reading 401, simulator readings landed as real water/trap records (verified via API), probe rows removed at the D1 layer, temp secret deleted and the gate verified closed (503). One process incident: the first secret-delete attempt ran outside the deploy directory and failed on a missing Worker name; re-run correctly, deletion confirmed via secret list + the 503 probe. Live browser round passed (7 monitoring tabs, device form 6 fields). Worker 4263c4c6.",
     "blockers": []
+   },
+   {
+    "id": "T-046",
+    "title": "Per-device IoT keys: issue / rotate / revoke, hash-only storage, one-time display",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "T-005"
+    ],
+    "evidence": "Owner decision 2026-11-04 (option tap): proceed with per-device keys now. iot_devices gained key_hash (registry col-only field; migration v10). Create issues a random iotk_ key and returns it exactly once; rotate (TENANT_ADMIN) replaces it; revoke clears it (ingestion then 403 DEVICE_KEY_INACTIVE); wrong key 401, missing header 401 IOT_KEY_REQUIRED, unknown device 404. Hash = HMAC-SHA256 keyed by IAICT_PII_KEY when configured, SHA-256 fallback; compare via hmac.compare_digest. key_hash is stripped from every API response (the T-045 tenant-wide IAICT_IOT_KEY is retired). UI: device cards carry Cap/doi khoa + Thu hoi khoa buttons; create and rotate flows end in a one-time key sheet. Simulator now takes IAICT_DEVICE_KEY. Tests caught a real defect during the build: the create route mutated the InMemory store's live record (the one-time key leaked into list responses and the stored hash was popped) - fixed by copying before post-processing; suite memory 94 passed + 4 skipped, D1 iot tests pass. Production proof: device WQ-KEY created with key issued, list leaked nothing, simulator reading landed (201), UI rotation invalidated the old key (401), revoke 200, all probe data removed at the D1 layer and table counts verified 0. Live browser round passed. Worker 08863dcb. docs/IOT_GATE_T005.md updated (per-device item closed).",
+    "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T02:12:00Z"
+ "updated_at": "2026-11-04T02:27:00Z"
 }

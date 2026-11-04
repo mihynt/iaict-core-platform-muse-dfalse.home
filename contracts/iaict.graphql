@@ -487,6 +487,7 @@ type IotDevice {
   parcel_code: String
   firmware_version: String
   installed_at: String
+  key_hash: String
 }
 
 type Query {

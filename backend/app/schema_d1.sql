@@ -846,6 +846,7 @@ CREATE TABLE IF NOT EXISTS iot_devices (
     parcel_code     TEXT,
     firmware_version TEXT,
     installed_at    TEXT,
+    key_hash        TEXT,
     data            TEXT NOT NULL DEFAULT '{}',
     created_at      TEXT NOT NULL,
     updated_at      TEXT NOT NULL,

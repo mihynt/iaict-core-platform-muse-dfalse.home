@@ -21,12 +21,17 @@ in the 2026-11-02 three-document review of KH v3.1).
   (water sensor / AI trap / weather station), installation zone and
   parcel, firmware version. Managed in the "Giám sát & kê khai" UI.
 - **Ingestion endpoint** (`POST /api/v1/iot/readings`): authenticated
-  by a per-environment tenant ingest key (`IAICT_IOT_KEY` Worker
-  secret; when unset the endpoint returns 503 IOT_DISABLED — the gate
-  is closed by default, the same pattern as platform administration).
-  Unknown devices are rejected (404 DEVICE_UNKNOWN); empty readings
-  are rejected (400 READING_EMPTY); every accepted reading writes an
-  `IOT_READING` audit row under actor `iot:<device_code>`.
+  by the calling device's OWN key (`X-Iot-Key` header). Per-device
+  keys were added by T-046 on the Owner's direction: each device
+  receives a random key at registration (and on rotation), the
+  platform stores only an HMAC hash, and the raw key is shown exactly
+  once. A device with no active key is refused (403
+  DEVICE_KEY_INACTIVE), a wrong key is refused (401), unknown devices
+  are rejected (404 DEVICE_UNKNOWN), empty readings are rejected
+  (400 READING_EMPTY); every accepted reading writes an `IOT_READING`
+  audit row under actor `iot:<device_code>`. The T-045 tenant-wide
+  shared key was retired — one compromised device no longer opens the
+  whole tenant gate.
 - **Landing zones are the dossier's own tables** — no parallel IoT
   schema: water metrics become Bảng 20 water-quality records on the
   device's parcel; trap counts become Bảng 19 monitoring records of
@@ -38,9 +43,10 @@ in the 2026-11-02 three-document review of KH v3.1).
 
 ## What real devices would still need (not built, by design)
 
-1. **Per-device credentials.** The slice uses one tenant ingest key;
-   production devices need per-device keys (or mTLS) with rotation and
-   revocation, so one leaked key does not open the tenant's gate.
+1. ~~**Per-device credentials.**~~ **Done (T-046):** per-device keys
+   with admin-driven rotation and revocation, hash-only storage,
+   one-time display. (mTLS remains a future option if a vendor
+   requires it.)
 2. **A transport decision.** Devices/gateways would post HTTPS
    directly (simplest, matches the slice), or via an MQTT broker /
    vendor cloud webhook (most sensor vendors push from their own
@@ -66,6 +72,6 @@ in the 2026-11-02 three-document review of KH v3.1).
    The SOW/SRS/KH timeline mismatch (+4/+9/+40 days between document
    sets) is still unresolved at IAICT level.
 
-Until these are decided, the gate stays closed in production:
-`IAICT_IOT_KEY` is not set on the live Worker outside of supervised
-verification windows.
+Until these are decided, the gate stays closed in production in
+practice: no production device has been issued a key yet, and devices
+without an active key are refused.
