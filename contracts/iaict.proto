@@ -426,3 +426,38 @@ message LivestockDeclItem {
   string quantity_unit = 4;  // Đơn vị tính
   string farming_purpose = 5;  // Mục đích nuôi
 }
+
+message TransportTrip {
+  string carrier_actor_code = 1;  // Đơn vị vận chuyển
+  string packing_lot_code = 2;  // Lô thành phẩm vận chuyển
+  string harvest_lot_code = 3;  // Lô thu hoạch vận chuyển trực tiếp
+  string transport_mode_code = 4;  // Phương thức vận chuyển
+  string vehicle_vessel_identifier = 5;  // Biển số xe / số hiệu tàu / container
+  string driver_captain_name = 6;  // Người điều khiển phương tiện
+  string despatch_advice_asn_no = 7;  // Số ASN / vận đơn / hóa đơn
+  string origin_actor_code = 8;  // Cơ sở giao hàng
+  string destination_actor_code = 9;  // Cơ sở nhận hàng
+  string departure_timestamp = 10;  // Thời gian xuất phát
+  string arrival_timestamp = 11;  // Thời gian đến đích
+  double storage_temp_celsius = 12;  // Nhiệt độ bảo quản TB (°C)
+}
+
+message RecallCase {
+  string traceability_code = 1;  // Mã truy xuất của lô bị thu hồi
+  string affected_zone_code = 2;  // Vùng liên đới
+  string isolated_household_actor_code = 3;  // Hộ bị khoanh vùng
+  string recall_initiation_type = 4;  // Hình thức thu hồi
+  string risk_classification = 5;  // Phân loại rủi ro
+  string recall_reason = 6;  // Lý do thu hồi
+  double qty_produced_imported = 7;  // Số lượng đã sản xuất / nhập khẩu
+  double qty_consumed_sold = 8;  // Số lượng đã tiêu thụ
+  double qty_recovered = 9;  // Số lượng đã thu hồi
+  double qty_unrecovered = 10;  // Số lượng chưa thu hồi (tự động)
+  string primary_collection_address = 11;  // Địa điểm tập kết thu hồi
+  string post_recall_handling_method = 12;  // Xử lý sau thu hồi
+  string handling_plan_approved_date = 13;  // Ngày duyệt phương án xử lý
+  string fix_report_submitted_date = 14;  // Thời điểm gửi báo cáo khắc phục
+  string authority_recirc_reply_due = 15;  // Hạn trả lời cho lưu thông lại
+  string recirculation_approval_doc = 16;  // Số VB đồng ý lưu thông lại
+  string repurpose_or_reexport_doc = 17;  // Số HĐ chuyển mục đích / tờ khai tái xuất
+}

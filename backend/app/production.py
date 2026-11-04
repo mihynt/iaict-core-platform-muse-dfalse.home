@@ -49,6 +49,33 @@ class RecordIn(BaseModel):
     code: str | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]{1,63}$")
     name: str | None = None
     status: str | None = None
+    # GD3 Bang 28/31: transport trips + recall cases
+    carrier_actor_code: str | None = None
+    transport_mode_code: str | None = None
+    vehicle_vessel_identifier: str | None = None
+    driver_captain_name: str | None = None
+    despatch_advice_asn_no: str | None = None
+    origin_actor_code: str | None = None
+    destination_actor_code: str | None = None
+    departure_timestamp: str | None = None
+    arrival_timestamp: str | None = None
+    storage_temp_celsius: float | None = None
+    affected_zone_code: str | None = None
+    isolated_household_actor_code: str | None = None
+    recall_initiation_type: str | None = None
+    risk_classification: str | None = None
+    recall_reason: str | None = None
+    qty_produced_imported: float | None = None
+    qty_consumed_sold: float | None = None
+    qty_recovered: float | None = None
+    qty_unrecovered: float | None = None
+    primary_collection_address: str | None = None
+    post_recall_handling_method: str | None = None
+    handling_plan_approved_date: str | None = None
+    fix_report_submitted_date: str | None = None
+    authority_recirc_reply_due: str | None = None
+    recirculation_approval_doc: str | None = None
+    repurpose_or_reexport_doc: str | None = None
     # GD3 Bang 14/16/19-22: livestock + monitoring logs
     facility_actor_code: str | None = None
     management_granularity: str | None = None
@@ -361,9 +388,30 @@ async def _prepare_lot(tenant: str, fields: dict) -> None:
     plan_code = fields.get("plan_code")
     if plan_code and harvest is not None:
         events = await store.list_records(tenant, "field_events")
-        dated = [(e["safe_harvest_date"], e) for e in events
-                 if e.get("plan_code") == plan_code
-                 and e.get("safe_harvest_date")]
+        # FLD-17 (SRS baseline, completed in T-043): the PHI gate is scoped
+        # PER PARCEL. Field events inherit their parcel from their plan;
+        # when the lot names a parcel, every treatment recorded against
+        # that parcel (under any plan) must have run out its pre-harvest
+        # interval. Without a parcel, the plan scope applies, which is the
+        # conservative superset (every parcel of the plan must pass).
+        plans = {p.get("code"): p
+                 for p in await store.list_records(tenant, "crop_plans")}
+        lot_parcel = fields.get("parcel_code") or (plans.get(plan_code) or {}).get("parcel_code")
+
+        def _ev_parcel(e):
+            return (plans.get(e.get("plan_code")) or {}).get("parcel_code")
+
+        def _in_scope(e):
+            ep = _ev_parcel(e)
+            if e.get("plan_code") == plan_code:
+                # the lot's own plan: parcel narrows only when both known
+                return (not lot_parcel) or ep is None or ep == lot_parcel
+            # other plans: only treatments on the very same parcel count
+            return lot_parcel is not None and ep == lot_parcel
+
+        scoped = [e for e in events if _in_scope(e)]
+        dated = [(e["safe_harvest_date"], e) for e in scoped
+                 if e.get("safe_harvest_date")]
         max_safe = max((d for d, _ in dated), default=None)
         # Bang 24 (LOG_PHI_VALIDATION): keep a reference to the treatment
         # whose PHI ends last — the one that set the safe date.
@@ -371,14 +419,33 @@ async def _prepare_lot(tenant: str, fields: dict) -> None:
         if max_safe is not None:
             last_event = max(dated, key=lambda de: de[0])[1]
             last_ref = str(last_event.get("id"))
+        # FLD-17: a scoped treatment that applied a material (input lot)
+        # but produced no safe date has an UNKNOWN PHI end. Missing PHI
+        # must not be treated as zero — the lot cannot be certified safe.
+        missing_phi = [e for e in scoped
+                       if e.get("input_lot_code") and not e.get("safe_harvest_date")]
         blocked = max_safe is not None and fields["harvest_date"] < max_safe
+        if missing_phi:
+            outcome = "CONDITIONAL_LAB_TEST_REQUIRED"
+        elif blocked:
+            outcome = "BLOCKED_VIOLATION_PHI"
+        else:
+            outcome = "PASSED_SAFE"
         await store.create_record(tenant, "phi_validations", {
             "lot_code": fields.get("code"), "plan_code": plan_code,
+            "parcel_code": lot_parcel,
             "max_safe_harvest_date": max_safe,
             "actual_harvest_date": fields["harvest_date"],
-            "validation_outcome": "BLOCKED_VIOLATION_PHI" if blocked else "PASSED_SAFE",
+            "validation_outcome": outcome,
             "last_treatment_ref": last_ref,
         })
+        if missing_phi:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "PHI_DATA_MISSING",
+                        "message": "A treatment on this parcel applied an input lot "
+                                   "without PHI data (no phi_days on the treatment or "
+                                   "the input lot); the safe harvest date is unknown"})
         if blocked:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -638,6 +705,22 @@ def _prepare_residue_detail(fields: dict) -> None:
         fields["is_mrl_exceeded"] = mv > lim
 
 
+async def _prepare_recall_case(tenant: str, fields: dict) -> None:
+    """Bang 31: qty_unrecovered is generated (consumed - recovered), and a
+    declared traceability code must resolve to a real record."""
+    code = fields.get("traceability_code")
+    if code:
+        records = await store.list_records(tenant, "traceability_records")
+        if not any(r.get("traceability_code") == code for r in records):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"code": "REF_UNKNOWN",
+                        "message": "traceability_code does not match any traceability record"})
+    consumed, recovered = fields.get("qty_consumed_sold"), fields.get("qty_recovered")
+    if consumed is not None and recovered is not None:
+        fields["qty_unrecovered"] = consumed - recovered
+
+
 async def _prepare_certification(tenant: str, fields: dict) -> None:
     """Bang 10: the certified target must match the declared entity type."""
     etype = fields.get("certified_entity_type")
@@ -672,6 +755,8 @@ async def _create(tenant: str, actor: User, kind: str, prefix: str, body: Record
         await _prepare_certification(tenant, fields)
     if kind == "residue_test_details":
         _prepare_residue_detail(fields)
+    if kind == "recall_cases":
+        await _prepare_recall_case(tenant, fields)
     elif kind == "packing_inputs":
         await _prepare_packing_input(tenant, fields)
     elif kind == "traceability_records":
@@ -1158,6 +1243,118 @@ async def update_livestock_unit(rec_id: int, body: RecordIn,
                                 tenant: str = Depends(require_tenant),
                                 actor: User = Depends(require_role("OPERATOR"))) -> dict:
     return await _update_by_id(tenant, actor, "livestock_units", "LVU", rec_id, body)
+
+
+# ---- GD3 transport + recall (Bang 28, 31) ------------------------------------
+
+@router.post("/transport-trips", status_code=status.HTTP_201_CREATED)
+async def create_transport_trip(body: RecordIn, tenant: str = Depends(require_tenant),
+                                actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "transport_trips", "TRP", body)
+
+
+@router.get("/transport-trips")
+async def list_transport_trips(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "transport_trips")
+
+
+@router.patch("/transport-trips/{rec_id}")
+async def update_transport_trip(rec_id: int, body: RecordIn,
+                                tenant: str = Depends(require_tenant),
+                                actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update_by_id(tenant, actor, "transport_trips", "TRP", rec_id, body)
+
+
+@router.post("/recall-cases", status_code=status.HTTP_201_CREATED)
+async def create_recall_case(body: RecordIn, tenant: str = Depends(require_tenant),
+                             actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "recall_cases", "RCL", body)
+
+
+@router.get("/recall-cases")
+async def list_recall_cases(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "recall_cases")
+
+
+@router.patch("/recall-cases/{rec_id}")
+async def update_recall_case(rec_id: int, body: RecordIn,
+                             tenant: str = Depends(require_tenant),
+                             actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update_by_id(tenant, actor, "recall_cases", "RCL", rec_id, body)
+
+
+# ---- Dossier views (subsystem G) as live report computations -----------------
+
+@router.get("/reports/zone-metrics")
+async def report_zone_metrics(tenant: str = Depends(require_tenant)) -> dict:
+    """VW_PRODUCTION_ZONE_METRICS: per-zone rollup computed live."""
+    zones = await store.list_records(tenant, "zones")
+    links = await store.list_records(tenant, "zone_parcel_links")
+    parcels = {p.get("code"): p
+               for p in await store.list_records(tenant, "spatial_units")}
+    plans = await store.list_records(tenant, "crop_plans")
+    lots = await store.list_records(tenant, "lots")
+    items = []
+    for z in zones:
+        code = z.get("code")
+        active = [l for l in links if l.get("zone_code") == code
+                  and l.get("membership_status") != "WITHDRAWN_FROM_ZONE"]
+        area_m2 = sum((parcels.get(l.get("parcel_code")) or {}).get("area_m2") or 0
+                      for l in active)
+        zplans = [p for p in plans if p.get("zone_code") == code]
+        zlots = [l for l in lots if l.get("zone_code") == code]
+        items.append({
+            "zone_code": code, "puc_code": z.get("puc_code"),
+            "puc_status": z.get("puc_status"), "sector_category": z.get("sector_category"),
+            "declared_area_ha": z.get("initial_declared_area_ha"),
+            "linked_parcels": len(active), "linked_area_m2": area_m2,
+            "plans": len(zplans), "lots": len(zlots),
+            "harvested_kg": sum(l.get("quantity") or 0 for l in zlots),
+        })
+    return {"tenant_id": tenant, "items": items}
+
+
+@router.get("/reports/cycle-mass-balance")
+async def report_cycle_mass_balance(tenant: str = Depends(require_tenant)) -> dict:
+    """VW_CYCLE_MASS_BALANCE: harvested vs the cycle ceiling, per plan."""
+    plans = await store.list_records(tenant, "crop_plans")
+    lots = await store.list_records(tenant, "lots")
+    items = []
+    for p in plans:
+        harvested = sum(l.get("quantity") or 0 for l in lots
+                        if l.get("plan_code") == p.get("code"))
+        ceiling = p.get("target_yield_kg")
+        items.append({
+            "plan_code": p.get("code"), "zone_code": p.get("zone_code"),
+            "target_yield_kg": ceiling, "harvested_kg": harvested,
+            "remaining_kg": (ceiling - harvested) if ceiling is not None else None,
+            "harvested_pct": (round(100 * harvested / ceiling, 1)
+                              if ceiling else None),
+            "over_ceiling": bool(ceiling is not None and harvested > ceiling),
+        })
+    return {"tenant_id": tenant, "items": items}
+
+
+@router.get("/reports/packing-mass-balance")
+async def report_packing_mass_balance(tenant: str = Depends(require_tenant)) -> dict:
+    """VW_PACKING_MASS_BALANCE: inputs x yield norm vs declared output."""
+    packing = await store.list_records(tenant, "packing_lots")
+    inputs = await store.list_records(tenant, "packing_inputs")
+    items = []
+    for pk in packing:
+        in_kg = sum(i.get("allocated_weight_kg") or 0 for i in inputs
+                    if i.get("packing_lot_code") == pk.get("code"))
+        norm = pk.get("yield_norm_ratio")
+        expected = in_kg * norm if norm is not None else None
+        output = pk.get("output_weight_kg")
+        items.append({
+            "packing_lot_code": pk.get("code"), "facility_code": pk.get("facility_code"),
+            "inputs_kg": in_kg, "yield_norm_ratio": norm,
+            "expected_output_kg": expected, "output_weight_kg": output,
+            "variance_kg": (output - expected)
+                           if (output is not None and expected is not None) else None,
+        })
+    return {"tenant_id": tenant, "items": items}
 
 
 # ---- Updates (T-023) -------------------------------------------------------

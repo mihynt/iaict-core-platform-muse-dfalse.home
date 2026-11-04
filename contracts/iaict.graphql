@@ -442,6 +442,43 @@ type LivestockDeclItem {
   farming_purpose: String
 }
 
+type TransportTrip {
+  id: ID
+  carrier_actor_code: String
+  packing_lot_code: String
+  harvest_lot_code: String
+  transport_mode_code: String
+  vehicle_vessel_identifier: String
+  driver_captain_name: String
+  despatch_advice_asn_no: String
+  origin_actor_code: String
+  destination_actor_code: String
+  departure_timestamp: String
+  arrival_timestamp: String
+  storage_temp_celsius: Float
+}
+
+type RecallCase {
+  id: ID
+  traceability_code: String
+  affected_zone_code: String
+  isolated_household_actor_code: String
+  recall_initiation_type: String
+  risk_classification: String
+  recall_reason: String
+  qty_produced_imported: Float
+  qty_consumed_sold: Float
+  qty_recovered: Float
+  qty_unrecovered: Float
+  primary_collection_address: String
+  post_recall_handling_method: String
+  handling_plan_approved_date: String
+  fix_report_submitted_date: String
+  authority_recirc_reply_due: String
+  recirculation_approval_doc: String
+  repurpose_or_reexport_doc: String
+}
+
 type Query {
   actors: [Actor!]!
   crop_plans: [CropPlan!]!
@@ -473,4 +510,6 @@ type Query {
   water_quality_tests: [WaterQualityTest!]!
   residue_test_details: [ResidueTestDetail!]!
   livestock_decl_items: [LivestockDeclItem!]!
+  transport_trips: [TransportTrip!]!
+  recall_cases: [RecallCase!]!
 }

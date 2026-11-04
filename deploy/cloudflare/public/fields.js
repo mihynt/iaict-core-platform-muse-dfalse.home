@@ -34,7 +34,7 @@ window.IAICT_META = {
   "forest_harvest_plan_no": "Số VB phê duyệt PA khai thác rừng (nếu có)",
   "departure_port_code": "Mã cảng xuất bến (thủy sản, nếu có)",
   "arrival_port_code": "Mã cảng cập bến (thủy sản, nếu có)",
-  "traceability_code": "Mã truy xuất",
+  "traceability_code": "Mã truy xuất của lô bị thu hồi",
   "stage_no": "Công đoạn số",
   "stage_name": "Tên công đoạn",
   "product_trace_code": "Mã truy xuất sản phẩm",
@@ -84,10 +84,10 @@ window.IAICT_META = {
   "sscc_code": "Mã SSCC",
   "package_spec": "Quy cách đóng gói",
   "units_count": "Số đơn vị",
-  "packing_lot_code": "Lô đóng gói",
+  "packing_lot_code": "Lô thành phẩm vận chuyển",
   "cites_specimen_mark_code": "Mã nhãn đánh dấu mẫu vật CITES (nếu có)",
   "allocated_weight_kg": "Khối lượng phân bổ (kg)",
-  "harvest_lot_code": "Lô thu hoạch đầu vào",
+  "harvest_lot_code": "Lô thu hoạch vận chuyển trực tiếp",
   "phc_code": "Mã cơ sở đóng gói (PHC)",
   "output_weight_kg": "Sản lượng thành phẩm (kg)",
   "yield_norm_ratio": "Định mức thu hồi",
@@ -248,6 +248,32 @@ window.IAICT_META = {
   "declared_quantity": "Số lượng kê khai",
   "quantity_unit": "Đơn vị tính",
   "farming_purpose": "Mục đích nuôi",
+  "carrier_actor_code": "Đơn vị vận chuyển",
+  "transport_mode_code": "Phương thức vận chuyển",
+  "vehicle_vessel_identifier": "Biển số xe / số hiệu tàu / container",
+  "driver_captain_name": "Người điều khiển phương tiện",
+  "despatch_advice_asn_no": "Số ASN / vận đơn / hóa đơn",
+  "origin_actor_code": "Cơ sở giao hàng",
+  "destination_actor_code": "Cơ sở nhận hàng",
+  "departure_timestamp": "Thời gian xuất phát",
+  "arrival_timestamp": "Thời gian đến đích",
+  "storage_temp_celsius": "Nhiệt độ bảo quản TB (°C)",
+  "affected_zone_code": "Vùng liên đới",
+  "isolated_household_actor_code": "Hộ bị khoanh vùng",
+  "recall_initiation_type": "Hình thức thu hồi",
+  "risk_classification": "Phân loại rủi ro",
+  "recall_reason": "Lý do thu hồi",
+  "qty_produced_imported": "Số lượng đã sản xuất / nhập khẩu",
+  "qty_consumed_sold": "Số lượng đã tiêu thụ",
+  "qty_recovered": "Số lượng đã thu hồi",
+  "qty_unrecovered": "Số lượng chưa thu hồi (tự động)",
+  "primary_collection_address": "Địa điểm tập kết thu hồi",
+  "post_recall_handling_method": "Xử lý sau thu hồi",
+  "handling_plan_approved_date": "Ngày duyệt phương án xử lý",
+  "fix_report_submitted_date": "Thời điểm gửi báo cáo khắc phục",
+  "authority_recirc_reply_due": "Hạn trả lời cho lưu thông lại",
+  "recirculation_approval_doc": "Số VB đồng ý lưu thông lại",
+  "repurpose_or_reexport_doc": "Số HĐ chuyển mục đích / tờ khai tái xuất",
   "registration_no": "Số đăng ký",
   "active_ingredient": "Hoạt chất",
   "quantity_received": "Số lượng nhập",
@@ -616,6 +642,39 @@ window.IAICT_META = {
    "declared_quantity",
    "quantity_unit",
    "farming_purpose"
+  ],
+  "transport_trips": [
+   "carrier_actor_code",
+   "packing_lot_code",
+   "harvest_lot_code",
+   "transport_mode_code",
+   "vehicle_vessel_identifier",
+   "driver_captain_name",
+   "despatch_advice_asn_no",
+   "origin_actor_code",
+   "destination_actor_code",
+   "departure_timestamp",
+   "arrival_timestamp",
+   "storage_temp_celsius"
+  ],
+  "recall_cases": [
+   "traceability_code",
+   "affected_zone_code",
+   "isolated_household_actor_code",
+   "recall_initiation_type",
+   "risk_classification",
+   "recall_reason",
+   "qty_produced_imported",
+   "qty_consumed_sold",
+   "qty_recovered",
+   "qty_unrecovered",
+   "primary_collection_address",
+   "post_recall_handling_method",
+   "handling_plan_approved_date",
+   "fix_report_submitted_date",
+   "authority_recirc_reply_due",
+   "recirculation_approval_doc",
+   "repurpose_or_reexport_doc"
   ]
  },
  "enums": {
@@ -1239,6 +1298,60 @@ window.IAICT_META = {
    {
     "v": "SQUARE_METER",
     "t": "m²"
+   }
+  ],
+  "RECALL_INITIATION_TYPES": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "VOLUNTARY_RECALL",
+    "t": "Thu hồi tự nguyện"
+   },
+   {
+    "v": "MANDATORY_RECALL",
+    "t": "Thu hồi bắt buộc"
+   }
+  ],
+  "RISK_CLASSES": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "LOW_RISK",
+    "t": "Rủi ro thấp"
+   },
+   {
+    "v": "MEDIUM_RISK",
+    "t": "Rủi ro trung bình"
+   },
+   {
+    "v": "HIGH_RISK",
+    "t": "Rủi ro cao"
+   }
+  ],
+  "RECALL_HANDLING_METHODS": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "FIX_PRODUCT_OR_LABEL_DEFECT",
+    "t": "Khắc phục lỗi sản phẩm / nhãn"
+   },
+   {
+    "v": "REPURPOSE_USAGE",
+    "t": "Chuyển mục đích sử dụng"
+   },
+   {
+    "v": "RE_EXPORT",
+    "t": "Tái xuất khẩu"
+   },
+   {
+    "v": "DESTRUCTION",
+    "t": "Tiêu hủy"
    }
   ]
  }

@@ -237,6 +237,25 @@
   "supervision_outcome": 9,
   "zone_code": 2
  },
+ "recall_cases": {
+  "affected_zone_code": 2,
+  "authority_recirc_reply_due": 15,
+  "fix_report_submitted_date": 14,
+  "handling_plan_approved_date": 13,
+  "isolated_household_actor_code": 3,
+  "post_recall_handling_method": 12,
+  "primary_collection_address": 11,
+  "qty_consumed_sold": 8,
+  "qty_produced_imported": 7,
+  "qty_recovered": 9,
+  "qty_unrecovered": 10,
+  "recall_initiation_type": 4,
+  "recall_reason": 6,
+  "recirculation_approval_doc": 16,
+  "repurpose_or_reexport_doc": 17,
+  "risk_classification": 5,
+  "traceability_code": 1
+ },
  "ref_active_substance_mrls": {
   "approval_status": 7,
   "code": 1,
@@ -338,6 +357,20 @@
   "sync_status": 11,
   "synced_at": 12,
   "traceability_code": 1
+ },
+ "transport_trips": {
+  "arrival_timestamp": 11,
+  "carrier_actor_code": 1,
+  "departure_timestamp": 10,
+  "despatch_advice_asn_no": 7,
+  "destination_actor_code": 9,
+  "driver_captain_name": 6,
+  "harvest_lot_code": 3,
+  "origin_actor_code": 8,
+  "packing_lot_code": 2,
+  "storage_temp_celsius": 12,
+  "transport_mode_code": 4,
+  "vehicle_vessel_identifier": 5
  },
  "water_quality_tests": {
   "alkalinity_mg_l": 10,

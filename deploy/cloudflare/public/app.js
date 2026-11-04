@@ -507,6 +507,9 @@ Object.assign(DETAIL_VALUE_MAPS, {
   compliance_conclusion: _enumMap("COMPLIANCE_CONCLUSIONS"),
   species_category_code: _enumMap("DECL_SPECIES_CATEGORIES"),
   quantity_unit: _enumMap("DECL_QUANTITY_UNITS"),
+  recall_initiation_type: _enumMap("RECALL_INITIATION_TYPES"),
+  risk_classification: _enumMap("RISK_CLASSES"),
+  post_recall_handling_method: _enumMap("RECALL_HANDLING_METHODS"),
 });
 
 function fmtDetailVal(k2, v) {
@@ -608,6 +611,8 @@ const NAV = [
   { id: "refs", ic: "📚", label: "Danh mục" },
   { id: "market", ic: "🌏", label: "Thị trường" },
   { id: "monitor", ic: "🔬", label: "Giám sát" },
+  { id: "logistics", ic: "🚚", label: "Vận chuyển" },
+  { id: "reports", ic: "📊", label: "Báo cáo" },
   { id: "philogs", ic: "🛡️", label: "Kiểm tra PHI" },
   { id: "users", ic: "👥", label: "Người dùng" },
   { id: "tenants", ic: "🏢", label: "Tenant" },
@@ -1800,6 +1805,116 @@ VIEWS.monitor = async () => {
       await T(cfg.path, { method: "POST", body: p }); invalidate(gd3bTab);
     });
   });
+};
+
+/* ---------------- transport + recall (GD3 Bang 28, 31) ---------------- */
+const GD3C_KINDS = {
+  transport_trips: { path: "/transport-trips", title: "Chuyến vận chuyển", editable: true,
+    titleOf: (r) => `${r.vehicle_vessel_identifier || r.despatch_advice_asn_no || "Chuyến"} · ${r.departure_timestamp || ""}`,
+    subOf: (r) => r.driver_captain_name || "",
+    fields: [
+      { k: "carrier_actor_code", label: "Đơn vị vận chuyển", type: "select", target: "actors", empty: "— Chọn đơn vị —" },
+      { k: "packing_lot_code", label: "Lô thành phẩm vận chuyển", type: "select", target: "packing_lots", empty: "— Không có —", noAdd: true },
+      { k: "harvest_lot_code", label: "Lô thu hoạch vận chuyển trực tiếp", type: "select", target: "lots", empty: "— Không có —" },
+      { k: "transport_mode_code", label: "Phương thức vận chuyển", type: "select", target: "ref_transport_modes", empty: "— Chọn phương thức —" },
+      { k: "vehicle_vessel_identifier", label: "Biển số xe / số hiệu tàu / container" },
+      { k: "driver_captain_name", label: "Người điều khiển phương tiện" },
+      { k: "despatch_advice_asn_no", label: "Số ASN / vận đơn / hóa đơn" },
+      { k: "origin_actor_code", label: "Cơ sở giao hàng", type: "select", target: "actors", empty: "— Chọn cơ sở —" },
+      { k: "destination_actor_code", label: "Cơ sở nhận hàng", type: "select", target: "actors", empty: "— Chọn cơ sở —" },
+      { k: "departure_timestamp", label: "Thời gian xuất phát", type: "datetime-local" },
+      { k: "arrival_timestamp", label: "Thời gian đến đích", type: "datetime-local" },
+      { k: "storage_temp_celsius", label: "Nhiệt độ bảo quản TB (°C)", type: "number" },
+    ]},
+  recall_cases: { path: "/recall-cases", title: "Hồ sơ thu hồi", editable: true,
+    titleOf: (r) => r.traceability_code || r.recall_reason || "Hồ sơ thu hồi",
+    subOf: (r) => r.primary_collection_address || "",
+    fields: [
+      { k: "traceability_code", label: "Mã truy xuất của lô bị thu hồi" },
+      { k: "affected_zone_code", label: "Vùng liên đới", type: "select", target: "zones", empty: "— Không gắn —" },
+      { k: "isolated_household_actor_code", label: "Hộ bị khoanh vùng", type: "select", target: "actors", empty: "— Không gắn —" },
+      { k: "recall_initiation_type", label: "Hình thức thu hồi", type: "select", enum: "RECALL_INITIATION_TYPES" },
+      { k: "risk_classification", label: "Phân loại rủi ro", type: "select", enum: "RISK_CLASSES" },
+      { k: "recall_reason", label: "Lý do thu hồi" },
+      { k: "qty_produced_imported", label: "Số lượng đã sản xuất / nhập khẩu", type: "number" },
+      { k: "qty_consumed_sold", label: "Số lượng đã tiêu thụ", type: "number" },
+      { k: "qty_recovered", label: "Số lượng đã thu hồi", type: "number" },
+      { k: "primary_collection_address", label: "Địa điểm tập kết thu hồi" },
+      { k: "post_recall_handling_method", label: "Xử lý sau thu hồi", type: "select", enum: "RECALL_HANDLING_METHODS" },
+      { k: "handling_plan_approved_date", label: "Ngày duyệt phương án xử lý", type: "date" },
+      { k: "fix_report_submitted_date", label: "Thời điểm gửi báo cáo khắc phục", type: "datetime-local" },
+      { k: "authority_recirc_reply_due", label: "Hạn trả lời cho lưu thông lại", type: "datetime-local" },
+      { k: "recirculation_approval_doc", label: "Số VB đồng ý lưu thông lại" },
+      { k: "repurpose_or_reexport_doc", label: "Số HĐ chuyển mục đích / tờ khai tái xuất" },
+    ]},
+};
+Object.assign(GD3A_TARGETS, {
+  lots: { path: "/lots", fmt: fmtLotOpt, addNew: (d, b) => quickLot(d, b) },
+});
+let gd3cTab = "transport_trips";
+VIEWS.logistics = async () => {
+  const el = $("#view");
+  el.innerHTML = `<div class="section-head"><h2>🚚 Vận chuyển & thu hồi</h2>
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>
+    <div class="chips">${Object.entries(GD3C_KINDS).map(([k, c]) => `<button class="chip${k === gd3cTab ? " on" : ""}" data-gd3ctab="${k}">${c.title}</button>`).join("")}</div>
+    <div id="gd3cBody"></div>`;
+  $("#reload").onclick = () => { invalidate(gd3cTab); navigate("logistics", true); };
+  el.querySelectorAll("[data-gd3ctab]").forEach((b) => b.onclick = () => { gd3cTab = b.dataset.gd3ctab; navigate("logistics", true); });
+  const cfg = GD3C_KINDS[gd3cTab];
+  const body = el.querySelector("#gd3cBody");
+  try {
+    const items = await ensure(gd3cTab, cfg.path);
+    body.innerHTML = items.length ? `<div class="list">${items.map((r) => `
+      <div class="card" data-card="${esc(r.code ?? r.id)}"><div class="thumb slate">🚚</div><div class="body">
+        <div class="title">${esc(cfg.titleOf(r))}</div>
+        <div class="sub">${esc(cfg.subOf(r))}</div>
+        ${cfg.editable ? `<div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-gd3c="${r.id}">✏️ Sửa</button></div>` : ""}
+      </div></div>`).join("")}</div>`
+      : emptyState("🚚", "Chưa có bản ghi nào", "Bấm nút + để thêm " + cfg.title.toLowerCase() + ".");
+    if (cfg.editable) body.querySelectorAll("[data-edit-gd3c]").forEach((b) => b.onclick = async () => {
+      const rec = items.find((x) => x.id === Number(b.dataset.editGd3c));
+      openSheet("Sửa " + cfg.titleOf(rec), await gd3FormFields(gd3cTab, rec, GD3C_KINDS), async (p) => {
+        await T(`${cfg.path}/${rec.id}`, { method: "PATCH", body: p });
+        invalidate(gd3cTab);
+      });
+    });
+    wireCardDetails(body, items, (r) => cfg.titleOf(r), gd3cTab);
+  } catch (err) { body.innerHTML = banner(err); }
+  fab("Thêm " + cfg.title.toLowerCase(), async () => {
+    openSheet("Thêm " + cfg.title.toLowerCase(), await gd3FormFields(gd3cTab, null, GD3C_KINDS), async (p) => {
+      await T(cfg.path, { method: "POST", body: p }); invalidate(gd3cTab);
+    });
+  });
+};
+
+/* ---------------- reports: the 3 dossier views, computed live ---------------- */
+const REPORT_TABS = [
+  { id: "zone", path: "/reports/zone-metrics", title: "Chỉ số vùng",
+    cols: [["zone_code", "Vùng"], ["puc_status", "Trạng thái mã"], ["declared_area_ha", "Diện tích khai (ha)"], ["linked_parcels", "Thửa liên kết"], ["linked_area_m2", "Diện tích liên kết (m²)"], ["plans", "Vụ mùa"], ["lots", "Lô"], ["harvested_kg", "Đã thu (kg)"]] },
+  { id: "cycle", path: "/reports/cycle-mass-balance", title: "Cân bằng vụ mùa",
+    cols: [["plan_code", "Vụ mùa"], ["zone_code", "Vùng"], ["target_yield_kg", "Trần sản lượng (kg)"], ["harvested_kg", "Đã thu (kg)"], ["remaining_kg", "Còn lại (kg)"], ["harvested_pct", "% đạt"]] },
+  { id: "packing", path: "/reports/packing-mass-balance", title: "Cân bằng đóng gói",
+    cols: [["packing_lot_code", "Lô đóng gói"], ["facility_code", "Cơ sở"], ["inputs_kg", "Đầu vào (kg)"], ["yield_norm_ratio", "Định mức thu hồi"], ["expected_output_kg", "Đầu ra kỳ vọng (kg)"], ["output_weight_kg", "Đầu ra thực (kg)"], ["variance_kg", "Chênh lệch (kg)"]] },
+];
+let reportTab = "zone";
+VIEWS.reports = async () => {
+  const el = $("#view");
+  const tab = REPORT_TABS.find((t) => t.id === reportTab);
+  el.innerHTML = `<div class="section-head"><h2>📊 Báo cáo truy xuất</h2>
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>
+    <div class="chips">${REPORT_TABS.map((t) => `<button class="chip${t.id === reportTab ? " on" : ""}" data-reptab="${t.id}">${t.title}</button>`).join("")}</div>
+    <div id="repBody"></div>`;
+  $("#reload").onclick = () => navigate("reports", true);
+  el.querySelectorAll("[data-reptab]").forEach((b) => b.onclick = () => { reportTab = b.dataset.reptab; navigate("reports", true); });
+  const body = el.querySelector("#repBody");
+  try {
+    const data = await T(tab.path);
+    const items = data.items || [];
+    body.innerHTML = items.length ? `<div class="card" style="overflow-x:auto"><table class="tbl">
+      <thead><tr>${tab.cols.map((c) => `<th>${c[1]}</th>`).join("")}</tr></thead>
+      <tbody>${items.map((r) => `<tr>${tab.cols.map((c) => `<td>${esc(r[c[0]] === null || r[c[0]] === undefined ? "—" : r[c[0]])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`
+      : emptyState("📊", "Chưa có dữ liệu", "Báo cáo sẽ hiện khi có dữ liệu tương ứng.");
+  } catch (err) { body.innerHTML = banner(err); }
 };
 
 /* ---------------- users & audit ---------------- */
