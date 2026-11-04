@@ -1,5 +1,5 @@
 {
- "revision": 88,
+ "revision": 89,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-072",
-   "last_completed_step": "T-071 (AG07) TECH_DONE + DEPLOYED (rev 88): HLT + STD engines; Worker 328afd22.",
-   "next_action": "AG08 (T-072): cong IoT sang v2 (dang ky thiet bi, khoa rieng tung thiet bi, ingestion, canh bao).",
+   "active_task": "T-074",
+   "last_completed_step": "T-072 (AG08) TECH_DONE + DEPLOYED (rev 89): IoT port; Worker 626f36af.",
+   "next_action": "AG10 (T-074): lo giu/tha (hold/release), dinh dang nhan, cung co tra cuu cong khai chong liet ke. AG09 (T-073) van de sau theo chi thi Owner.",
    "blockers": []
   },
   "decisions": [
@@ -1063,9 +1063,9 @@
    {
     "id": "T-072",
     "title": "AG08 — IoT va profiles (port tu v1) (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commit c3afcda. Cong thiet ke IoT v1 (T-045/T-046) sang loi trung lap: bang iot_devices/iot_readings/iot_alerts (migration v11); khoa RIENG tung thiet bi cap 1 lan, chi luu bam HMAC (dung lai pii.hmac_hash), nam trong payload namespace '_' va bi iot_api loai khoi moi response; thang xac thuc ingestion giong v1 (401 IOT_KEY_REQUIRED / 404 DEVICE_UNKNOWN / 403 DEVICE_KEY_INACTIVE / 401 IOT_KEY_INVALID / 400 READING_EMPTY); rotate/revoke chi TENANT_ADMIN, khoa cu chet ngay; profile thiet bi + khoang do nam o manifest pack (iot_profiles, Pack 01 v1.4.0 co tram thoi tiet + cam bien nuoc); so do vuot khoang -> iot_alerts; thiet bi co lien ket subject thi ghi them su kien OBSERVATION vao ledger (khong doi so luong); tools/simulate_iot.py cong sang v2. Phan cung vat ly/lenh dieu khien van cho SRS-DEC08 (framework seam, khong tu dong hoa). Suite: memory 87+2, D1 89, PG 85+4; CI GREEN. DEPLOYED Worker 626f36af: D1 production migration 11; probe live: /iot-profiles + /iot-devices 200, POST readings khong khoa -> dung 401 IOT_KEY_REQUIRED.",
     "blockers": []
    },
    {
@@ -1153,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T09:33:56Z"
+ "updated_at": "2026-11-04T09:42:00Z"
 }
