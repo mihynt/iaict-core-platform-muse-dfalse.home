@@ -1,5 +1,5 @@
 {
- "revision": 67,
+ "revision": 68,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -867,11 +867,11 @@
      "ZON-01",
      "MPL-01"
     ],
-    "evidence": "Chua bat dau; theo DESIGN.md muc 3.1-3.2 + muc 9 lat V2-2. Core schema canonical viet tay; extension payload validate bang JSON Schema cua pack tu V2-4 (V2-2 chap nhan payload co khai bao truong trong registry loi).",
+    "evidence": "Chuan bi da khoa truoc khi xay (nghien cuu prompt mau theo yeu cau Owner 2026-11-04): repo v2 co AGENTS.md noi hoa System Prompt mau Phan 4.1 (mandate, mo hinh canonical, co che pack) + bang co lap ngu canh Phan 3 theo lat cat + muc tu kiem 5 diem truoc checkpoint. DESIGN.md bo sung: WorkflowEngine + Health & Biosecurity (HLT) + Standards & Compliance (STD) vao danh sach engines; manifest them workflows + test_vectors (Golden Test Vectors bat buoc); ghi chu anh xa OrganizationUnit = phan cap producers (SOW 5.2 khong co thuc the rieng, khong them bang); ngu phap Rule Engine ghi ro kieu JSON Logic/AST. Script denylist hop nhat ca 2 nguon (them land_parcel, cultivation_log, pesticide, fertilizer, thoi_gian_cach_ly, ao_nuoi, livestock, herd) va mo rong pham vi quet sang backend/app/main.py + UI shell app.js — chay dat. Commit repo v2 5ab7873. Chua bat dau; theo DESIGN.md muc 3.1-3.2 + muc 9 lat V2-2. Core schema canonical viet tay; extension payload validate bang JSON Schema cua pack tu V2-4 (V2-2 chap nhan payload co khai bao truong trong registry loi).",
     "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T04:09:25Z"
+ "updated_at": "2026-11-04T04:19:33Z"
 }
