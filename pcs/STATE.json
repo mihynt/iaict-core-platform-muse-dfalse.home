@@ -1,5 +1,5 @@
 {
- "revision": 80,
+ "revision": 81,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-065",
-   "last_completed_step": "DEC-016 + T-064 TECH_DONE (rev 80): nhan SRS R3 lam baseline hoan thien v2; ban do AG01-AG17 xong; 17 task chuong trinh da dang ky.",
-   "next_action": "Bat dau AG01 (T-065): CI + ADR doi chieu SRS-DEC + linter/validator. AG09 cho phan quyet Owner rieng.",
+   "active_task": "T-066",
+   "last_completed_step": "DEC-017 + T-065 (AG01) TECH_DONE (rev 81): nen CI/ADR/linter/validator/ma tran truy vet + CF smoke — cong CI xanh o ca 3 che do store.",
+   "next_action": "AG02 (T-066): grant/scope engine + four-eyes + kiem thu cach ly TC-01/TC-02.",
    "blockers": []
   },
   "decisions": [
@@ -132,6 +132,12 @@
     "date": "2026-11-04",
     "title": "Nhan SRS R3 (159 trang) lam baseline hoan thien Core v2; chuong trinh AG01-AG17 la lo trinh thuc thi",
     "detail": "Owner gui IAICT_SRS_159P_R3_UNCHANGED.docx (SHA-256 2daa7859..., 'SRS 1.0' 02/11/2026, trang thai cho IAICT khoa baseline) va chi thi: v2 thieu nhieu, lam day du tung phan. Tai lieu chua 21 module, 115 UAT, 82 bao cao, 116 hop dong operation (Phu luc K DRAFT), 24 SRS-TC, Phu luc H-N viet cho AI agent, va he thong giao viec rieng: 17 goi AG co phu thuoc (Muc 13.2) + 18 SRS-DEC dang OPEN (Phu luc L) — SRS ghi ro khong can dong ca 18 moi bat dau; moi task neu DEC lien quan. Ban do khoang thieu: ~/workspace/your_files/iaict-core-v2/ban-do-khoang-thieu-srs-r3-ag01-ag17.md — AG04/AG05/AG10 GAN XONG; AG02 phan lon; AG01/AG03/AG06/AG15 mot phan; AG07/AG08/AG11/AG12/AG13/AG14/AG16/AG17 chua lam; AG09 (Android native) can phan quyet Owner (xung dot thay the web, noi tiep F3 cua T-048)."
+   },
+   {
+    "id": "DEC-017",
+    "date": "2026-11-04",
+    "title": "Ap dung Core-First Agent Directive (tu chu ky thuat); Android de sau",
+    "detail": "Owner gui IAICT_CORE_FIRST_AGENT_DIRECTIVE_2026-11-04.md va chi thi lam theo; AG09 Android de sau (ghi nhan thay cho cau hoi phan quyet MOB). Noi dung then chot: (1) agent tu chu toi da ve kien truc/DB/API/UI/phan ra task — khong can phe duyet tung task/endpoint/bang; (2) khong duoc tu doi: pham vi chuc nang da chot, ngu nghia Core/Pack/Tenant, cach ly du lieu/quyen, bat bien ledger/tien/trace, bao mat/kiem thu, gioi han du lieu that va production; (3) Muc 13 SRS bi thay the o phuong dien QUAN TRI cong viec (khong thay noi dung chuc nang), ghi tai ADR-000 cua repo v2 + muc ghi chu trong AGENTS.md repo v2; (4) duy tri ma tran truy vet requirement -> capability -> entity -> API -> UI -> test -> evidence; (5) bo test trung lap/cach ly CF-T01..T08 cua chi thi la dieu kien nghiem thu G5, chay smoke ngay tu lat dau; (6) ban giao duy nhat: ung dung chay duoc + bao cao ngan (da lam / con FAIL-BLOCKED-NOT_RUN / link demo)."
    }
   ],
   "features": [
@@ -1001,9 +1007,9 @@
    {
     "id": "T-065",
     "title": "AG01 — Kho hop dong va nen tang CI (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commit 6479d49. Giao: (1) cong CI scripts/ci.sh (trung lap + lint + validator + pytest 2 che do) + .github/workflows/ci.yml (them job PostgreSQL service); chay local: CI GATE GREEN — lint 10/10, validator self-test CLEAN, memory 68+2, D1 70, PG 66+4. (2) Bo ADR docs/adr/ (000 autonomy, 001 topology/isolation, 002 dinh danh/API, 003 pack, 004 ledger/idempotency, 005 toan ven JCS/Merkle, 006 pagination) — moi ADR anh xa toi SRS-DEC tuong ung va ghi phan con mo. (3) tools/lint_schema.py (drift registry, parity 2 DDL, ledger migration, manifest + test vectors, bang trace). (4) tools/validate_trace.py (GTIN/SSCC/ma truy xuat theo profile; self-test bat duoc va da sua loi doc ket qua tra ve cua validate_gtin). (5) tools/build_traceability.py sinh docs/TRACEABILITY.md + traceability.json: 389 dong, tong khop so phu 39/118/232, 87 ma chua anh xa (cac nhom AG07-AG17) hien cong khai. (6) test_cf_smoke.py: CF-T01 tenant trong khong can truong nganh, CF-T04 toan dan 200-10-50=140 + retry/correction/rebuild, CF-T07 tu choi cheo tenant — 3/3 PASS ca 3 che do store.",
     "blockers": []
    },
    {
@@ -1064,11 +1070,13 @@
    },
    {
     "id": "T-073",
-    "title": "AG09 — Android va sync ngoai tuyen — CHO phan quyet Owner (SRS R3)",
+    "title": "AG09 — Android va sync ngoai tuyen (Owner chi thi DE SAU 2026-11-04)",
     "status": "PLANNED",
     "srs_refs": [],
     "evidence": "",
-    "blockers": []
+    "blockers": [
+     "Owner chi thi de sau (2026-11-04)"
+    ]
    },
    {
     "id": "T-074",
@@ -1145,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T08:36:36Z"
+ "updated_at": "2026-11-04T08:41:25Z"
 }
