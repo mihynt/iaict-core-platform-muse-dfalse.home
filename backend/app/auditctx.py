@@ -13,6 +13,8 @@ _client_info: contextvars.ContextVar = contextvars.ContextVar(
     "iaict_client_info", default=(None, None))
 _pii_key: contextvars.ContextVar = contextvars.ContextVar(
     "iaict_pii_key", default=None)
+_integrity_key: contextvars.ContextVar = contextvars.ContextVar(
+    "iaict_integrity_key", default=None)
 
 
 def set_client_info(ip: str | None, user_agent: str | None) -> None:
@@ -36,3 +38,19 @@ def pii_key() -> str | None:
     if key:
         return key
     return os.environ.get("IAICT_PII_KEY")
+
+
+def set_integrity_key(key: str | None) -> None:
+    _integrity_key.set(key)
+
+
+def integrity_key() -> str | None:
+    """Optional HMAC key for the Data Integrity chain (D-10/BLC-07).
+
+    Held in the platform secret store as IAICT_INTEGRITY_KEY; when unset
+    the chain uses plain SHA-256 and checkpoints record key_id "none".
+    """
+    key = _integrity_key.get()
+    if key:
+        return key
+    return os.environ.get("IAICT_INTEGRITY_KEY")

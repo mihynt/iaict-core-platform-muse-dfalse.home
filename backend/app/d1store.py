@@ -31,7 +31,7 @@ _SCHEMA = pathlib.Path(__file__).with_name("schema_d1.sql").read_text(encoding="
 _DDL = [stmt.strip() for stmt in _SCHEMA.split(";\n") if stmt.strip()]
 
 _TABLES_CHILD_FIRST = [
-    "audit_log", "iot_devices", "transport_trips", "recall_cases",
+    "integrity_checkpoints", "audit_log", "iot_devices", "transport_trips", "recall_cases",
     "water_quality_tests", "residue_test_details",
     "livestock_decl_items", "pre_harvest_supervisions",
     "monitoring_declarations", "livestock_units",
@@ -189,6 +189,20 @@ _MIGRATIONS: list[tuple[int, list[str]]] = [
     (11, [
         # T-047: per-SKU gate input (platform extension field).
         "ALTER TABLE packaging_units ADD COLUMN unit_weight_kg REAL",
+    ]),
+    (12, [
+        # T-050 (D-10): Data Integrity checkpoints over the audit ledger.
+        "CREATE TABLE IF NOT EXISTS integrity_checkpoints ("
+        " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        " tenant_id TEXT NOT NULL, day TEXT NOT NULL,"
+        " from_seq INTEGER NOT NULL, to_seq INTEGER NOT NULL,"
+        " leaf_count INTEGER NOT NULL, merkle_root TEXT NOT NULL,"
+        " head_chain TEXT NOT NULL, prev_root TEXT NOT NULL DEFAULT '',"
+        " schema_version INTEGER NOT NULL DEFAULT 1,"
+        " canon_id TEXT NOT NULL DEFAULT 'RFC8785-JCS',"
+        " hash_alg TEXT NOT NULL DEFAULT 'SHA-256',"
+        " tree_version INTEGER NOT NULL DEFAULT 1,"
+        " key_id TEXT NOT NULL DEFAULT 'none', created_at TEXT NOT NULL)",
     ]),
 ]
 

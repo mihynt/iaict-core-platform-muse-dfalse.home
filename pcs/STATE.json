@@ -1,5 +1,5 @@
 {
- "revision": 64,
+ "revision": 65,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -29,8 +29,8 @@
   ],
   "current": {
    "active_task": null,
-   "last_completed_step": "T-049 TECH_DONE: so phu yeu cau 389 ma SOW da lap (COVERED 33 / PARTIAL 111 / NOT_STARTED 245), luu o pcs/coverage.json + pcs/COVERAGE.md",
-   "next_action": "Owner chon buoc tiep theo sau T-049: (a) xay D-10 bo kiem chung toan ven du lieu (mo ca nhom BLC-01..09 + NFR-36/RPT-10), (b) chot huong MOB native-hay-web (F3), (c) goi chuan bi T-006 kem goi van hanh F5, (d) dien du lieu danh muc tham chieu (F2).",
+   "last_completed_step": "T-050 TECH_DONE (D-10): integrity checkpoints live tren beta — 88/88 audit rows da niem phong, verify VALID; so phu len COVERED 38/389",
+   "next_action": "Owner chon: (a) chot huong MOB native-hay-web (F3 cua T-048), (b) dien du lieu danh muc tham chieu cho beta (F2), (c) goi chuan bi T-006 kem goi van hanh F5 (D-14/D-16/D-17/D-25/D-27), (d) dat secret IAICT_INTEGRITY_KEY de bat che do HMAC cho chuoi toan ven.",
    "blockers": []
   },
   "decisions": [
@@ -308,6 +308,12 @@
     "name": "So phu yeu cau SOW (coverage register 389 ma)",
     "status": "TECH_DONE",
     "notes": "pcs/coverage.json + pcs/COVERAGE.md; duy tri o moi checkpoint cham toi ma lien quan."
+   },
+   {
+    "id": "F-028",
+    "name": "Data Integrity verifier (D-10): JCS + Merkle checkpoints + proof",
+    "status": "TECH_DONE",
+    "notes": "docs/INTEGRITY.md; khoa HMAC tuy chon qua secret IAICT_INTEGRITY_KEY (Owner tu dat neu muon); anchoring cho quyet dinh Q.2."
    }
   ],
   "flows": [],
@@ -788,9 +794,28 @@
     ],
     "evidence": "Vu tru doi chieu khop tuyet doi voi con so SOW tu cong bo (SOW R30 dong 1261/2596/3352): 389 ma = 302 FR o 22 nhom (chiet xuat theo bang tu DOCX R30, khong thieu so nao trong tung nhom) + 56 NFR (NFR-06/07 bo sung tay tu dong van ban vi bang co cot nhan rieng RPO/RTO) + 31 SEC. Trang thai gan theo bang chung test/probe, dung quy tac SOW (khong bang chung thi khong COVERED): COVERED 33, PARTIAL 111, NOT_STARTED 245; rieng FR 25/77/200. Hai vong tu kiem: vong 1 bat som phieu MPL-11..16/D-44 phai la NOT_STARTED; vong 2 ha 39 ma bi phong boi trang thai mac dinh nhom (FLD-05/06/08/09/10/11/12/19/20, MPL-05/07/09/10, LOT-03/04/12/14/16/17, TRC-03/04/06/07/08/11/13/14/16/17, PRO-06/07/09, API-03) xuong NOT_STARTED. Script lap so: ~/workspace/iaict-sow-review-work/build_register.py + build_coverage_md.py (coverage.json la nguon, COVERAGE.md sinh tu do). Khong doi runtime; beta giu Worker fd482d42 (rev 62).",
     "blockers": []
+   },
+   {
+    "id": "T-050",
+    "title": "D-10: bo kiem chung toan ven du lieu (JCS RFC 8785 + chuoi bam + Merkle checkpoints tren audit, verifier + proof + tab Bao cao)",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "D-10",
+     "BLC-01",
+     "BLC-02",
+     "BLC-04",
+     "BLC-06",
+     "BLC-07",
+     "NFR-36",
+     "NFR-40",
+     "RPT-10",
+     "SEC-21"
+    ],
+    "evidence": "backend/app/integrity.py thuan: JCS RFC 8785 (vector RFC dat, sap khoa UTF-16, so ECMAScript), envelope schema v1 {v,seq,ts,tenant,actor,action,target,outcome,old,new}, event hash SHA-256 hoac HMAC-SHA-256 khi co IAICT_INTEGRITY_KEY (key_id = van tay khoa; xoay vong -> UNVERIFIABLE, khong INVALID), chuoi bam domain 0x01 tu genesis theo tenant, Merkle domain 0x02 theo ngay UTC (la theo seq, nut le nhan doi, tree_version 1). Bang integrity_checkpoints (migration D1 v12, ca 2 schema; khong FK tenants), store methods o ca 4 store; endpoint POST /integrity/checkpoints (TENANT_ADMIN) + GET checkpoints/verify/proof/{seq} (proof kem truong anchor NOT_ENABLED - BLC-03/04/05 co dieu kien Q.2). UI: tab Toan ven trong Bao cao. docs/INTEGRITY.md co test vector chinh thuc khoa bang test tu dong. Suite: memory 109+4 skipped, D1 subset 19, PG ca 2 driver 106 dat + 1 loi cu previous_status. Deploy Worker 8676c276. PROBE PRODUCTION: beta-pilot co 88 audit rows chua niem phong -> POST tao 3 checkpoint theo ngay (1-6, 7-26, 27-88) -> verify VALID ca 3; proof seq 10 khop root checkpoint #2; D1 ledger v12, bang checkpoints = 3 dong. jsdom sim16 bat 1 loi that truoc deploy (REPORT_TABS thung 1 o do dau phay thua) da sua. Test trinh duyet live 10:48-10:49 xac nhan tab + banner Toan ven + the proof khop API. So phu cap nhat: BLC-01/02/06, NFR-36, RPT-10 -> COVERED; BLC-04/07, NFR-40 -> PARTIAL; tong 389 ma: COVERED 38 / PARTIAL 113 / NOT_STARTED 238.",
+    "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T03:21:55Z"
+ "updated_at": "2026-11-04T03:49:31Z"
 }

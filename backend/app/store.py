@@ -86,6 +86,8 @@ class InMemoryStore:
         self.workspaces: dict[str, dict[str, dict]] = {}
         self.audit: list[dict] = []
         self._seq = itertools.count(1)
+        self.checkpoints: list[dict] = []
+        self._checkpoint_ids = itertools.count(1)
         # records[kind][tenant] = {"by_code": {code: record}, "events": [record]}
         self.records: dict[str, dict[str, dict]] = {k: {} for k in RECORD_REFS}
         self._ids = {k: itertools.count(1) for k in RECORD_REFS}
@@ -97,6 +99,8 @@ class InMemoryStore:
             self.workspaces.clear()
             self.audit.clear()
             self._seq = itertools.count(1)
+            self.checkpoints.clear()
+            self._checkpoint_ids = itertools.count(1)
             self.records = {k: {} for k in RECORD_REFS}
             self._ids = {k: itertools.count(1) for k in RECORD_REFS}
 
@@ -132,6 +136,16 @@ class InMemoryStore:
 
     async def audit_for_tenant(self, tenant_id: str) -> list[dict]:
         return [e for e in self.audit if e["tenant_id"] == tenant_id]
+
+    # ---- integrity checkpoints (D-10) --------------------------------
+    async def create_checkpoint(self, rec: dict) -> dict:
+        with self._lock:
+            row = {**rec, "id": next(self._checkpoint_ids)}
+            self.checkpoints.append(row)
+            return row
+
+    async def list_checkpoints(self, tenant_id: str) -> list[dict]:
+        return [c for c in self.checkpoints if c["tenant_id"] == tenant_id]
 
     # ---- tenants -------------------------------------------------------
     async def create_tenant(self, slug: str, name: str) -> Tenant | None:

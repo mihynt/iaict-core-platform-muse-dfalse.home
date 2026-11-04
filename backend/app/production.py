@@ -26,7 +26,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .config import settings
 from .deps import require_role
-from .store import CODED_KINDS, RECORD_REFS, RefUnknown, User, store
+from .store import (CODED_KINDS, RECORD_REFS, RefUnknown, User,
+                    store, utcnow)
 from . import pii
 from .tenancy import require_tenant
 
@@ -1412,6 +1413,199 @@ async def report_packing_mass_balance(tenant: str = Depends(require_tenant)) -> 
                            if (output is not None and expected is not None) else None,
         })
     return {"tenant_id": tenant, "items": items}
+
+
+# ---- Data Integrity checkpoints & verifier (T-050, SOW D-10 / BLC) ------------
+# The audit ledger (Bang 33) is sealed in per-day checkpoints: each stores a
+# Merkle root + hash-chain head over its seq range (docs/INTEGRITY.md). Rows
+# stay append-only in the stores; sealing is a separate, repeatable step, so
+# the evidence window is "everything up to the last checkpoint".
+
+async def _seal_new_checkpoints(tenant: str) -> list[dict]:
+    from . import auditctx, integrity as ig
+    key = auditctx.integrity_key()
+    rows = await store.audit_for_tenant(tenant)
+    cps = await store.list_checkpoints(tenant)
+    if cps:
+        sealed_to = cps[-1]["to_seq"]
+        prev_chain = bytes.fromhex(cps[-1]["head_chain"])
+        prev_root = cps[-1]["merkle_root"]
+    else:
+        sealed_to = 0
+        prev_chain = ig.genesis(tenant)
+        prev_root = ""
+    by_day: dict[str, list[dict]] = {}
+    for r in rows:
+        if r["seq"] > sealed_to:
+            by_day.setdefault(str(r["ts"])[:10], []).append(r)
+    created = []
+    for day in sorted(by_day):
+        batch = by_day[day]
+        events, head = ig.compute_batch(batch, prev_chain, key)
+        root = ig.merkle_root(events)
+        created.append(await store.create_checkpoint({
+            "tenant_id": tenant, "day": day,
+            "from_seq": batch[0]["seq"], "to_seq": batch[-1]["seq"],
+            "leaf_count": len(batch),
+            "merkle_root": root.hex(), "head_chain": head.hex(),
+            "prev_root": prev_root,
+            "schema_version": ig.SCHEMA_VERSION, "canon_id": ig.CANON_ID,
+            "hash_alg": "HMAC-SHA-256" if key else "SHA-256",
+            "tree_version": ig.TREE_VERSION, "key_id": ig.key_id(key),
+            "created_at": utcnow(),
+        }))
+        prev_chain = head
+        prev_root = root.hex()
+    return created
+
+
+async def _verify_integrity(tenant: str) -> dict:
+    from . import auditctx, integrity as ig
+    key = auditctx.integrity_key()
+    cur_kid = ig.key_id(key)
+    rows = await store.audit_for_tenant(tenant)
+    by_seq = {r["seq"]: r for r in rows}
+    cps = await store.list_checkpoints(tenant)
+    prev_chain = ig.genesis(tenant)
+    prev_root = ""
+    chain_blocked = False
+    results, first_break = [], None
+    sealed = 0
+    for cp in cps:
+        res = {"checkpoint_id": cp["id"], "day": cp["day"],
+               "from_seq": cp["from_seq"], "to_seq": cp["to_seq"],
+               "status": "VALID"}
+        batch = [by_seq[s] for s in range(cp["from_seq"], cp["to_seq"] + 1)
+                 if s in by_seq]
+        if len(batch) != cp["leaf_count"]:
+            res["status"] = "INVALID"
+            res["reason"] = "ROW_COUNT_MISMATCH"
+        elif cp["prev_root"] != prev_root:
+            res["status"] = "INVALID"
+            res["reason"] = "PREV_ROOT_MISMATCH"
+        elif chain_blocked or (cp["key_id"] != "none" and cp["key_id"] != cur_kid):
+            res["status"] = "KEY_UNAVAILABLE"
+            chain_blocked = True
+        else:
+            cp_key = key if cp["key_id"] == cur_kid else None
+            events, head = ig.compute_batch(batch, prev_chain, cp_key)
+            if head.hex() != cp["head_chain"]:
+                res["status"] = "INVALID"
+                res["reason"] = "CHAIN_MISMATCH"
+            elif ig.merkle_root(events).hex() != cp["merkle_root"]:
+                res["status"] = "INVALID"
+                res["reason"] = "ROOT_MISMATCH"
+            else:
+                prev_chain = head
+                prev_root = cp["merkle_root"]
+                sealed += len(batch)
+        if res["status"] == "INVALID" and first_break is None:
+            first_break = {"checkpoint_id": cp["id"], "reason": res["reason"],
+                           "from_seq": cp["from_seq"], "to_seq": cp["to_seq"]}
+        if res["status"] == "INVALID":
+            chain_blocked = True  # later chain links can no longer be trusted
+        results.append(res)
+    last_sealed = cps[-1]["to_seq"] if cps else 0
+    unsealed = sum(1 for r in rows if r["seq"] > last_sealed)
+    if first_break is not None:
+        overall = "INVALID"
+    elif any(r["status"] == "KEY_UNAVAILABLE" for r in results):
+        overall = "UNVERIFIABLE"
+    elif not cps:
+        overall = "EMPTY"
+    else:
+        overall = "VALID"
+    return {"tenant_id": tenant, "status": overall, "checkpoints": results,
+            "sealed_rows": sealed, "unsealed_rows": unsealed,
+            "first_break": first_break}
+
+
+@router.post("/integrity/checkpoints")
+async def create_integrity_checkpoints(
+        tenant: str = Depends(require_tenant),
+        actor: User = Depends(require_role("TENANT_ADMIN"))) -> dict:
+    created = await _seal_new_checkpoints(tenant)
+    await store.record_audit(
+        scope="tenant", tenant_id=tenant, actor=actor.username,
+        action="INTEGRITY_CHECKPOINT",
+        target=f"{len(created)} checkpoint(s)", outcome="OK")
+    cps = await store.list_checkpoints(tenant)
+    rows = await store.audit_for_tenant(tenant)
+    last_sealed = cps[-1]["to_seq"] if cps else 0
+    return {"tenant_id": tenant, "created": created,
+            "sealed_rows": sum(c["leaf_count"] for c in cps),
+            "unsealed_rows": sum(1 for r in rows if r["seq"] > last_sealed)}
+
+
+@router.get("/integrity/checkpoints")
+async def list_integrity_checkpoints(
+        tenant: str = Depends(require_tenant)) -> dict:
+    cps = await store.list_checkpoints(tenant)
+    rows = await store.audit_for_tenant(tenant)
+    last_sealed = cps[-1]["to_seq"] if cps else 0
+    return {"tenant_id": tenant, "items": cps,
+            "sealed_rows": sum(c["leaf_count"] for c in cps),
+            "unsealed_rows": sum(1 for r in rows if r["seq"] > last_sealed)}
+
+
+@router.get("/integrity/verify")
+async def verify_integrity(tenant: str = Depends(require_tenant)) -> dict:
+    return await _verify_integrity(tenant)
+
+
+@router.get("/integrity/proof/{seq}")
+async def integrity_proof(seq: int,
+                          tenant: str = Depends(require_tenant)) -> dict:
+    from . import auditctx, integrity as ig
+    cps = await store.list_checkpoints(tenant)
+    idx_cp = next((i for i, c in enumerate(cps)
+                   if c["from_seq"] <= seq <= c["to_seq"]), None)
+    if idx_cp is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": "PROOF_NOT_SEALED",
+                    "message": f"Audit row {seq} is not in any checkpoint yet"})
+    cp = cps[idx_cp]
+    key = auditctx.integrity_key()
+    if cp["key_id"] != "none" and cp["key_id"] != ig.key_id(key):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": "KEY_UNAVAILABLE",
+                    "message": "Checkpoint was sealed with a different integrity key"})
+    cp_key = key if cp["key_id"] == ig.key_id(key) else None
+    rows = await store.audit_for_tenant(tenant)
+    batch = [r for r in rows if cp["from_seq"] <= r["seq"] <= cp["to_seq"]]
+    if len(batch) != cp["leaf_count"]:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": "INTEGRITY_BROKEN",
+                    "message": "Sealed row count no longer matches the ledger"})
+    prev_chain = (bytes.fromhex(cps[idx_cp - 1]["head_chain"])
+                  if idx_cp > 0 else ig.genesis(tenant))
+    events, chains = [], prev_chain
+    chain_hashes = []
+    for r in batch:
+        ev = ig.event_hash(r, cp_key)
+        events.append(ev)
+        chains = ig.chain_link(chains, ev)
+        chain_hashes.append(chains)
+    pos = next(i for i, r in enumerate(batch) if r["seq"] == seq)
+    proof = ig.merkle_proof(events, pos)
+    root = ig.merkle_root(events)
+    return {"tenant_id": tenant, "seq": seq,
+            "event_hash": events[pos].hex(),
+            "chain_hash": chain_hashes[pos].hex(),
+            "merkle_root": root.hex(),
+            "root_matches_checkpoint": root.hex() == cp["merkle_root"],
+            "proof": proof,
+            "checkpoint": {k: cp[k] for k in (
+                "id", "day", "from_seq", "to_seq", "leaf_count",
+                "schema_version", "canon_id", "hash_alg", "tree_version",
+                "key_id", "created_at")},
+            "anchor": {"status": "NOT_ENABLED",
+                       "note": "Blockchain anchoring is conditional on the "
+                               "IAICT Q.2 decision (BLC-03); the Merkle root "
+                               "above is the value an adapter would anchor."}}
 
 
 # ---- IoT ingestion slice (T-045, T-005 preparation) ---------------------------

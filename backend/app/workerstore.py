@@ -190,7 +190,7 @@ class WorkerPgStore:
         self._user_cache.clear()
         with self._lock, self._session() as cur:
             cur.execute(
-                "TRUNCATE audit_log, lot_relations, field_events, lots, crop_plans,"
+                "TRUNCATE integrity_checkpoints, audit_log, lot_relations, field_events, lots, crop_plans,"
                 " mother_plant_status_history, mother_plants, zone_boundary_versions,"
                 " zones, workspaces, users, tenants RESTART IDENTITY CASCADE"
             )
@@ -229,6 +229,28 @@ class WorkerPgStore:
 
     async def audit_for_tenant(self, tenant_id: str) -> list[dict]:
         return self._audit_rows("WHERE tenant_id = %s", (tenant_id,))
+
+    # ---- integrity checkpoints (D-10) --------------------------------
+    async def create_checkpoint(self, rec: dict) -> dict:
+        cols = ("tenant_id", "day", "from_seq", "to_seq", "leaf_count",
+                "merkle_root", "head_chain", "prev_root", "schema_version",
+                "canon_id", "hash_alg", "tree_version", "key_id", "created_at")
+        with self._lock, self._session() as cur:
+            cur.execute(
+                f"INSERT INTO integrity_checkpoints ({', '.join(cols)})"
+                f" VALUES ({', '.join(['%s'] * len(cols))}) RETURNING id",
+                tuple(rec[c] for c in cols))
+            row = self._one(cur)
+        return {**rec, "id": row["id"]}
+
+    async def list_checkpoints(self, tenant_id: str) -> list[dict]:
+        def work(cur):
+            cur.execute(
+                "SELECT * FROM integrity_checkpoints"
+                " WHERE tenant_id = %s ORDER BY id", (tenant_id,))
+            return self._rows(cur)
+        with self._lock:
+            return self._run_read(work)
 
     # ---- tenants -------------------------------------------------------
     async def create_tenant(self, slug: str, name: str) -> Tenant | None:

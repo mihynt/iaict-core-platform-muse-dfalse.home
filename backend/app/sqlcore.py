@@ -127,6 +127,24 @@ class SqlStoreCore:
     async def audit_for_tenant(self, tenant_id: str) -> list[dict]:
         return await self._audit_rows(f"WHERE tenant_id = {self.d.ph}", (tenant_id,))
 
+    # ---- integrity checkpoints (D-10) -----------------------------------
+    async def create_checkpoint(self, rec: dict) -> dict:
+        ph = self.d.ph
+        cols = ("tenant_id", "day", "from_seq", "to_seq", "leaf_count",
+                "merkle_root", "head_chain", "prev_root", "schema_version",
+                "canon_id", "hash_alg", "tree_version", "key_id", "created_at")
+        new_id = await self.d.insert(
+            f"INSERT INTO integrity_checkpoints ({', '.join(cols)})"
+            f" VALUES ({', '.join([ph] * len(cols))})",
+            tuple(rec[c] for c in cols), returning="id")
+        return {**rec, "id": new_id}
+
+    async def list_checkpoints(self, tenant_id: str) -> list[dict]:
+        rows = await self.d.all(
+            "SELECT * FROM integrity_checkpoints"
+            f" WHERE tenant_id = {self.d.ph} ORDER BY id", (tenant_id,))
+        return [dict(r) for r in rows]
+
     # ---- tenants -----------------------------------------------------------
     async def create_tenant(self, slug: str, name: str) -> Tenant | None:
         ph = self.d.ph

@@ -16,8 +16,8 @@ Lập tại T-049 (2026-11-04), từ rà soát T-048. Bản máy đọc: `pcs/co
 
 ## Tổng hợp
 
-- Toàn bộ 389 mã: **COVERED 33 · PARTIAL 111 · NOT_STARTED 245**.
-- Riêng 302 FR: COVERED 25 · PARTIAL 77 · NOT_STARTED 200 — phần đã phủ tập trung ở lõi sản xuất/truy xuất (ZON/MPL/FLD/LOT/TRC + Phụ lục U); phần chưa phủ lớn nhất là lớp thương mại/vận hành (COM/CRM/PAY/MOP/AIX) thuộc mốc M5–M7 và nền tảng lõi còn thiếu (BLC = D-10, entitlement/metering trong COM/ADM).
+- Toàn bộ 389 mã: **COVERED 38 · PARTIAL 113 · NOT_STARTED 238**.
+- Riêng 302 FR: COVERED 29 · PARTIAL 79 · NOT_STARTED 194 — phần đã phủ tập trung ở lõi sản xuất/truy xuất (ZON/MPL/FLD/LOT/TRC + Phụ lục U); phần chưa phủ lớn nhất là lớp thương mại/vận hành (COM/CRM/PAY/MOP/AIX) thuộc mốc M5–M7 và nền tảng lõi còn thiếu (BLC = D-10, entitlement/metering trong COM/ADM).
 
 | Nhóm | Tên | Tổng | COVERED | PARTIAL | NOT_STARTED |
 |---|---|---|---|---|---|
@@ -33,17 +33,17 @@ Lập tại T-049 (2026-11-04), từ rà soát T-048. Bản máy đọc: `pcs/co
 | MOB | Ứng dụng di động | 13 | 1 | 1 | 11 |
 | AIX | AI Gateway | 10 | 0 | 0 | 10 |
 | LFC | Vòng đời & Event Ledger | 13 | 1 | 8 | 4 |
-| BLC | Toàn vẹn dữ liệu / blockchain | 9 | 0 | 0 | 9 |
+| BLC | Toàn vẹn dữ liệu / blockchain | 9 | 3 | 2 | 4 |
 | HLT | Sức khỏe & dịch tễ | 12 | 0 | 5 | 7 |
 | PRO | Chủ thể & địa giới | 10 | 2 | 5 | 3 |
 | CRM | CRM | 12 | 0 | 0 | 12 |
 | MOP | Vận hành ủy thác | 10 | 0 | 0 | 10 |
 | STD | Tiêu chuẩn & đánh giá tuân thủ | 10 | 0 | 5 | 5 |
 | COM | Thương mại / subscription / metering | 41 | 0 | 2 | 39 |
-| RPT | Báo cáo | 12 | 1 | 3 | 8 |
+| RPT | Báo cáo | 12 | 2 | 3 | 7 |
 | PAY | Thanh toán | 12 | 1 | 0 | 11 |
 | API | API & tích hợp | 4 | 1 | 2 | 1 |
-| NFR | Phi chức năng | 56 | 4 | 23 | 29 |
+| NFR | Phi chức năng | 56 | 5 | 23 | 28 |
 | SEC | An toàn thông tin | 31 | 4 | 11 | 16 |
 
 ## TEN — Tenant Experience & thương hiệu
@@ -280,15 +280,15 @@ Lập tại T-049 (2026-11-04), từ rà soát T-048. Bản máy đọc: `pcs/co
 
 | Mã | Yêu cầu (rút gọn) | Trạng thái | Bằng chứng (task · test) | Ghi chú |
 |---|---|---|---|---|
-| BLC-01 | Canonicalize event envelope theo RFC 8785 JCS (baseline) hoặc cơ chế tương đương được IAICT phê… | NOT_STARTED | — | = D-10 — chưa xây (đã khuyến nghị ở T-048). |
-| BLC-02 | Gom event hash thành Merkle root theo lô/ngày bằng quy tắc deterministic đã tài liệu hóa: leaf … | NOT_STARTED | — | = D-10 — chưa xây (đã khuyến nghị ở T-048). |
-| BLC-03 | Nếu sử dụng blockchain anchoring, hồ sơ kỹ thuật/giá phải nêu đích danh 01 mạng chính để làm cơ… | NOT_STARTED | — | = D-10 — chưa xây (đã khuyến nghị ở T-048). |
-| BLC-04 | Khi dùng blockchain, adapter phải tách rời để thay mạng/cơ chế anchoring mà không sửa nghiệp vụ… | NOT_STARTED | — | = D-10 — chưa xây (đã khuyến nghị ở T-048). |
-| BLC-05 | Nếu ghi on-chain, tuyệt đối không ghi dữ liệu cá nhân, tài liệu, bí mật kinh doanh hoặc cảm biế… | NOT_STARTED | — | = D-10 — chưa xây (đã khuyến nghị ở T-048). |
-| BLC-06 | Trang/công cụ xác minh cho biết bằng chứng toàn vẹn hợp lệ/không hợp lệ, thời điểm tạo/chốt bằn… | NOT_STARTED | — | = D-10 — chưa xây (đã khuyến nghị ở T-048). |
-| BLC-07 | Khóa ký Data Integrity phải lưu bằng secret store/KMS. Nếu dùng blockchain, ví/account producti… | NOT_STARTED | — | = D-10 — chưa xây (đã khuyến nghị ở T-048). |
-| BLC-08 | Nếu dùng blockchain, không yêu cầu người dùng sở hữu ví/tiền mã hóa; hệ thống quản lý service a… | NOT_STARTED | — | = D-10 — chưa xây (đã khuyến nghị ở T-048). |
-| BLC-09 | Nếu dùng blockchain, hồ sơ mạng chính phải nêu tên mạng, chain ID, mainnet/L2, native token, RP… | NOT_STARTED | — | = D-10 — chưa xây (đã khuyến nghị ở T-048). |
+| BLC-01 | Canonicalize event envelope theo RFC 8785 JCS (baseline) hoặc cơ chế tương đương được IAICT phê… | COVERED | — | Canonicalization RFC 8785 (JCS) + SHA-256/HMAC-SHA-256; metadata schema_version/canon_id/hash_alg ghi ở từng checkpoint (docs/INTEGRITY.md). |
+| BLC-02 | Gom event hash thành Merkle root theo lô/ngày bằng quy tắc deterministic đã tài liệu hóa: leaf … | COVERED | — | Merkle root theo ngày, quy tắc deterministic đã tài liệu hóa: lá theo seq tăng dần, nút lẻ nhân đôi, domain separation 0x01/0x02, tree_version 1; proof truy vấn được. |
+| BLC-03 | Nếu sử dụng blockchain anchoring, hồ sơ kỹ thuật/giá phải nêu đích danh 01 mạng chính để làm cơ… | NOT_STARTED | — | Có điều kiện: chỉ khi IAICT chốt dùng blockchain anchoring (Q.2); Polygon PoS là phương án tham chiếu của SOW. |
+| BLC-04 | Khi dùng blockchain, adapter phải tách rời để thay mạng/cơ chế anchoring mà không sửa nghiệp vụ… | PARTIAL | — | Đường may adapter có sẵn: Merkle root + metadata xuất qua endpoint proof (trường anchor NOT_ENABLED); neo thật chờ quyết định Q.2. |
+| BLC-05 | Nếu ghi on-chain, tuyệt đối không ghi dữ liệu cá nhân, tài liệu, bí mật kinh doanh hoặc cảm biế… | NOT_STARTED | — | Có điều kiện (anchoring): thiết kế chỉ neo Merkle root, tuyệt đối không neo dữ liệu cá nhân/tài liệu — sẵn sàng khi kích hoạt. |
+| BLC-06 | Trang/công cụ xác minh cho biết bằng chứng toàn vẹn hợp lệ/không hợp lệ, thời điểm tạo/chốt bằn… | COVERED | — | Tab Toàn vẹn trong Báo cáo: kết quả hợp lệ/không, thời điểm niêm phong, metadata phiên bản, tra proof theo seq. |
+| BLC-07 | Khóa ký Data Integrity phải lưu bằng secret store/KMS. Nếu dùng blockchain, ví/account producti… | PARTIAL | — | Khóa HMAC qua secret store (IAICT_INTEGRITY_KEY) + key_id truy vết từng checkpoint; xoay vòng khóa báo UNVERIFIABLE thay vì INVALID. Owner chưa đặt khóa trên beta — đang chạy SHA-256. |
+| BLC-08 | Nếu dùng blockchain, không yêu cầu người dùng sở hữu ví/tiền mã hóa; hệ thống quản lý service a… | NOT_STARTED | — | Có điều kiện: thuộc gói anchoring khi kích hoạt. |
+| BLC-09 | Nếu dùng blockchain, hồ sơ mạng chính phải nêu tên mạng, chain ID, mainnet/L2, native token, RP… | NOT_STARTED | — | Có điều kiện: hồ sơ mạng chính được lập khi IAICT phê duyệt một mạng cụ thể. |
 
 ## HLT — Sức khỏe & dịch tễ
 
@@ -428,7 +428,7 @@ Lập tại T-049 (2026-11-04), từ rà soát T-048. Bản máy đọc: `pcs/co
 | RPT-07 | Báo cáo tuân thủ canh tác theo FLD-20 và báo cáo điều kiện xuất theo từng thị trường. | NOT_STARTED | T-022, T-043 · test_dashboard | Mới có dashboard + 3 báo cáo truy xuất trên tổng số REP 82. |
 | RPT-08 | Báo cáo mã số vùng trồng: hiệu lực, sắp hết hạn, vùng đủ và không đủ điều kiện theo thị trường. | PARTIAL | T-022, T-043 · test_dashboard | Báo cáo chỉ số vùng có PUC + trạng thái; điều kiện theo thị trường nằm ở mục phê duyệt. |
 | RPT-09 | Báo cáo thu hồi và khiếu nại: số hồ sơ, phạm vi ảnh hưởng, thời gian xử lý và kết quả. | NOT_STARTED | T-022, T-043 · test_dashboard | Mới có dashboard + 3 báo cáo truy xuất trên tổng số REP 82. |
-| RPT-10 | Báo cáo đối soát toàn vẹn dữ liệu theo kỳ và trạng thái checkpoint hash/Merkle. Chỉ bổ sung ref… | NOT_STARTED | T-022, T-043 · test_dashboard | Mới có dashboard + 3 báo cáo truy xuất trên tổng số REP 82. |
+| RPT-10 | Báo cáo đối soát toàn vẹn dữ liệu theo kỳ và trạng thái checkpoint hash/Merkle. Chỉ bổ sung ref… | COVERED | T-022, T-043 · test_dashboard | Báo cáo đối soát toàn vẹn theo checkpoint/ngày + trạng thái kiểm chứng ở tab Toàn vẹn; reference blockchain chỉ bổ sung khi Q.2 kích hoạt. |
 | RPT-11 | Báo cáo dành riêng cho IAICT: mức sử dụng theo tenant và theo hạn mức, doanh thu thuê bao tham … | NOT_STARTED | T-022, T-043 · test_dashboard | Mới có dashboard + 3 báo cáo truy xuất trên tổng số REP 82. |
 | RPT-12 | Danh mục báo cáo có sẵn theo các mã REP tại Phụ lục I; công cụ tự tạo báo cáo vẫn là khuyến ngh… | PARTIAL | T-022, T-043 · test_dashboard | Mới 3/82 báo cáo REP dạng endpoint; chưa có danh mục báo cáo trong sản phẩm. |
 
@@ -497,11 +497,11 @@ Lập tại T-049 (2026-11-04), từ rà soát T-048. Bản máy đọc: `pcs/co
 | NFR-33 | Cấu hình danh mục và luật nghiệp vụ theo Vertical Pack | PARTIAL | — | Danh mục theo tenant có; luật nghiệp vụ vẫn trong code. |
 | NFR-34 | Mở rộng ngành hàng | COVERED | — | Một lõi chạy 4 ngành trồng trọt/chăn nuôi/lâm nghiệp/thủy sản (T-035/T-036). |
 | NFR-35 | Đồng bộ thời gian | PARTIAL | — | Timestamp server UTC; giờ đo của thiết bị được giữ nguyên khi ingest. |
-| NFR-36 | Audit chống sửa | PARTIAL | — | Audit append-only + snapshot trước/sau; chuỗi băm chống sửa thuộc D-10, chưa có. |
+| NFR-36 | Audit chống sửa | COVERED | — | Audit chống sửa bằng chuỗi băm + checkpoint Merkle (T-050); production đã niêm phong 88/88 bản ghi lịch sử, kiểm chứng VALID. |
 | NFR-37 | API/Webhook lifecycle | PARTIAL | — | API versioning có; webhook lifecycle chưa có. |
 | NFR-38 | Device profile extensibility | PARTIAL | — | Thêm loại thiết bị qua registry; profile mở rộng chưa có. |
 | NFR-39 | IoT lifecycle security | PARTIAL | — | Khóa riêng từng thiết bị + xoay vòng/thu hồi (T-046); vòng đời thiết bị đầy đủ chưa có. |
-| NFR-40 | Data Integrity/anchoring key custody | NOT_STARTED | — | Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store. |
+| NFR-40 | Data Integrity/anchoring key custody | PARTIAL | — | Khóa toàn vẹn do IAICT kiểm soát qua secret store, có key_id truy vết (T-050); phần anchoring custody có điều kiện. |
 | NFR-41 | Data residency | NOT_STARTED | — | Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store. |
 | NFR-42 | Vertical Pack portability | PARTIAL | — | Contract Protobuf/GraphQL sinh từ registry là đường may portability (T-032). |
 | NFR-43 | Event Ledger consistency | PARTIAL | — | Nhật ký append-only + toàn vẹn FK; projection nhất quán chưa có. |

@@ -21,6 +21,7 @@ Coded objects are unique per tenant: `UNIQUE (tenant_id, code)`.
 | `users` | PK `(tenant_id, username)` | Roles: TENANT_ADMIN / OPERATOR / VIEWER. First user of a tenant is bootstrapped as TENANT_ADMIN. |
 | `workspaces` | PK `(tenant_id, name)` | Tenant-isolated named workspaces. |
 | `audit_log` | `seq` BIGSERIAL PK | Append-only. `scope` = platform / tenant; records actor, action, target, outcome. |
+| `integrity_checkpoints` | `id` PK | T-050 (D-10/BLC-02): per-day Merkle root + hash-chain head sealing a seq range of one tenant's `audit_log`, with BLC-01 reproduction metadata (schema_version, canon_id, hash_alg, tree_version, key_id). No FK to tenants — evidence must outlive tenant lifecycle operations. Spec: `docs/INTEGRITY.md`. |
 
 ## ZON — material zones (SRS ZON-01..04)
 

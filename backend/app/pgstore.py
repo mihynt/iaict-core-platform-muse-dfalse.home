@@ -92,7 +92,7 @@ class PgStore(SqlStoreCore):
     async def reset(self) -> None:
         with self._lock, self._conn.cursor() as cur:
             cur.execute(
-                "TRUNCATE audit_log, lot_relations, field_events, lots, crop_plans,"
+                "TRUNCATE integrity_checkpoints, audit_log, lot_relations, field_events, lots, crop_plans,"
                 " mother_plant_status_history, mother_plants, zone_boundary_versions,"
                 " zones, workspaces, users, tenants RESTART IDENTITY CASCADE"
             )

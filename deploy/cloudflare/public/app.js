@@ -33,6 +33,9 @@ const ERR_VI = {
   REF_UNKNOWN: "Đối tượng tham chiếu (vùng/kế hoạch/cây) không tồn tại trong tenant này.",
   GTIN_INVALID: "Mã GTIN phải là GTIN-8/12/13/14, chỉ gồm chữ số.",
   GTIN_CHECK_DIGIT_INVALID: "Mã GTIN sai số kiểm tra GS1 — kiểm tra lại mã trên bao bì.",
+  PROOF_NOT_SEALED: "Bản ghi này chưa nằm trong checkpoint nào — hãy tạo checkpoint trước.",
+  KEY_UNAVAILABLE: "Checkpoint được niêm phong bằng khóa toàn vẹn khác — cần đúng khóa để kiểm chứng.",
+  INTEGRITY_BROKEN: "Dữ liệu đã niêm phong không còn khớp — hãy chạy Kiểm chứng để xem chi tiết.",
   PACKING_OUTPUT_EXCEEDED: "Tổng khối lượng đã cấp mã cho lô đóng gói này vượt sản lượng thành phẩm đã khai.",
   NOT_FOUND: "Không tìm thấy đối tượng.",
   PLATFORM_DISABLED: "Quản trị platform chưa được bật (chưa đặt khóa).",
@@ -1938,6 +1941,7 @@ const REPORT_TABS = [
     cols: [["plan_code", "Vụ mùa"], ["zone_code", "Vùng"], ["target_yield_kg", "Trần sản lượng (kg)"], ["harvested_kg", "Đã thu (kg)"], ["remaining_kg", "Còn lại (kg)"], ["harvested_pct", "% đạt"]] },
   { id: "packing", path: "/reports/packing-mass-balance", title: "Cân bằng đóng gói",
     cols: [["packing_lot_code", "Lô đóng gói"], ["facility_code", "Cơ sở"], ["inputs_kg", "Đầu vào (kg)"], ["yield_norm_ratio", "Định mức thu hồi"], ["expected_output_kg", "Đầu ra kỳ vọng (kg)"], ["output_weight_kg", "Đầu ra thực (kg)"], ["variance_kg", "Chênh lệch (kg)"]] },
+  { id: "integrity", path: null, title: "🧾 Toàn vẹn dữ liệu" },
 ];
 let reportTab = "zone";
 VIEWS.reports = async () => {
@@ -1950,6 +1954,7 @@ VIEWS.reports = async () => {
   $("#reload").onclick = () => navigate("reports", true);
   el.querySelectorAll("[data-reptab]").forEach((b) => b.onclick = () => { reportTab = b.dataset.reptab; navigate("reports", true); });
   const body = el.querySelector("#repBody");
+  if (reportTab === "integrity") { renderIntegrity(body); return; }
   try {
     const data = await T(tab.path);
     const items = data.items || [];
@@ -1959,6 +1964,72 @@ VIEWS.reports = async () => {
       : emptyState("📊", "Chưa có dữ liệu", "Báo cáo sẽ hiện khi có dữ liệu tương ứng.");
   } catch (err) { body.innerHTML = banner(err); }
 };
+
+/* ---------------- data integrity (D-10): checkpoints, verify, proofs ---------------- */
+const IG_REASON_VI = {
+  ROW_COUNT_MISMATCH: "Số bản ghi trong khoảng niêm phong đã thay đổi (bị xóa hoặc chèn thêm)",
+  CHAIN_MISMATCH: "Chuỗi băm không khớp — nội dung một bản ghi đã bị sửa sau khi niêm phong",
+  ROOT_MISMATCH: "Merkle root không khớp với dữ liệu hiện tại",
+  PREV_ROOT_MISMATCH: "Liên kết giữa các checkpoint liên tiếp bị đứt",
+};
+async function renderIntegrity(body) {
+  const short = (h) => (h ? h.slice(0, 16) + "…" : "—");
+  async function draw() {
+    const data = await T("/integrity/checkpoints");
+    const items = data.items || [];
+    body.innerHTML = `
+      <div class="card"><div class="body">
+        <div class="title">Niêm phong & kiểm chứng nhật ký kiểm toán</div>
+        <div class="sub">Đã niêm phong <b>${data.sealed_rows}</b> bản ghi · Chưa niêm phong <b>${data.unsealed_rows}</b> · Chuẩn hoá RFC 8785 (JCS) + SHA-256/Merkle · Neo blockchain: <b>chưa kích hoạt</b> (chờ quyết định Q.2)</div>
+        <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" id="igSeal">🔒 Tạo checkpoint</button>
+          <button class="btn btn-ghost btn-sm" id="igVerify">🔍 Kiểm chứng toàn chuỗi</button>
+        </div>
+        <div id="igResult" style="margin-top:10px"></div>
+        <div style="margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+          <input id="igSeq" type="number" min="1" placeholder="Số seq của bản ghi audit" style="padding:8px 10px; border:1px solid var(--line, #ddd); border-radius:8px; width:220px">
+          <button class="btn btn-ghost btn-sm" id="igProofBtn">Xem bằng chứng Merkle</button>
+        </div>
+        <div id="igProofOut" style="margin-top:10px"></div>
+      </div></div>
+      ${items.length ? `<div class="card" style="overflow-x:auto; margin-top:12px"><table class="tbl">
+        <thead><tr><th>Ngày</th><th>Khoảng seq</th><th>Bản ghi</th><th>Merkle root</th><th>Thuật toán</th><th>Khóa</th><th>Niêm phong lúc</th></tr></thead>
+        <tbody>${items.map((c) => `<tr><td>${esc(c.day)}</td><td>${c.from_seq}–${c.to_seq}</td><td>${c.leaf_count}</td><td title="${esc(c.merkle_root)}">${short(c.merkle_root)}</td><td>${esc(c.hash_alg)}</td><td>${esc(c.key_id)}</td><td>${fmtTs(c.created_at)}</td></tr>`).join("")}</tbody></table></div>`
+      : emptyState("🧾", "Chưa có checkpoint nào", "Bấm \"Tạo checkpoint\" để niêm phong toàn bộ nhật ký hiện có.")}`;
+    const result = body.querySelector("#igResult");
+    body.querySelector("#igSeal").onclick = async () => {
+      try {
+        const r = await T("/integrity/checkpoints", { method: "POST" });
+        toast(r.created.length ? `Đã tạo ${r.created.length} checkpoint — niêm phong thêm ${r.created.reduce((s, c) => s + c.leaf_count, 0)} bản ghi.` : "Không có bản ghi mới để niêm phong.");
+        draw();
+      } catch (err) { result.innerHTML = banner(err); }
+    };
+    body.querySelector("#igVerify").onclick = async () => {
+      result.innerHTML = `<div class="sub">Đang tính lại toàn bộ chuỗi băm…</div>`;
+      try {
+        const v = await T("/integrity/verify");
+        if (v.status === "VALID") result.innerHTML = `<div class="card" style="border-left:4px solid #2e7d32"><div class="body"><div class="title">✅ Toàn vẹn</div><div class="sub">${v.sealed_rows} bản ghi đã niêm phong khớp hoàn toàn chuỗi băm và Merkle root của ${v.checkpoints.length} checkpoint. Còn ${v.unsealed_rows} bản ghi mới chưa niêm phong.</div></div></div>`;
+        else if (v.status === "INVALID") result.innerHTML = `<div class="card" style="border-left:4px solid #c62828"><div class="body"><div class="title">❌ Phát hiện sai lệch</div><div class="sub">Checkpoint #${v.first_break.checkpoint_id}, khoảng seq ${v.first_break.from_seq}–${v.first_break.to_seq}: ${esc(IG_REASON_VI[v.first_break.reason] || v.first_break.reason)}</div></div></div>`;
+        else if (v.status === "UNVERIFIABLE") result.innerHTML = `<div class="card" style="border-left:4px solid #ef6c00"><div class="body"><div class="title">⚠️ Chưa kiểm chứng được</div><div class="sub">Một số checkpoint được niêm phong bằng khóa toàn vẹn khác với khóa hiện tại (xoay vòng khóa) — cần khóa cũ để kiểm chứng lại phần lịch sử đó.</div></div></div>`;
+        else result.innerHTML = `<div class="sub">Chưa có checkpoint nào để kiểm chứng.</div>`;
+      } catch (err) { result.innerHTML = banner(err); }
+    };
+    body.querySelector("#igProofBtn").onclick = async () => {
+      const out = body.querySelector("#igProofOut");
+      const seq = body.querySelector("#igSeq").value;
+      if (!seq) { out.innerHTML = `<div class="sub">Nhập số seq trước đã.</div>`; return; }
+      try {
+        const p = await T(`/integrity/proof/${seq}`);
+        out.innerHTML = `<div class="card"><div class="body">
+          <div class="title" style="font-size:14.5px">Bằng chứng cho bản ghi seq ${p.seq} ${p.root_matches_checkpoint ? "✅ khớp checkpoint" : "❌ không khớp"}</div>
+          <div class="sub" style="word-break:break-all">Event hash: ${esc(p.event_hash)}<br>Chain hash: ${esc(p.chain_hash)}<br>Merkle root: ${esc(p.merkle_root)}</div>
+          <div class="sub">Checkpoint #${p.checkpoint.id} · ngày ${esc(p.checkpoint.day)} · seq ${p.checkpoint.from_seq}–${p.checkpoint.to_seq} · ${esc(p.checkpoint.canon_id)} / ${esc(p.checkpoint.hash_alg)} · ${p.proof.length} bước Merkle · Neo chuỗi: chưa kích hoạt</div>
+        </div></div>`;
+      } catch (err) { out.innerHTML = banner(err); }
+    };
+  }
+  try { await draw(); } catch (err) { body.innerHTML = banner(err); }
+}
 
 /* ---------------- users & audit ---------------- */
 const ROLE_VI = { TENANT_ADMIN: "Quản trị tenant", OPERATOR: "Vận hành", VIEWER: "Chỉ xem" };

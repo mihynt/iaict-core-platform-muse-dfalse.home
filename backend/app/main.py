@@ -43,6 +43,8 @@ async def _bind_store_backend(request: Request, call_next):
         request.headers.get("user-agent"))
     if scope_env is not None:
         auditctx.set_pii_key(getattr(scope_env, "IAICT_PII_KEY", None))
+        auditctx.set_integrity_key(
+            getattr(scope_env, "IAICT_INTEGRITY_KEY", None))
     return await call_next(request)
 
 

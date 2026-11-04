@@ -50,6 +50,28 @@ CREATE TABLE IF NOT EXISTS audit_log (
     user_agent TEXT
 );
 
+-- Data Integrity checkpoints (D-10/BLC-02, T-050): Merkle root + chain head
+-- sealing a seq range of one tenant's audit ledger, with the BLC-01 metadata
+-- needed to reproduce the proof. No FK on tenant_id: checkpoints must survive
+-- as evidence independently of tenant lifecycle operations.
+CREATE TABLE IF NOT EXISTS integrity_checkpoints (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_id     TEXT NOT NULL,
+    day           TEXT NOT NULL,
+    from_seq      INTEGER NOT NULL,
+    to_seq        INTEGER NOT NULL,
+    leaf_count    INTEGER NOT NULL,
+    merkle_root   TEXT NOT NULL,
+    head_chain    TEXT NOT NULL,
+    prev_root     TEXT NOT NULL DEFAULT '',
+    schema_version INTEGER NOT NULL DEFAULT 1,
+    canon_id      TEXT NOT NULL DEFAULT 'RFC8785-JCS',
+    hash_alg      TEXT NOT NULL DEFAULT 'SHA-256',
+    tree_version  INTEGER NOT NULL DEFAULT 1,
+    key_id        TEXT NOT NULL DEFAULT 'none',
+    created_at    TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS zones (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,

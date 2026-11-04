@@ -47,6 +47,25 @@ CREATE TABLE IF NOT EXISTS audit_log (
     user_agent TEXT
 );
 
+-- Data Integrity checkpoints (D-10/BLC-02, T-050): see schema_d1.sql.
+CREATE TABLE IF NOT EXISTS integrity_checkpoints (
+    id            BIGSERIAL PRIMARY KEY,
+    tenant_id     TEXT NOT NULL,
+    day           TEXT NOT NULL,
+    from_seq      BIGINT NOT NULL,
+    to_seq        BIGINT NOT NULL,
+    leaf_count    BIGINT NOT NULL,
+    merkle_root   TEXT NOT NULL,
+    head_chain    TEXT NOT NULL,
+    prev_root     TEXT NOT NULL DEFAULT '',
+    schema_version INTEGER NOT NULL DEFAULT 1,
+    canon_id      TEXT NOT NULL DEFAULT 'RFC8785-JCS',
+    hash_alg      TEXT NOT NULL DEFAULT 'SHA-256',
+    tree_version  INTEGER NOT NULL DEFAULT 1,
+    key_id        TEXT NOT NULL DEFAULT 'none',
+    created_at    TEXT NOT NULL
+);
+
 -- ---- ZON: material zones / sites / plots (SRS ZON-01..04) ------------------
 CREATE TABLE IF NOT EXISTS zones (
     id              BIGSERIAL,

@@ -1706,21 +1706,21 @@
    "id": "BLC-01",
    "group": "BLC",
    "name": "Canonicalize event envelope theo RFC 8785 JCS (baseline) hoặc cơ chế tương đương được IAICT phê duyệt, sau đó băm bằng SHA-256 hoặc thuật toán mạnh hơn đã khóa. Payload/hash record phải lưu schema_version, canonicalization_id/version và hash_algorithm; không cho phép thay đổi âm thầm giữa các release.",
-   "status": "N",
+   "status": "C",
    "tasks": "",
    "api": "",
    "tests": "",
-   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+   "note": "Canonicalization RFC 8785 (JCS) + SHA-256/HMAC-SHA-256; metadata schema_version/canon_id/hash_alg ghi ở từng checkpoint (docs/INTEGRITY.md)."
   },
   {
    "id": "BLC-02",
    "group": "BLC",
    "name": "Gom event hash thành Merkle root theo lô/ngày bằng quy tắc deterministic đã tài liệu hóa: leaf ordering, duplicate handling, odd-node policy, hash algorithm/domain separation nếu dùng, tree_version; lưu proof và metadata đủ để tái tạo.",
-   "status": "N",
+   "status": "C",
    "tasks": "",
    "api": "",
    "tests": "",
-   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+   "note": "Merkle root theo ngày, quy tắc deterministic đã tài liệu hóa: lá theo seq tăng dần, nút lẻ nhân đôi, domain separation 0x01/0x02, tree_version 1; proof truy vấn được."
   },
   {
    "id": "BLC-03",
@@ -1730,17 +1730,17 @@
    "tasks": "",
    "api": "",
    "tests": "",
-   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+   "note": "Có điều kiện: chỉ khi IAICT chốt dùng blockchain anchoring (Q.2); Polygon PoS là phương án tham chiếu của SOW."
   },
   {
    "id": "BLC-04",
    "group": "BLC",
    "name": "Khi dùng blockchain, adapter phải tách rời để thay mạng/cơ chế anchoring mà không sửa nghiệp vụ lõi.",
-   "status": "N",
+   "status": "P",
    "tasks": "",
    "api": "",
    "tests": "",
-   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+   "note": "Đường may adapter có sẵn: Merkle root + metadata xuất qua endpoint proof (trường anchor NOT_ENABLED); neo thật chờ quyết định Q.2."
   },
   {
    "id": "BLC-05",
@@ -1750,27 +1750,27 @@
    "tasks": "",
    "api": "",
    "tests": "",
-   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+   "note": "Có điều kiện (anchoring): thiết kế chỉ neo Merkle root, tuyệt đối không neo dữ liệu cá nhân/tài liệu — sẵn sàng khi kích hoạt."
   },
   {
    "id": "BLC-06",
    "group": "BLC",
    "name": "Trang/công cụ xác minh cho biết bằng chứng toàn vẹn hợp lệ/không hợp lệ, thời điểm tạo/chốt bằng chứng và metadata phiên bản. Nếu anchoring/blockchain được bật, hiển thị thêm thời điểm/reference/trạng thái anchor.",
-   "status": "N",
+   "status": "C",
    "tasks": "",
    "api": "",
    "tests": "",
-   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+   "note": "Tab Toàn vẹn trong Báo cáo: kết quả hợp lệ/không, thời điểm niêm phong, metadata phiên bản, tra proof theo seq."
   },
   {
    "id": "BLC-07",
    "group": "BLC",
    "name": "Khóa ký Data Integrity phải lưu bằng secret store/KMS. Nếu dùng blockchain, ví/account production và quy trình xoay vòng/thu hồi thuộc IAICT control; bằng chứng lịch sử vẫn xác minh được.",
-   "status": "N",
+   "status": "P",
    "tasks": "",
    "api": "",
    "tests": "",
-   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+   "note": "Khóa HMAC qua secret store (IAICT_INTEGRITY_KEY) + key_id truy vết từng checkpoint; xoay vòng khóa báo UNVERIFIABLE thay vì INVALID. Owner chưa đặt khóa trên beta — đang chạy SHA-256."
   },
   {
    "id": "BLC-08",
@@ -1780,7 +1780,7 @@
    "tasks": "",
    "api": "",
    "tests": "",
-   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+   "note": "Có điều kiện: thuộc gói anchoring khi kích hoạt."
   },
   {
    "id": "BLC-09",
@@ -1790,7 +1790,7 @@
    "tasks": "",
    "api": "",
    "tests": "",
-   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+   "note": "Có điều kiện: hồ sơ mạng chính được lập khi IAICT phê duyệt một mạng cụ thể."
   },
   {
    "id": "HLT-01",
@@ -2836,11 +2836,11 @@
    "id": "RPT-10",
    "group": "RPT",
    "name": "Báo cáo đối soát toàn vẹn dữ liệu theo kỳ và trạng thái checkpoint hash/Merkle. Chỉ bổ sung reference/trạng thái blockchain hoặc external anchor khi lựa chọn tương ứng tại Q.2 được kích hoạt.",
-   "status": "N",
+   "status": "C",
    "tasks": "T-022, T-043",
    "api": "/dashboard, /reports/*",
    "tests": "test_dashboard",
-   "note": "Mới có dashboard + 3 báo cáo truy xuất trên tổng số REP 82."
+   "note": "Báo cáo đối soát toàn vẹn theo checkpoint/ngày + trạng thái kiểm chứng ở tab Toàn vẹn; reference blockchain chỉ bổ sung khi Q.2 kích hoạt."
   },
   {
    "id": "RPT-11",
@@ -3376,11 +3376,11 @@
    "id": "NFR-36",
    "group": "NFR",
    "name": "Audit chống sửa",
-   "status": "P",
+   "status": "C",
    "tasks": "",
    "api": "",
    "tests": "",
-   "note": "Audit append-only + snapshot trước/sau; chuỗi băm chống sửa thuộc D-10, chưa có."
+   "note": "Audit chống sửa bằng chuỗi băm + checkpoint Merkle (T-050); production đã niêm phong 88/88 bản ghi lịch sử, kiểm chứng VALID."
   },
   {
    "id": "NFR-37",
@@ -3416,11 +3416,11 @@
    "id": "NFR-40",
    "group": "NFR",
    "name": "Data Integrity/anchoring key custody",
-   "status": "N",
+   "status": "P",
    "tasks": "",
    "api": "",
    "tests": "",
-   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+   "note": "Khóa toàn vẹn do IAICT kiểm soát qua secret store, có key_id truy vết (T-050); phần anchoring custody có điều kiện."
   },
   {
    "id": "NFR-41",
