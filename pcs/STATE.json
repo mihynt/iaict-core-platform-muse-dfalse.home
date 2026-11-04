@@ -1,5 +1,5 @@
 {
- "revision": 84,
+ "revision": 85,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-068",
-   "last_completed_step": "Deploy gom AG01-AG03 len beta v2 (rev 84): Worker 8ec07016, D1 migration 1-7, probe ghi + test trinh duyet dat.",
-   "next_action": "AG04 (T-068): transactional outbox + truy van trang thai as-of cho Ledger.",
+   "active_task": "T-069",
+   "last_completed_step": "T-068 (AG04) TECH_DONE + DEPLOYED (rev 85): outbox + as-of hai truc; Worker 62844aed.",
+   "next_action": "AG05 (T-069): cong cu import/export pack + migration/rollback pack + kiem tra tuong thich N-1.",
    "blockers": []
   },
   "decisions": [
@@ -1031,9 +1031,9 @@
    {
     "id": "T-068",
     "title": "AG04 — Ledger va Current State (outbox, as-of) (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commit 61f053a. Outbox: bang event_outbox (migration v8, UNIQUE tenant+event) ghi trong CUNG store call voi append_event (cung khoa o memory mode); GET /outbox, POST /outbox/publish (danh dau PUBLISHED — seam cho broker/webhook o AG16), POST /outbox/backfill (tu chua). As-of hai truc thoi gian (SRS-TC 05): GET /state/as-of?mode=recorded|occurred. Test: test_outbox_asof.py (outbox/publish/backfill, bao idempotency 5 lan gui trung -> 1 su kien + 1 outbox, as-of 2 truc). Suite: memory 79+2, D1 81, PG 77+4; CI GREEN. DEPLOYED Worker 62844aed: D1 production migration 8; probe live: as-of recorded tren beta-pilot tra dung 400 plants/5 su kien; backfill chay that tren production -> 5 dong outbox cho 5 su kien co tu truoc (2 lan thu bi chan PHI khong nam trong ledger nen khong co outbox — dung ngu nghia). ADR-004 bo sung addendum.",
     "blockers": []
    },
    {
@@ -1153,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T09:04:36Z"
+ "updated_at": "2026-11-04T09:09:10Z"
 }
