@@ -1,5 +1,5 @@
 {
- "revision": 86,
+ "revision": 87,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-070",
-   "last_completed_step": "T-069 (AG05) TECH_DONE + DEPLOYED (rev 86): pack lifecycle tooling; Worker b5f19b8c.",
-   "next_action": "AG06 (T-070): WorkflowEngine thuc thi + ton kho vat tu dau vao trong v2.",
+   "active_task": "T-071",
+   "last_completed_step": "T-070 (AG06) TECH_DONE + DEPLOYED (rev 87): WorkflowEngine + ton kho vat tu; Worker 1b3053b0.",
+   "next_action": "AG07 (T-071): HLT engine (dich benh/cach ly) + STD engine (tieu chuan/MRL canh bao).",
    "blockers": []
   },
   "decisions": [
@@ -1047,9 +1047,9 @@
    {
     "id": "T-070",
     "title": "AG06 — Plant va nguon giong (WorkflowEngine, vat tu) (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commit fc1425a. WorkflowEngine: engines/workflows.py (thuan) + workflows_api — dinh nghia workflow tu manifest pack dang active; instance o bang workflow_instances (migration v9); start/act theo tung buoc, khoa vai tro tung buoc (403 WORKFLOW_STEP_ROLE), REJECT ket thuc, buoc cuoi APPROVE ap hieu ung generic on_approve.set_target_status len ban ghi dich; check_manifest nay kiem tra ca cau truc workflow. Pack 01 len v1.2.0 (tuong thich 100%, 0 findings) them workflow recognition-approval 2 buoc cho ho so cong nhan. Ton kho vat tu: bang inventory_lots + inventory_api — nhap lo (payload pack tu do), tieu thu ghi su kien ACTIVITY vao ledger kem SNAPSHOT payload lo, chan tieu thu vuot ton (INVENTORY_INSUFFICIENT), het lo -> DEPLETED; thong tin truy vet di trong namespace dat truoc '_' (schema pack bo qua khi validate — collision that da duoc test bat va xu ly). Chung minh dau-cuoi: harvest som bi cong phi-gate chan chi nho snapshot phi_days tu lo vat tu. Suite: memory 83+2, D1 85, PG 81+4; CI GREEN (neutrality bat 1 lan do comment chua tu cam trong core — da sua). DEPLOYED Worker 1b3053b0: D1 production migration 9; probe live /inventory-lots + /workflow-definitions 200 (beta-pilot van chay Pack 01 v1.1.0 nen danh sach dinh nghia rong — dang ky v1.2.0 can khoa platform Owner dat). UI hop thu workflow de lai AG14.",
     "blockers": []
    },
    {
@@ -1153,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T09:18:32Z"
+ "updated_at": "2026-11-04T09:24:28Z"
 }
