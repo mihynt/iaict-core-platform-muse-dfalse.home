@@ -1,5 +1,5 @@
 {
- "revision": 63,
+ "revision": 64,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -29,8 +29,8 @@
   ],
   "current": {
    "active_task": null,
-   "last_completed_step": "T-048 SOW conformance review delivered (rev 63).",
-   "next_action": "Owner picks the follow-up: (a) coverage register (requirement-level traceability in STATE), (b) D-10 integrity verifier build, (c) T-006 prep pack, (d) MOB native-vs-web decision. IoT parked; commercial layer remains M7.",
+   "last_completed_step": "T-049 TECH_DONE: so phu yeu cau 389 ma SOW da lap (COVERED 33 / PARTIAL 111 / NOT_STARTED 245), luu o pcs/coverage.json + pcs/COVERAGE.md",
+   "next_action": "Owner chon buoc tiep theo sau T-049: (a) xay D-10 bo kiem chung toan ven du lieu (mo ca nhom BLC-01..09 + NFR-36/RPT-10), (b) chot huong MOB native-hay-web (F3), (c) goi chuan bi T-006 kem goi van hanh F5, (d) dien du lieu danh muc tham chieu (F2).",
    "blockers": []
   },
   "decisions": [
@@ -302,6 +302,12 @@
     "name": "Cleanup pack: pagination + GS1 + per-SKU gate (T-047)",
     "status": "TECH_DONE",
     "notes": "Closes backlog P2-b and T-016 review leftovers L1 + L4 (L4 declaration-conditional)."
+   },
+   {
+    "id": "F-027",
+    "name": "So phu yeu cau SOW (coverage register 389 ma)",
+    "status": "TECH_DONE",
+    "notes": "pcs/coverage.json + pcs/COVERAGE.md; duy tri o moi checkpoint cham toi ma lien quan."
    }
   ],
   "flows": [],
@@ -770,9 +776,21 @@
     ],
     "evidence": "Minutes: ~/workspace/your_files/iaict-sow-core-review/bien-ban-ra-soat-theo-sow-ban-core-04-11-2026.md. Scope verified by identical extraction of R30 and R21 DOCX: identical defined-ID sets (692), one name diff (MOB-01); R30's only addition is Appendix U (implemented T-040..T-043). D-01..D-64 classified against STATE/code/live: 6 done, 26 partial, 32 not started - of which 27 are M5-M7/process scope, and 5 are in-window gaps: D-08 (Android native, M3), D-10 (integrity verifier JCS/Merkle, M2-M4), D-18 (SBOM, M3a/M3), D-29 (control plane, M3-M7), D-30 (metering spec, M2-M7). Commercial layer D-53..D-64 untouched (M7, T-007). REP 3/82. Findings F1-F5: platform-core services (control plane/metering/integrity) absent while the data core is strong; rule packs are code not configuration and catalogues are empty; MOB native-vs-web substitution needs an explicit Owner decision; requirement-level traceability is not maintained in STATE (srs_refs nearly empty) - a coverage register is the recommended cheap fix; ops evidence pack (D-14/16/17/25/27) is a T-006 prerequisite.",
     "blockers": []
+   },
+   {
+    "id": "T-049",
+    "title": "Sổ phủ yêu cầu theo mã SOW (coverage register): 389 mã FR/NFR/SEC -> trạng thái + bằng chứng, pcs/coverage.json + pcs/COVERAGE.md",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "SOW R30 Traceability Ledger (389 ma)",
+     "D-35",
+     "T-048 F4"
+    ],
+    "evidence": "Vu tru doi chieu khop tuyet doi voi con so SOW tu cong bo (SOW R30 dong 1261/2596/3352): 389 ma = 302 FR o 22 nhom (chiet xuat theo bang tu DOCX R30, khong thieu so nao trong tung nhom) + 56 NFR (NFR-06/07 bo sung tay tu dong van ban vi bang co cot nhan rieng RPO/RTO) + 31 SEC. Trang thai gan theo bang chung test/probe, dung quy tac SOW (khong bang chung thi khong COVERED): COVERED 33, PARTIAL 111, NOT_STARTED 245; rieng FR 25/77/200. Hai vong tu kiem: vong 1 bat som phieu MPL-11..16/D-44 phai la NOT_STARTED; vong 2 ha 39 ma bi phong boi trang thai mac dinh nhom (FLD-05/06/08/09/10/11/12/19/20, MPL-05/07/09/10, LOT-03/04/12/14/16/17, TRC-03/04/06/07/08/11/13/14/16/17, PRO-06/07/09, API-03) xuong NOT_STARTED. Script lap so: ~/workspace/iaict-sow-review-work/build_register.py + build_coverage_md.py (coverage.json la nguon, COVERAGE.md sinh tu do). Khong doi runtime; beta giu Worker fd482d42 (rev 62).",
+    "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T03:02:00Z"
+ "updated_at": "2026-11-04T03:21:55Z"
 }

@@ -1,0 +1,3896 @@
+{
+ "generated_from": "SOW R30 (SHA-256 1904e7fe…e8049), table-aware extraction",
+ "rule": "COVERED yêu cầu bằng chứng test/probe; thiếu bằng chứng để PARTIAL/NOT_STARTED (theo quy tắc sổ truy vết của SOW).",
+ "entries": [
+  {
+   "id": "TEN-01",
+   "group": "TEN",
+   "name": "Tenant Experience Profile versioned: display name, short name, logo, favicon, color tokens, cover/login image, footer/copyright, support profile và public metadata.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Trải nghiệm tenant/thương hiệu/tên miền — chưa xây."
+  },
+  {
+   "id": "TEN-02",
+   "group": "TEN",
+   "name": "Subdomain IAICT cấp theo slug cấu hình, ví dụ phuyen.iaict-platform.com; slug/host chỉ là alias, tenant_id nội bộ phải là immutable ID/UUID.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Trải nghiệm tenant/thương hiệu/tên miền — chưa xây."
+  },
+  {
+   "id": "TEN-03",
+   "group": "TEN",
+   "name": "Custom domain hỗ trợ verify ownership, DNS/CAA hướng dẫn, TLS tự động, expiry/renewal/health và revoke khi kết thúc.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Trải nghiệm tenant/thương hiệu/tên miền — chưa xây."
+  },
+  {
+   "id": "TEN-04",
+   "group": "TEN",
+   "name": "Hỗ trợ Primary Domain + Alias Domains + Redirect/Canonical; thay primary không đổi tenant ID hoặc subscription.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Trải nghiệm tenant/thương hiệu/tên miền — chưa xây."
+  },
+  {
+   "id": "TEN-05",
+   "group": "TEN",
+   "name": "Ba mode thương hiệu: IAICT Branding, Co-branding/Powered by IAICT, Full White-label; mode do plan/contract/IAICT policy quyết định.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Trải nghiệm tenant/thương hiệu/tên miền — chưa xây."
+  },
+  {
+   "id": "TEN-06",
+   "group": "TEN",
+   "name": "Menu, landing page, dashboard mặc định, module visible, terminology label, banner/news/help link và support contact cấu hình theo tenant nhưng backend entitlement vẫn là nguồn quyền.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Trải nghiệm tenant/thương hiệu/tên miền — chưa xây."
+  },
+  {
+   "id": "TEN-07",
+   "group": "TEN",
+   "name": "Trang QR/public trace có branding tenant/sản phẩm và dữ liệu công khai versioned; logo/HTML/content phải sanitize và không lộ private field.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Trải nghiệm tenant/thương hiệu/tên miền — chưa xây."
+  },
+  {
+   "id": "TEN-08",
+   "group": "TEN",
+   "name": "Brand asset lưu object storage theo tenant/version, có kích thước/định dạng/virus scan/checksum và fallback an toàn.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Trải nghiệm tenant/thương hiệu/tên miền — chưa xây."
+  },
+  {
+   "id": "TEN-09",
+   "group": "TEN",
+   "name": "Provision tenant từ template gồm plan/module/role/workflow/branding/subdomain; baseline hợp lệ phải hoàn thành ≤10 phút như COM-12, không tính DNS custom domain bên ngoài.",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Provision tenant + bootstrap admin + workspace có; template plan/module/branding/subdomain chưa có."
+  },
+  {
+   "id": "TEN-10",
+   "group": "TEN",
+   "name": "Theme/branding thay đổi phải có draft→review→publish, owner/effective date; thay đổi domain/white-label nhạy cảm có approval.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Trải nghiệm tenant/thương hiệu/tên miền — chưa xây."
+  },
+  {
+   "id": "TEN-11",
+   "group": "TEN",
+   "name": "Một product baseline: cấm branch/fork per tenant để đổi giao diện/nghiệp vụ; extension qua config/feature flag/Vertical Pack/tenant profile.",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Một codebase duy nhất, cấu hình theo tenant; feature flag chưa có."
+  },
+  {
+   "id": "TEN-12",
+   "group": "TEN",
+   "name": "Customer-facing email/template/notification cơ sở hỗ trợ tenant branding nhưng domain gửi, DKIM/SPF/DMARC và compliance cấu hình theo hạ tầng được phê duyệt.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Trải nghiệm tenant/thương hiệu/tên miền — chưa xây."
+  },
+  {
+   "id": "ADM-01",
+   "group": "ADM",
+   "name": "Tạo và quản lý nhiều tenant; dữ liệu các tenant tách biệt ở tầng ứng dụng và truy vấn.",
+   "status": "C",
+   "tasks": "T-003",
+   "api": "/tenants, /users, /audit",
+   "tests": "test_platform/test_identity",
+   "note": "Registry tenant + guard + khóa ngoại phức hợp chống chéo tenant; test ở cả 4 chế độ store."
+  },
+  {
+   "id": "ADM-02",
+   "group": "ADM",
+   "name": "Quản lý OrganizationUnit, Site, vai trò và trạng thái tài khoản; Producer/AdministrativeUnit dùng registry Core tương ứng, không trộn thành “tổ chức” tự do.",
+   "status": "P",
+   "tasks": "T-003",
+   "api": "/tenants, /users, /audit",
+   "tests": "test_platform/test_identity",
+   "note": "Có actors/users/trạng thái tài khoản (Bảng 32); OrganizationUnit/Site chưa là thực thể riêng (site ≈ vùng)."
+  },
+  {
+   "id": "ADM-03",
+   "group": "ADM",
+   "name": "RBAC Core tối thiểu: quản trị IAICT, quản trị tenant, vận hành, kiểm tra/chất lượng và chỉ xem. Vai trò cán bộ vùng, kho/nhà máy và vai trò ngành khác được cung cấp bằng role template của Vertical Pack.",
+   "status": "P",
+   "tasks": "T-003",
+   "api": "/tenants, /users, /audit",
+   "tests": "test_platform/test_identity",
+   "note": "3 vai trò VIEWER/OPERATOR/TENANT_ADMIN + platform admin, cưỡng chế ở backend; thiếu vai trò kiểm tra/chất lượng riêng."
+  },
+  {
+   "id": "ADM-04",
+   "group": "ADM",
+   "name": "Đăng nhập bằng email/số điện thoại; chính sách mật khẩu; khóa sau nhiều lần sai.",
+   "status": "N",
+   "tasks": "T-003",
+   "api": "/tenants, /users, /audit",
+   "tests": "test_platform/test_identity",
+   "note": "Chưa có đăng nhập mật khẩu — mô hình hiện tại là định danh actor qua header; khác thiết kế SOW, cần quyết định."
+  },
+  {
+   "id": "ADM-05",
+   "group": "ADM",
+   "name": "MFA bắt buộc cho super-admin/quản trị IAICT và có thể cấu hình bắt buộc theo vai trò/plan; TOTP là mức tối thiểu. Hỗ trợ WebAuthn/FIDO2/passkey cho tài khoản đặc quyền; recovery/break-glass có thời hạn, phê duyệt và audit.",
+   "status": "N",
+   "tasks": "T-003",
+   "api": "/tenants, /users, /audit",
+   "tests": "test_platform/test_identity",
+   "note": ""
+  },
+  {
+   "id": "ADM-06",
+   "group": "ADM",
+   "name": "Nhật ký đăng nhập, đăng xuất, đổi quyền, xuất dữ liệu và thao tác quản trị.",
+   "status": "P",
+   "tasks": "T-003",
+   "api": "/tenants, /users, /audit",
+   "tests": "test_platform/test_identity",
+   "note": "Audit thao tác quản trị kèm snapshot trước/sau + IP/thiết bị; không có sự kiện đăng nhập/đăng xuất (không có phiên)."
+  },
+  {
+   "id": "ADM-07",
+   "group": "ADM",
+   "name": "Cấu hình thương hiệu theo tenant: logo, tên hiển thị, tên miền/slug, thông tin liên hệ.",
+   "status": "N",
+   "tasks": "T-003",
+   "api": "/tenants, /users, /audit",
+   "tests": "test_platform/test_identity",
+   "note": ""
+  },
+  {
+   "id": "ADM-08",
+   "group": "ADM",
+   "name": "Nhập/xuất người dùng bằng mẫu có kiểm tra lỗi và báo cáo kết quả.",
+   "status": "N",
+   "tasks": "T-003",
+   "api": "/tenants, /users, /audit",
+   "tests": "test_platform/test_identity",
+   "note": ""
+  },
+  {
+   "id": "ADM-09",
+   "group": "ADM",
+   "name": "Super-admin IAICT tạo, cấu hình, tạm ngừng, khôi phục và kết thúc tenant theo quyền bốn mắt với thao tác rủi ro.",
+   "status": "P",
+   "tasks": "T-003",
+   "api": "/tenants, /users, /audit",
+   "tests": "test_platform/test_identity",
+   "note": "Tạo/tạm ngừng/khôi phục tenant qua platform API có; thiếu duyệt bốn mắt và kết thúc tenant."
+  },
+  {
+   "id": "ADM-10",
+   "group": "ADM",
+   "name": "Quản lý tên miền riêng/tên miền con (custom domain/subdomain), logo, màu, thông tin hỗ trợ và mẫu nội dung theo tenant.",
+   "status": "N",
+   "tasks": "T-003",
+   "api": "/tenants, /users, /audit",
+   "tests": "test_platform/test_identity",
+   "note": ""
+  },
+  {
+   "id": "ADM-11",
+   "group": "ADM",
+   "name": "Quản lý named account; cấm dùng chung tài khoản nghiệp vụ; tài khoản dịch vụ/API và định danh thiết bị tách riêng.",
+   "status": "P",
+   "tasks": "T-003",
+   "api": "/tenants, /users, /audit",
+   "tests": "test_platform/test_identity",
+   "note": "Tài khoản đặt tên riêng; định danh thiết bị tách riêng (T-046); tài khoản dịch vụ/API chưa có."
+  },
+  {
+   "id": "ADM-12",
+   "group": "ADM",
+   "name": "API key/client credential theo tenant, scope, hạn dùng, quota, xoay vòng và thu hồi.",
+   "status": "P",
+   "tasks": "T-003",
+   "api": "/tenants, /users, /audit",
+   "tests": "test_platform/test_identity",
+   "note": "Khóa thiết bị có xoay vòng/thu hồi; API key tổng quát theo tenant (scope/hạn/quota) chưa có."
+  },
+  {
+   "id": "ADM-13",
+   "group": "ADM",
+   "name": "Feature flag/module entitlement theo plan và scope tenant/OrganizationUnit/Producer/Site; thay đổi phải kiểm tra phụ thuộc và effective date.",
+   "status": "N",
+   "tasks": "T-003",
+   "api": "/tenants, /users, /audit",
+   "tests": "test_platform/test_identity",
+   "note": ""
+  },
+  {
+   "id": "ADM-14",
+   "group": "ADM",
+   "name": "Quản trị viên tenant xem người dùng, site, thiết bị, hạn mức và audit thuộc tenant nhưng không thấy dữ liệu thương mại nội bộ IAICT.",
+   "status": "P",
+   "tasks": "T-003",
+   "api": "/tenants, /users, /audit",
+   "tests": "test_platform/test_identity",
+   "note": "Màn hình tenant chỉ thấy dữ liệu tenant mình (user/audit/thiết bị); hạn mức chưa có."
+  },
+  {
+   "id": "ADM-15",
+   "group": "ADM",
+   "name": "Hỗ trợ cấu hình SSO OIDC/SAML cho gói tùy chọn mà không thay đổi cơ chế đăng nhập tenant khác.",
+   "status": "N",
+   "tasks": "T-003",
+   "api": "/tenants, /users, /audit",
+   "tests": "test_platform/test_identity",
+   "note": ""
+  },
+  {
+   "id": "GEN-01",
+   "group": "GEN",
+   "name": "Core Domain phải dùng mô hình trung lập ngành trong phạm vi tenant: AdministrativeUnit/OrganizationUnit, Producer, Site/SpatialUnit/ProductionUnit, Subject, ProductionCycle, Activity/Observation/Event Ledger, Current State, measurement, lot/batch và trace relation/event. Tenant entity/lifecycle thuộc Control Plane & Identity. Alias nghiệp vụ như MotherPlant/Cây đầu dòng, Herd/Đàn, ShrimpPopulation hoặc ForestStand chỉ được định nghĩa trong Vertical Pack/extension contract.",
+   "status": "C",
+   "tasks": "T-032",
+   "api": "",
+   "tests": "test_fields_codegen",
+   "note": "Mô hình lõi trung lập ngành đã chạy cho 4 ngành (T-035/T-036)."
+  },
+  {
+   "id": "GEN-02",
+   "group": "GEN",
+   "name": "Mỗi Vertical Pack có ID/version/manifest, phụ thuộc Core version, schema extension, form, workflow, rule, report, role, device profile, seed data và migration.",
+   "status": "N",
+   "tasks": "T-032",
+   "api": "",
+   "tests": "test_fields_codegen",
+   "note": "Khung lõi + registry là nền; pack/entitlement chưa có."
+  },
+  {
+   "id": "GEN-03",
+   "group": "GEN",
+   "name": "Tenant bật/tắt Vertical Pack bằng entitlement; một tenant có thể dùng nhiều pack nếu không xung đột.",
+   "status": "N",
+   "tasks": "T-032",
+   "api": "",
+   "tests": "test_fields_codegen",
+   "note": "Khung lõi + registry là nền; pack/entitlement chưa có."
+  },
+  {
+   "id": "GEN-04",
+   "group": "GEN",
+   "name": "Form/field/checklist đặc thù ngành được cấu hình qua schema/metadata trong giới hạn framework. Schema extension phải typed, có validation/reference/index/query contract khi cần, version/migration rõ; không dùng EAV/JSON blob không kiểm soát làm mô hình chính và không cho phép script/SQL tùy ý thực thi từ cấu hình.",
+   "status": "C",
+   "tasks": "T-032",
+   "api": "",
+   "tests": "test_fields_codegen",
+   "note": "Form/trường sinh từ field registry duy nhất; test chống lệch (drift) khóa hành vi này."
+  },
+  {
+   "id": "GEN-05",
+   "group": "GEN",
+   "name": "Rule/approval/exception đặc thù ngành được version hóa, có ngày hiệu lực và quản trị bốn mắt khi rủi ro cao.",
+   "status": "P",
+   "tasks": "T-032",
+   "api": "",
+   "tests": "test_fields_codegen",
+   "note": "Luật tuân thủ đang là cổng cứng trong code, chưa version hóa/cấu hình hiệu lực."
+  },
+  {
+   "id": "GEN-06",
+   "group": "GEN",
+   "name": "Báo cáo/dashboard đặc thù ngành dùng template/dataset contract, không viết logic truy vấn hard-code rải rác.",
+   "status": "P",
+   "tasks": "T-032",
+   "api": "",
+   "tests": "test_fields_codegen",
+   "note": "3 endpoint báo cáo tính trực tiếp từ dữ liệu vận hành; chưa có template/dataset contract."
+  },
+  {
+   "id": "GEN-07",
+   "group": "GEN",
+   "name": "IoT dùng Device Profile và Measurement Profile để thêm model, codec, kênh đo, đơn vị, calibration và command capability.",
+   "status": "P",
+   "tasks": "T-032",
+   "api": "",
+   "tests": "test_fields_codegen",
+   "note": "Có loại thiết bị + registry ingest; Device/Measurement Profile và codec versioned chưa có."
+  },
+  {
+   "id": "GEN-08",
+   "group": "GEN",
+   "name": "Traceability engine hỗ trợ event/relationship generic; Vertical Pack chỉ mapping CTE/KDE/bizStep/disposition.",
+   "status": "P",
+   "tasks": "T-032",
+   "api": "",
+   "tests": "test_fields_codegen",
+   "note": "CTE stages là event truy xuất tổng quát; mapping KDE/bizStep chưa theo EPCIS."
+  },
+  {
+   "id": "GEN-09",
+   "group": "GEN",
+   "name": "Không fork Core theo tenant/vertical. Mọi ngoại lệ cần code phải đi qua extension point/plugin contract versioned hoặc CR được IAICT phê duyệt. Runtime plugin/code extension không được upload/chạy tùy ý: phải ở kho Git IAICT, build/test/scan bằng pipeline IAICT, gắn version/provenance/chữ ký hoặc checksum và có rollback.",
+   "status": "P",
+   "tasks": "T-032",
+   "api": "",
+   "tests": "test_fields_codegen",
+   "note": "Không fork theo tenant (một bản dựng); extension point/plugin contract chưa có."
+  },
+  {
+   "id": "GEN-10",
+   "group": "GEN",
+   "name": "Vertical Pack có compatibility matrix với Core, migration versioned và test regression.",
+   "status": "P",
+   "tasks": "T-032",
+   "api": "",
+   "tests": "test_fields_codegen",
+   "note": "Migration đánh số phiên bản + bộ test hồi quy đầy đủ có; ma trận tương thích pack chưa có."
+  },
+  {
+   "id": "GEN-11",
+   "group": "GEN",
+   "name": "IAICT có thể tự tạo/cập nhật pack sau bàn giao bằng tài liệu/công cụ được chuyển giao, không cần khóa bí mật hoặc license server của đội triển khai nội bộ IAICT.",
+   "status": "N",
+   "tasks": "T-032",
+   "api": "",
+   "tests": "test_fields_codegen",
+   "note": "Khung lõi + registry là nền; pack/entitlement chưa có."
+  },
+  {
+   "id": "GEN-12",
+   "group": "GEN",
+   "name": "M7 phải qualification bằng ít nhất hai miền khác biệt với pilot: Aquaculture Qualification Pack và Livestock Qualification Scenario. Không chấp nhận chỉ đổi tên field/label hoặc tạo bảng/code path ngành nằm trong Core.",
+   "status": "N",
+   "tasks": "T-032",
+   "api": "",
+   "tests": "test_fields_codegen",
+   "note": "Khung lõi + registry là nền; pack/entitlement chưa có."
+  },
+  {
+   "id": "ZON-01",
+   "group": "ZON",
+   "name": "Tạo vùng nguyên liệu, site, thửa/ô vùng trồng với tên, mã, diện tích, địa chỉ và tọa độ.",
+   "status": "P",
+   "tasks": "T-004, T-015, T-031, T-040, T-041",
+   "api": "/zones, /spatial-units, /zone-parcel-links",
+   "tests": "test_m3_traceability, test_gd3_market",
+   "note": "Vùng/thửa theo Bảng 7 hồ sơ chuẩn; tên/địa chỉ/tọa độ của ZON-01 không nằm trong 33 bảng nên đã cắt ở T-034 (lệch có ghi nhận)."
+  },
+  {
+   "id": "ZON-02",
+   "group": "ZON",
+   "name": "Vẽ/chỉnh sửa polygon trên bản đồ hoặc nhập GeoJSON/KML; tính diện tích tham chiếu. Lưu/chuẩn hóa dữ liệu không gian về WGS84; GeoJSON tuân RFC 7946 với thứ tự longitude, latitude; nguồn CRS của dữ liệu nhập khác WGS84 phải được khai báo và chuyển đổi có log.",
+   "status": "N",
+   "tasks": "T-004, T-015, T-031, T-040, T-041",
+   "api": "/zones, /spatial-units, /zone-parcel-links",
+   "tests": "test_m3_traceability, test_gd3_market",
+   "note": "Chưa có bản đồ/polygon; boundary_polygon_gis mới là trường lưu ở danh mục hành chính."
+  },
+  {
+   "id": "ZON-03",
+   "group": "ZON",
+   "name": "Gắn chủ thể quản lý, nhóm cây, mùa vụ, nguồn nước, tình trạng và hồ sơ liên quan.",
+   "status": "P",
+   "tasks": "T-004, T-015, T-031, T-040, T-041",
+   "api": "/zones, /spatial-units, /zone-parcel-links",
+   "tests": "test_m3_traceability, test_gd3_market",
+   "note": "Chủ thể quản lý + ngành + trạng thái PUC có; nhóm cây/nguồn nước đã cắt theo 33 bảng; hồ sơ đính kèm chưa có."
+  },
+  {
+   "id": "ZON-04",
+   "group": "ZON",
+   "name": "Quản lý phiên bản ranh giới; lưu người sửa, thời gian và lý do.",
+   "status": "N",
+   "tasks": "T-004, T-015, T-031, T-040, T-041",
+   "api": "/zones, /spatial-units, /zone-parcel-links",
+   "tests": "test_m3_traceability, test_gd3_market",
+   "note": "Bảng zone_boundary_versions có trong schema nhưng chưa có luồng API/UI."
+  },
+  {
+   "id": "ZON-05",
+   "group": "ZON",
+   "name": "Gắn cảm biến/gateway vào vị trí địa lý và hiển thị trạng thái trên bản đồ.",
+   "status": "P",
+   "tasks": "T-004, T-015, T-031, T-040, T-041",
+   "api": "/zones, /spatial-units, /zone-parcel-links",
+   "tests": "test_m3_traceability, test_gd3_market",
+   "note": "Thiết bị gắn vùng/thửa (T-045); chưa hiển thị trên bản đồ."
+  },
+  {
+   "id": "ZON-06",
+   "group": "ZON",
+   "name": "Tra cứu vùng theo mã, tên, cây trồng, trạng thái, site và người quản lý.",
+   "status": "P",
+   "tasks": "T-004, T-015, T-031, T-040, T-041",
+   "api": "/zones, /spatial-units, /zone-parcel-links",
+   "tests": "test_m3_traceability, test_gd3_market",
+   "note": "Danh sách + lọc phía client; chưa có tìm kiếm phía server."
+  },
+  {
+   "id": "ZON-07",
+   "group": "ZON",
+   "name": "Đính kèm giấy tờ, biên bản, ảnh và tài liệu; phân loại công khai/nội bộ.",
+   "status": "N",
+   "tasks": "T-004, T-015, T-031, T-040, T-041",
+   "api": "/zones, /spatial-units, /zone-parcel-links",
+   "tests": "test_m3_traceability, test_gd3_market",
+   "note": "Chưa có hệ thống đính kèm tài liệu/ảnh (chỉ vài trường URL đơn lẻ)."
+  },
+  {
+   "id": "ZON-08",
+   "group": "ZON",
+   "name": "Hỗ trợ lớp bản đồ nền thay thế và không hard-code nhà cung cấp.",
+   "status": "N",
+   "tasks": "T-004, T-015, T-031, T-040, T-041",
+   "api": "/zones, /spatial-units, /zone-parcel-links",
+   "tests": "test_m3_traceability, test_gd3_market",
+   "note": "Chưa có bản đồ."
+  },
+  {
+   "id": "ZON-09",
+   "group": "ZON",
+   "name": "Quản lý mã số vùng trồng theo thửa hoặc site: số mã, thị trường xuất khẩu tương ứng, cơ quan cấp, thời hạn và tệp quyết định.",
+   "status": "C",
+   "tasks": "T-004, T-015, T-031, T-040, T-041",
+   "api": "/zones, /spatial-units, /zone-parcel-links",
+   "tests": "test_m3_traceability, test_gd3_market",
+   "note": "Khối PUC đủ vòng đời 5 trạng thái + lịch sử trạng thái (Bảng 7/13)."
+  },
+  {
+   "id": "ZON-10",
+   "group": "ZON",
+   "name": "Gán thị trường xuất khẩu đích cho thửa hoặc site, làm căn cứ áp dụng danh mục hoạt chất bị hạn chế tại FLD-14 và kiểm soát xuất tại LOT-11.",
+   "status": "C",
+   "tasks": "T-004, T-015, T-031, T-040, T-041",
+   "api": "/zones, /spatial-units, /zone-parcel-links",
+   "tests": "test_m3_traceability, test_gd3_market",
+   "note": "Phê duyệt thị trường theo vùng (Bảng 8) — gán ở cấp vùng, không phải cấp thửa."
+  },
+  {
+   "id": "MPL-01",
+   "group": "MPL",
+   "name": "Cấp mã duy nhất và QR cho từng cây/cụm cây đầu dòng.",
+   "status": "P",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Mã duy nhất có; QR cho cây chưa có."
+  },
+  {
+   "id": "MPL-02",
+   "group": "MPL",
+   "name": "Lưu loài, giống, tên khoa học, nguồn gốc, năm trồng, vị trí, chủ sở hữu/quản lý.",
+   "status": "P",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Loài/giống/tên khoa học/nguồn gốc/chủ quản có trong registry; năm trồng/vị trí chỉ ở mức mô tả."
+  },
+  {
+   "id": "MPL-03",
+   "group": "MPL",
+   "name": "Lưu quyết định/công nhận, cơ quan cấp, ngày hiệu lực/hết hạn và tệp hồ sơ.",
+   "status": "P",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Trường quyết định/cơ quan/hiệu lực có dạng mô tả; tệp hồ sơ chưa có."
+  },
+  {
+   "id": "MPL-04",
+   "group": "MPL",
+   "name": "Theo dõi trạng thái sống, sinh trưởng, sức khỏe, sâu bệnh, nguy cơ và tình trạng bảo tồn.",
+   "status": "P",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Có bảng lịch sử trạng thái cây; chỉ tiêu sinh trưởng/sức khỏe chi tiết chưa có."
+  },
+  {
+   "id": "MPL-05",
+   "group": "MPL",
+   "name": "Ghi nhận kiểm tra định kỳ với checklist, ảnh, GPS, người kiểm tra và kết luận.",
+   "status": "N",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Hồ sơ cây cơ bản có; gói định mức/báo cáo D-44 chưa có."
+  },
+  {
+   "id": "MPL-06",
+   "group": "MPL",
+   "name": "Ghi nhận chăm sóc, tưới, bón, tỉa, phòng trừ, lấy mẫu và kết quả xét nghiệm.",
+   "status": "P",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Chăm sóc ghi qua nhật ký đồng ruộng theo mùa vụ; chưa gắn trực tiếp từng cây."
+  },
+  {
+   "id": "MPL-07",
+   "group": "MPL",
+   "name": "Quản lý vật liệu nhân giống lấy từ cây đầu dòng: loại, ngày, số lượng, lô đích.",
+   "status": "N",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Hồ sơ cây cơ bản có; gói định mức/báo cáo D-44 chưa có."
+  },
+  {
+   "id": "MPL-08",
+   "group": "MPL",
+   "name": "Cho phép khóa hồ sơ cây ngừng sử dụng nhưng không xóa lịch sử.",
+   "status": "P",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Không có luồng khóa hồ sơ; xóa bị chặn khi đang được tham chiếu (409 RECORD_IN_USE)."
+  },
+  {
+   "id": "MPL-09",
+   "group": "MPL",
+   "name": "Cảnh báo lịch kiểm tra, hết hạn hồ sơ, tình trạng bất thường và mất dữ liệu cảm biến liên quan.",
+   "status": "N",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Hồ sơ cây cơ bản có; gói định mức/báo cáo D-44 chưa có."
+  },
+  {
+   "id": "MPL-10",
+   "group": "MPL",
+   "name": "Báo cáo danh sách cây, tình trạng, lịch sử bảo tồn, vật liệu nhân giống và điểm cần xử lý.",
+   "status": "N",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Hồ sơ cây cơ bản có; gói định mức/báo cáo D-44 chưa có."
+  },
+  {
+   "id": "MPL-11",
+   "group": "MPL",
+   "name": "Định mức khai thác vật liệu nhân giống theo dòng cây và theo kỳ; cảnh báo và chặn khi vượt định mức cấu hình được.",
+   "status": "N",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Thuộc gói cấu hình D-44."
+  },
+  {
+   "id": "MPL-12",
+   "group": "MPL",
+   "name": "Quản lý lô cây giống nhân từ cây đầu dòng: mã lô, số lượng, vườn ươm, tỷ lệ sống, ngày xuất và đơn vị nhận.",
+   "status": "N",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Thuộc gói cấu hình D-44."
+  },
+  {
+   "id": "MPL-13",
+   "group": "MPL",
+   "name": "Cảnh báo suy giảm khi năng suất hoặc chỉ tiêu sinh trưởng giảm quá ngưỡng cấu hình so với trung bình các kỳ theo dõi trước.",
+   "status": "N",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Thuộc gói cấu hình D-44."
+  },
+  {
+   "id": "MPL-14",
+   "group": "MPL",
+   "name": "Bản đồ vườn cây đầu dòng có lớp phủ trạng thái: bình thường, cần theo dõi, suy giảm, sắp hết hạn công nhận và đã loại bỏ.",
+   "status": "N",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Thuộc gói cấu hình D-44."
+  },
+  {
+   "id": "MPL-15",
+   "group": "MPL",
+   "name": "Hồ sơ sức khỏe cây: kết quả kiểm nghiệm sạch bệnh theo chỉ tiêu, đơn vị kiểm nghiệm, tệp phiếu và lịch kiểm nghiệm định kỳ.",
+   "status": "N",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Thuộc gói cấu hình D-44."
+  },
+  {
+   "id": "MPL-16",
+   "group": "MPL",
+   "name": "Kết xuất hồ sơ cây đầu dòng và vườn cây đầu dòng theo biểu mẫu phục vụ báo cáo cơ quan quản lý và hồ sơ đề nghị công nhận lại.",
+   "status": "N",
+   "tasks": "T-004, T-024",
+   "api": "/mother-plants",
+   "tests": "test_m3_traceability",
+   "note": "Thuộc gói cấu hình D-44."
+  },
+  {
+   "id": "FLD-01",
+   "group": "FLD",
+   "name": "Tạo mùa vụ/kế hoạch canh tác theo vùng, cây, thời gian và mục tiêu sản lượng.",
+   "status": "C",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": ""
+  },
+  {
+   "id": "FLD-02",
+   "group": "FLD",
+   "name": "Ghi nhật ký tưới, bón, làm đất, tỉa, xử lý sâu bệnh, kiểm tra và thu hoạch.",
+   "status": "C",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": ""
+  },
+  {
+   "id": "FLD-03",
+   "group": "FLD",
+   "name": "Liên kết vật tư với tên, nhà cung cấp, lô vật tư, số lượng, đơn vị và người sử dụng.",
+   "status": "C",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": ""
+  },
+  {
+   "id": "FLD-04",
+   "group": "FLD",
+   "name": "Ghi thời gian, GPS, người thực hiện, thiết bị, ảnh và ghi chú cho mỗi sự kiện.",
+   "status": "P",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": "Thời gian/người thực hiện có; GPS/ảnh/thiết bị đã cắt theo 33 bảng ở T-034 (lệch có ghi nhận)."
+  },
+  {
+   "id": "FLD-05",
+   "group": "FLD",
+   "name": "Cho phép mẫu checklist động cho kiểm tra cây/vùng/kho.",
+   "status": "N",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": ""
+  },
+  {
+   "id": "FLD-06",
+   "group": "FLD",
+   "name": "Hỗ trợ nhập nhanh nhiều cây/lô và sao chép kế hoạch có kiểm soát.",
+   "status": "N",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": ""
+  },
+  {
+   "id": "FLD-07",
+   "group": "FLD",
+   "name": "Sự kiện đã chốt không sửa trực tiếp; hiệu chỉnh bằng phiên bản hoặc bản ghi đảo.",
+   "status": "P",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": "Nhật ký append-only, không sửa/xóa qua API; cơ chế bản ghi đảo/hiệu chỉnh chưa có."
+  },
+  {
+   "id": "FLD-08",
+   "group": "FLD",
+   "name": "Đính kèm ảnh trước/sau, tài liệu và kết quả đo thủ công.",
+   "status": "N",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": ""
+  },
+  {
+   "id": "FLD-09",
+   "group": "FLD",
+   "name": "Tạo nhiệm vụ, giao người, hạn xử lý và trạng thái hoàn thành.",
+   "status": "N",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": ""
+  },
+  {
+   "id": "FLD-10",
+   "group": "FLD",
+   "name": "Hiển thị số liệu IoT liên quan tại thời điểm/sự kiện để tham khảo.",
+   "status": "N",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": ""
+  },
+  {
+   "id": "FLD-11",
+   "group": "FLD",
+   "name": "Xuất nhật ký theo vùng, mùa vụ, cây, khoảng thời gian và loại hoạt động.",
+   "status": "N",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": ""
+  },
+  {
+   "id": "FLD-12",
+   "group": "FLD",
+   "name": "Cơ chế duyệt hai bước cho sự kiện quan trọng do IAICT cấu hình.",
+   "status": "N",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": ""
+  },
+  {
+   "id": "FLD-13",
+   "group": "FLD",
+   "name": "Danh mục vật tư đầu vào lưu hoạt chất, hàm lượng, số đăng ký lưu hành, liều khuyến cáo, thời gian cách ly và đối tượng phòng trừ.",
+   "status": "C",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": "Danh mục vật tư theo Bảng 17 + danh mục hoạt chất/MRL (Bảng 3); dữ liệu danh mục trên beta đang rỗng."
+  },
+  {
+   "id": "FLD-14",
+   "group": "FLD",
+   "name": "Danh mục hoạt chất bị cấm hoặc bị hạn chế theo từng thị trường xuất khẩu, cấu hình và cập nhật được, có ngày hiệu lực và nguồn.",
+   "status": "P",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": "Khung danh mục theo thị trường có (Bảng 2/3); ngữ nghĩa cấm/hạn chế theo thị trường mới một phần; dữ liệu rỗng."
+  },
+  {
+   "id": "FLD-15",
+   "group": "FLD",
+   "name": "Khi ghi nhật ký sử dụng vật tư, hệ thống kiểm tra và cảnh báo tức thời ba trường hợp: vật tư ngoài danh mục cho phép của tenant, vượt liều khuyến cáo, hoạt chất bị hạn chế tại thị trường đích của thửa.",
+   "status": "P",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": "Kiểm tra PHI có; kiểm tra hoạt chất bị cấm theo thị trường đích tại thời điểm ghi nhật ký chưa có."
+  },
+  {
+   "id": "FLD-16",
+   "group": "FLD",
+   "name": "Kiểm tra điều kiện cách ly của mọi lần sử dụng thuốc liên quan trên từng thửa trước khi cho lô thu hoạch đủ điều kiện lưu thông. Cho phép ghi nhận sự kiện thực tế nhưng phải cách ly lô không đạt; không coi việc ghi nhận là cho phép thu hoạch hoặc xuất hàng.",
+   "status": "C",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": "Cổng PHI theo từng thửa, hoàn thiện ở T-043 (kế thừa FLD-17 của SRS)."
+  },
+  {
+   "id": "FLD-17",
+   "group": "FLD",
+   "name": "Tính và hiển thị hạn được phép thu hoạch của thửa bằng giá trị lớn nhất của thời điểm từng lần dùng thuốc cộng thời gian cách ly áp dụng cho lần đó. Lô lấy từ nhiều thửa phải đạt điều kiện của mọi thửa nguồn; thiếu căn cứ hoặc thời gian cách ly không được coi bằng 0.",
+   "status": "C",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": "safe_harvest_date = max(áp dụng + PHI); thiếu PHI → chặn + CONDITIONAL_LAB_TEST_REQUIRED (T-043)."
+  },
+  {
+   "id": "FLD-18",
+   "group": "FLD",
+   "name": "Ứng dụng hiện trường thực hiện được kiểm tra tại FLD-15 và FLD-16 khi mất mạng, bằng danh mục và tham số đã tải trước.",
+   "status": "P",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": ""
+  },
+  {
+   "id": "FLD-19",
+   "group": "FLD",
+   "name": "Quản lý tồn kho vật tư đầu vào theo lô và hạn dùng; đối chiếu lượng xuất kho với lượng ghi trong nhật ký canh tác.",
+   "status": "N",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": "Có đăng ký lô vật tư; quản lý tồn kho/xuất kho/đối chiếu chưa có."
+  },
+  {
+   "id": "FLD-20",
+   "group": "FLD",
+   "name": "Báo cáo tuân thủ canh tác: số lần cảnh báo theo loại, số lần phê duyệt ngoại lệ, số thửa chưa đủ điều kiện thu hoạch, số lần dùng vật tư ngoài danh mục.",
+   "status": "N",
+   "tasks": "T-004, T-015, T-043",
+   "api": "/crop-plans, /field-events, /input-lots, /phi-validations",
+   "tests": "test_m3_traceability, test_gd3_logistics",
+   "note": "Dữ liệu cảnh báo PHI có ở mục nhật ký PHI; báo cáo tuân thủ chuyên dụng chưa có."
+  },
+  {
+   "id": "LOT-01",
+   "group": "LOT",
+   "name": "Tạo lô thu hoạch từ vùng/cây/mùa vụ; ghi ngày, sản lượng, người thực hiện và tiêu chí chất lượng.",
+   "status": "C",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": "Kèm cổng PHI + cổng khối lượng theo mùa vụ."
+  },
+  {
+   "id": "LOT-02",
+   "group": "LOT",
+   "name": "Hỗ trợ tách, gộp và chuyển đổi lô; lưu quan hệ cha-con và tỷ lệ/số lượng.",
+   "status": "P",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": "Bảng lot_relations có trong schema; luồng tách/gộp lô chưa có API/UI."
+  },
+  {
+   "id": "LOT-03",
+   "group": "LOT",
+   "name": "Nhập kho, chuyển kho, xuất kho, hao hụt và kiểm kê theo lô.",
+   "status": "N",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": ""
+  },
+  {
+   "id": "LOT-04",
+   "group": "LOT",
+   "name": "Gắn dữ liệu nhiệt độ/độ ẩm kho theo thời gian lưu lô.",
+   "status": "N",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": ""
+  },
+  {
+   "id": "LOT-05",
+   "group": "LOT",
+   "name": "Tạo mẻ chế biến/đóng gói từ một hoặc nhiều lô nguyên liệu.",
+   "status": "C",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": "Mẻ đóng gói từ nhiều lô thu hoạch (quan hệ N-N, chặn phân bổ vượt)."
+  },
+  {
+   "id": "LOT-06",
+   "group": "LOT",
+   "name": "Quản lý sản phẩm/SKU, đơn vị, quy cách, GTIN tùy chọn và nội dung công khai.",
+   "status": "C",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": "SKU/GTIN/SSCC + kiểm chứng GS1 đầy đủ (T-047)."
+  },
+  {
+   "id": "LOT-07",
+   "group": "LOT",
+   "name": "Tạo lô thành phẩm, ngày sản xuất, hạn dùng, số lượng và trạng thái phát hành.",
+   "status": "P",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": "Ngày sản xuất/hạn dùng/số lượng có; trạng thái phát hành đã cắt theo 33 bảng ở T-034."
+  },
+  {
+   "id": "LOT-08",
+   "group": "LOT",
+   "name": "Quản lý đóng gói, kiện/thùng và SSCC tùy chọn.",
+   "status": "C",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": ""
+  },
+  {
+   "id": "LOT-09",
+   "group": "LOT",
+   "name": "Ghi nhận giao nhận/vận chuyển: nguồn, đích, phương tiện, thời gian và người nhận.",
+   "status": "C",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": "Chuyến vận chuyển theo Bảng 28 (T-043)."
+  },
+  {
+   "id": "LOT-10",
+   "group": "LOT",
+   "name": "Chức năng truy tìm và khoanh vùng lô bị ảnh hưởng để hỗ trợ thu hồi.",
+   "status": "P",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": "Có hồ sơ thu hồi + chuỗi truy vết; truy vấn khoanh vùng tự động chưa có."
+  },
+  {
+   "id": "LOT-11",
+   "group": "LOT",
+   "name": "Gán thị trường xuất khẩu đích cho lô thành phẩm hoặc cho phiếu xuất; kiểm tra điều kiện xuất theo thị trường trước khi phát hành.",
+   "status": "P",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": "Thị trường gán ở cấp vùng; gán cho lô/phiếu xuất + kiểm tra điều kiện xuất chưa có."
+  },
+  {
+   "id": "LOT-12",
+   "group": "LOT",
+   "name": "Chặn xuất lô có nguồn gốc từ thửa đã sử dụng hoạt chất bị hạn chế tại thị trường đích, hoặc lô đã bị đánh dấu nguy cơ về điều kiện bảo quản.",
+   "status": "N",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": "Điều kiện dữ liệu đã có (phê duyệt thị trường + PHI); cổng chặn xuất theo lô chưa có."
+  },
+  {
+   "id": "LOT-13",
+   "group": "LOT",
+   "name": "Quản lý kết quả kiểm nghiệm theo lô: chỉ tiêu, kết quả, ngưỡng cho phép, đơn vị kiểm nghiệm, số phiếu và tệp; đánh dấu lô đạt hoặc không đạt.",
+   "status": "P",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": "Chi tiết xét nghiệm dư lượng có cờ vượt MRL tự sinh; liên kết trực tiếp theo lô còn gián tiếp qua giám sát."
+  },
+  {
+   "id": "LOT-14",
+   "group": "LOT",
+   "name": "Cảnh báo vi phạm điều kiện bảo quản của lô dựa trên dữ liệu cảm biến kho: thời gian và mức độ vượt ngưỡng; tự đánh dấu lô có nguy cơ.",
+   "status": "N",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": ""
+  },
+  {
+   "id": "LOT-15",
+   "group": "LOT",
+   "name": "Quy trình thu hồi: lập hồ sơ thu hồi từ một tem hoặc một lô, xác định phạm vi lô và khách hàng bị ảnh hưởng, lý do, biện pháp, tiến độ và kết quả.",
+   "status": "P",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": "Hồ sơ thu hồi có số lượng chưa thu hồi tự sinh + phương án xử lý; phạm vi khách hàng/thông báo chưa có."
+  },
+  {
+   "id": "LOT-16",
+   "group": "LOT",
+   "name": "Quản lý khiếu nại từ khách hàng và từ người tiêu dùng qua trang truy xuất: liên kết lô, phân loại, người xử lý, tiến độ và kết quả.",
+   "status": "N",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": "Chưa có trang công khai để tiếp nhận khiếu nại."
+  },
+  {
+   "id": "LOT-17",
+   "group": "LOT",
+   "name": "Chốt và khóa dữ liệu lô sau khi phát hành hoặc xuất hàng; sửa đổi sau đó phải có phê duyệt, ghi lý do và lưu before/after audit.",
+   "status": "N",
+   "tasks": "T-015, T-016, T-017, T-043",
+   "api": "/lots, /packing-lots, /packing-inputs, /packaging-units, /transport-trips, /recall-cases",
+   "tests": "test_m3_traceability, test_m4_packing, test_gd3_logistics",
+   "note": "Có audit snapshot mọi thay đổi; khóa lô + duyệt sửa sau phát hành chưa có."
+  },
+  {
+   "id": "TRC-01",
+   "group": "TRC",
+   "name": "Quản lý GLN địa điểm, GTIN sản phẩm, mã lô/batch và SSCC tùy chọn.",
+   "status": "P",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "GTIN/SSCC/lô có; GLN không dùng — định danh địa điểm bằng PUC/PHC theo TT 02/2024."
+  },
+  {
+   "id": "TRC-02",
+   "group": "TRC",
+   "name": "Kiểm tra cấu trúc/check digit đối với mã GS1 do người dùng nhập.",
+   "status": "C",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Độ dài 8/12/13/14 + số kiểm tra mod-10 (T-047)."
+  },
+  {
+   "id": "TRC-03",
+   "group": "TRC",
+   "name": "Sinh QR theo GS1 Digital Link hoặc URL truy xuất tương thích.",
+   "status": "N",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Mã truy xuất dạng chuỗi nối theo TT 02/2024; QR/GS1 Digital Link chưa sinh."
+  },
+  {
+   "id": "TRC-04",
+   "group": "TRC",
+   "name": "Sinh đơn lẻ và hàng loạt; xuất PDF/PNG và dữ liệu in tem. Template phải quản lý X-dimension/quiet zone, GS1 element string/Application Identifier hoặc Digital Link URI theo cấu hình và version template.",
+   "status": "N",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Cấp mã + chuỗi CTE có; trang công khai/QR/EPCIS chưa có."
+  },
+  {
+   "id": "TRC-05",
+   "group": "TRC",
+   "name": "Cấu hình nội dung công khai theo tenant/sản phẩm/lô; tách dữ liệu nội bộ.",
+   "status": "P",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Bản ghi mang đủ 10 trường công khai TT 02/2024; cấu hình nội dung công khai theo tenant chưa có."
+  },
+  {
+   "id": "TRC-06",
+   "group": "TRC",
+   "name": "Trang truy xuất responsive, tải nhanh, có logo/thông tin liên hệ và hành vi vòng đời rõ ràng khi tenant Grace/Read-only/Suspended/Terminated. QR in vật lý mặc định chứa URL resolver ổn định do IAICT kiểm soát; resolver tách khỏi custom domain hiển thị và lifecycle thuê bao. Duy trì resolution theo retention/recall policy đã duyệt, kể cả khi đổi/revoke domain tenant.",
+   "status": "N",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Chưa có trang truy xuất công khai (cả TRC-06/07/08/14/16/17 phụ thuộc trang này)."
+  },
+  {
+   "id": "TRC-07",
+   "group": "TRC",
+   "name": "Hiển thị sản phẩm, lô, vùng, dòng thời gian, hồ sơ công bố và trạng thái xác minh.",
+   "status": "N",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Chi tiết nội bộ có trong app; trang công khai chưa có."
+  },
+  {
+   "id": "TRC-08",
+   "group": "TRC",
+   "name": "Ghi nhật ký quét ở mức tối thiểu: thời gian, mã, referrer và vùng địa lý thô nếu được phép.",
+   "status": "N",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Cấp mã + chuỗi CTE có; trang công khai/QR/EPCIS chưa có."
+  },
+  {
+   "id": "TRC-09",
+   "group": "TRC",
+   "name": "Hỗ trợ vô hiệu hóa/thu hồi mã và thông báo trạng thái rõ ràng.",
+   "status": "P",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Có hồ sơ thu hồi; vô hiệu hóa từng mã chưa có."
+  },
+  {
+   "id": "TRC-10",
+   "group": "TRC",
+   "name": "Mô hình sự kiện tương thích GS1 EPCIS 2.0.1 và CBV 2.0.0 ở mức dữ liệu.",
+   "status": "P",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Mô hình CTE tương thích về ý nghĩa; chưa serial hóa EPCIS 2.0/CBV."
+  },
+  {
+   "id": "TRC-11",
+   "group": "TRC",
+   "name": "Xuất dữ liệu sự kiện theo JSON/CSV; endpoint capture/query EPCIS là tùy chọn.",
+   "status": "N",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Chưa có endpoint xuất JSON/CSV."
+  },
+  {
+   "id": "TRC-12",
+   "group": "TRC",
+   "name": "Không tự nhận hệ thống hoặc sản phẩm được GS1/TCVN chứng nhận khi chưa có xác nhận.",
+   "status": "C",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Điều cấm về tuyên bố: sản phẩm/tài liệu không tự nhận chứng nhận GS1/TCVN."
+  },
+  {
+   "id": "TRC-13",
+   "group": "TRC",
+   "name": "Cơ chế chống làm giả: mã kích hoạt hoặc mã ẩn dưới lớp phủ; tem chưa kích hoạt khi bị tra cứu hiển thị cảnh báo và sinh sự kiện.",
+   "status": "N",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Cấp mã + chuỗi CTE có; trang công khai/QR/EPCIS chưa có."
+  },
+  {
+   "id": "TRC-14",
+   "group": "TRC",
+   "name": "Phát hiện tra cứu bất thường: một tem vượt số lần tra cứu cấu hình được, hoặc bị tra cứu từ nhiều vùng địa lý xa nhau trong thời gian ngắn.",
+   "status": "N",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Cấp mã + chuỗi CTE có; trang công khai/QR/EPCIS chưa có."
+  },
+  {
+   "id": "TRC-15",
+   "group": "TRC",
+   "name": "Truy vết ngược từ tem hoặc lô về thửa và cây đầu dòng; truy vết xuôi từ một thửa hoặc một lần sử dụng vật tư ra toàn bộ lô và khách hàng đã nhận.",
+   "status": "P",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Chuỗi dữ liệu truy ngược/xuôi đủ đầu-cuối; chưa có truy vấn truy vết chuyên dụng."
+  },
+  {
+   "id": "TRC-16",
+   "group": "TRC",
+   "name": "Kết xuất bộ dữ liệu và báo cáo phục vụ lập hồ sơ công bố hợp chuẩn TCVN 12850:2019: kiểm tra tính đầy đủ của CTE/KDE theo Phụ lục G và liệt kê phần còn thiếu.",
+   "status": "N",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Cấp mã + chuỗi CTE có; trang công khai/QR/EPCIS chưa có."
+  },
+  {
+   "id": "TRC-17",
+   "group": "TRC",
+   "name": "Trang truy xuất công khai hỗ trợ tiếng Việt và tiếng Anh; bổ sung ngôn ngữ khác bằng cấu hình.",
+   "status": "N",
+   "tasks": "T-016, T-017, T-047",
+   "api": "/traceability-records, /cte-stages",
+   "tests": "test_m4_packing, test_cleanup_t047",
+   "note": "Giao diện hiện chỉ tiếng Việt; trang công khai chưa có."
+  },
+  {
+   "id": "IOT-01",
+   "group": "IOT",
+   "name": "Đăng ký thiết bị với loại, model, serial, DevEUI, AppEUI/JoinEUI, vị trí và trạng thái.",
+   "status": "P",
+   "tasks": "T-045, T-046",
+   "api": "/iot-devices, /iot/readings",
+   "tests": "test_iot",
+   "note": "Đăng ký thiết bị: loại/vùng/thửa/firmware; model/serial/DevEUI chưa có."
+  },
+  {
+   "id": "IOT-02",
+   "group": "IOT",
+   "name": "Provision thiết bị LoRaWAN bằng OTAA; quản lý khóa an toàn.",
+   "status": "P",
+   "tasks": "T-045, T-046",
+   "api": "/iot-devices, /iot/readings",
+   "tests": "test_iot",
+   "note": "Khóa riêng từng thiết bị + xoay vòng/thu hồi (T-046) cho kênh HTTPS; OTAA LoRaWAN chưa có."
+  },
+  {
+   "id": "IOT-03",
+   "group": "IOT",
+   "name": "Tiếp nhận payload từ LoRaWAN Network Server qua MQTT/HTTP.",
+   "status": "P",
+   "tasks": "T-045, T-046",
+   "api": "/iot-devices, /iot/readings",
+   "tests": "test_iot",
+   "note": "Nhận qua HTTPS POST; MQTT/LoRaWAN Network Server chưa có."
+  },
+  {
+   "id": "IOT-04",
+   "group": "IOT",
+   "name": "Codec payload có phiên bản theo model/firmware và kiểm thử tự động.",
+   "status": "N",
+   "tasks": "T-045, T-046",
+   "api": "/iot-devices, /iot/readings",
+   "tests": "test_iot",
+   "note": "Nền ingest + khóa thiết bị có; LoRaWAN/codec/cảnh báo chưa có."
+  },
+  {
+   "id": "IOT-05",
+   "group": "IOT",
+   "name": "Chuẩn hóa đại lượng, đơn vị, thời gian, chất lượng dữ liệu và nguồn thiết bị.",
+   "status": "P",
+   "tasks": "T-045, T-046",
+   "api": "/iot-devices, /iot/readings",
+   "tests": "test_iot",
+   "note": "Số đo rơi thẳng vào Bảng 19/20 đã chuẩn hóa; lớp chuẩn hóa tổng quát chưa có."
+  },
+  {
+   "id": "IOT-06",
+   "group": "IOT",
+   "name": "Lưu cả dữ liệu thô và dữ liệu chuẩn hóa; không ghi đè dữ liệu thô.",
+   "status": "N",
+   "tasks": "T-045, T-046",
+   "api": "/iot-devices, /iot/readings",
+   "tests": "test_iot",
+   "note": "Nền ingest + khóa thiết bị có; LoRaWAN/codec/cảnh báo chưa có."
+  },
+  {
+   "id": "IOT-07",
+   "group": "IOT",
+   "name": "Cấu hình chu kỳ gửi, ngưỡng cảnh báo, hysteresis và số lần vượt liên tiếp.",
+   "status": "N",
+   "tasks": "T-045, T-046",
+   "api": "/iot-devices, /iot/readings",
+   "tests": "test_iot",
+   "note": "Nền ingest + khóa thiết bị có; LoRaWAN/codec/cảnh báo chưa có."
+  },
+  {
+   "id": "IOT-08",
+   "group": "IOT",
+   "name": "Cảnh báo mất kết nối, pin thấp, dữ liệu ngoài miền, sai thời gian và bản tin trùng.",
+   "status": "N",
+   "tasks": "T-045, T-046",
+   "api": "/iot-devices, /iot/readings",
+   "tests": "test_iot",
+   "note": "Nền ingest + khóa thiết bị có; LoRaWAN/codec/cảnh báo chưa có."
+  },
+  {
+   "id": "IOT-09",
+   "group": "IOT",
+   "name": "Gửi cảnh báo qua web/app/email; SMS/Zalo là tùy chọn tách giá.",
+   "status": "N",
+   "tasks": "T-045, T-046",
+   "api": "/iot-devices, /iot/readings",
+   "tests": "test_iot",
+   "note": "Nền ingest + khóa thiết bị có; LoRaWAN/codec/cảnh báo chưa có."
+  },
+  {
+   "id": "IOT-10",
+   "group": "IOT",
+   "name": "Theo dõi RSSI, SNR, pin, firmware, bản tin cuối và tỷ lệ thành công.",
+   "status": "N",
+   "tasks": "T-045, T-046",
+   "api": "/iot-devices, /iot/readings",
+   "tests": "test_iot",
+   "note": "Nền ingest + khóa thiết bị có; LoRaWAN/codec/cảnh báo chưa có."
+  },
+  {
+   "id": "IOT-11",
+   "group": "IOT",
+   "name": "Hỗ trợ dữ liệu đến muộn và gửi bù; giữ timestamp đo gốc.",
+   "status": "P",
+   "tasks": "T-045, T-046",
+   "api": "/iot-devices, /iot/readings",
+   "tests": "test_iot",
+   "note": "Giữ measured_at gốc của thiết bị khi ingest."
+  },
+  {
+   "id": "IOT-12",
+   "group": "IOT",
+   "name": "Tổng hợp 10 phút/giờ/ngày với min, max, avg, sum phù hợp từng đại lượng.",
+   "status": "N",
+   "tasks": "T-045, T-046",
+   "api": "/iot-devices, /iot/readings",
+   "tests": "test_iot",
+   "note": "Nền ingest + khóa thiết bị có; LoRaWAN/codec/cảnh báo chưa có."
+  },
+  {
+   "id": "IOT-13",
+   "group": "IOT",
+   "name": "Biểu đồ theo thiết bị, đại lượng, site/zone và khoảng thời gian; xuất CSV.",
+   "status": "N",
+   "tasks": "T-045, T-046",
+   "api": "/iot-devices, /iot/readings",
+   "tests": "test_iot",
+   "note": "Nền ingest + khóa thiết bị có; LoRaWAN/codec/cảnh báo chưa có."
+  },
+  {
+   "id": "IOT-14",
+   "group": "IOT",
+   "name": "Quản lý ngày/hệ số/chứng từ hiệu chuẩn và lịch hiệu chuẩn kế tiếp dựa trên model, khuyến cáo hãng, điều kiện hiện trường và mức độ quan trọng; tái đối chứng sau di chuyển, sửa chữa hoặc phát hiện trôi số liệu.",
+   "status": "N",
+   "tasks": "T-045, T-046",
+   "api": "/iot-devices, /iot/readings",
+   "tests": "test_iot",
+   "note": "Nền ingest + khóa thiết bị có; LoRaWAN/codec/cảnh báo chưa có."
+  },
+  {
+   "id": "IOT-15",
+   "group": "IOT",
+   "name": "Core phải có command/actuation framework để Vertical Pack tương lai có thể điều khiển thiết bị/actuator qua adapter được phê duyệt. Command phải có loại/target/payload schema, command ID chống trùng, TTL, trạng thái queued/sent/ack/failed/expired, desired/reported state, RBAC, audit và policy phê duyệt; tự động rule→actuator mặc định tắt cho đến khi có safety policy của vertical/site. Trạng thái tối thiểu gồm queued/sent/ack/failed/expired/unknown/reconciliation; tách acknowledgement đã nhận lệnh với bằng chứng đã thực hiện khi thiết bị hỗ trợ.",
+   "status": "N",
+   "tasks": "T-045, T-046",
+   "api": "/iot-devices, /iot/readings",
+   "tests": "test_iot",
+   "note": "Nền ingest + khóa thiết bị có; LoRaWAN/codec/cảnh báo chưa có."
+  },
+  {
+   "id": "MOB-01",
+   "group": "MOB",
+   "name": "Ứng dụng Android cho PDA/điện thoại; đăng nhập và tải dữ liệu được phân quyền. Min runtime Android 13+; targetSdk phải đáp ứng chính sách phân phối Google Play cho ứng dụng mobile tại thời điểm phát hành/Go-live (baseline kỹ thuật tại thời điểm lập R20/R21: Android 16/API 36; trước phát hành phải xác minh chính sách và cập nhật baseline nếu yêu cầu cao hơn); compileSdk không thấp hơn targetSdk. Nếu IAICT phê duyệt phân phối enterprise/private không qua Google Play, việc hạ targetSdk chỉ được phép bằng ngoại lệ có threat/risk assessment và vẫn không thấp hơn baseline bảo mật do IAICT phê duyệt.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Chưa có ứng dụng Android; web responsive đang thay thế — chờ quyết định Owner (F3/T-048)."
+  },
+  {
+   "id": "MOB-02",
+   "group": "MOB",
+   "name": "Offline-first: tải trước danh mục, lưu cục bộ mã hóa và đồng bộ khi có mạng.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Chưa có ứng dụng Android; web responsive đang thay thế — chờ quyết định Owner (F3/T-048)."
+  },
+  {
+   "id": "MOB-03",
+   "group": "MOB",
+   "name": "Quét QR/1D/2D bằng scanner tích hợp hoặc camera.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Chưa có ứng dụng Android; web responsive đang thay thế — chờ quyết định Owner (F3/T-048)."
+  },
+  {
+   "id": "MOB-04",
+   "group": "MOB",
+   "name": "Ghi nhật ký, kiểm tra cây/vùng, thu hoạch, nhập kho và giao nhận.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Chưa có ứng dụng Android; web responsive đang thay thế — chờ quyết định Owner (F3/T-048)."
+  },
+  {
+   "id": "MOB-05",
+   "group": "MOB",
+   "name": "Chụp ảnh, nén ảnh, ghi GPS, thời gian và người dùng; lưu device-reported location accuracy/source và timestamp.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Chưa có ứng dụng Android; web responsive đang thay thế — chờ quyết định Owner (F3/T-048)."
+  },
+  {
+   "id": "MOB-06",
+   "group": "MOB",
+   "name": "Hiển thị bản đồ, danh sách công việc và dữ liệu cảm biến gần nhất.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Chưa có ứng dụng Android; web responsive đang thay thế — chờ quyết định Owner (F3/T-048)."
+  },
+  {
+   "id": "MOB-07",
+   "group": "MOB",
+   "name": "Hàng đợi đồng bộ, trạng thái từng bản ghi và cơ chế thử lại.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Chưa có ứng dụng Android; web responsive đang thay thế — chờ quyết định Owner (F3/T-048)."
+  },
+  {
+   "id": "MOB-08",
+   "group": "MOB",
+   "name": "Quy tắc xử lý xung đột; không âm thầm ghi đè bản ghi đã sửa trên server.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Chưa có ứng dụng Android; web responsive đang thay thế — chờ quyết định Owner (F3/T-048)."
+  },
+  {
+   "id": "MOB-09",
+   "group": "MOB",
+   "name": "Thu hồi phiên/quyền máy chủ ngay khi tài khoản bị khóa; quyền ngoại tuyến dùng lease tối đa 24 giờ kể từ xác thực/đồng bộ hợp lệ. Hết lease phải khóa truy cập nghiệp vụ và xác thực lại; chống kéo dài bằng chỉnh đồng hồ thiết bị.",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Khóa/thu hồi tài khoản chặn ghi ngay ở server (T-031); lease ngoại tuyến 24h chưa có vì chưa có app."
+  },
+  {
+   "id": "MOB-10",
+   "group": "MOB",
+   "name": "Nhật ký lỗi có thể gửi về hệ thống sau khi được người dùng xác nhận.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Chưa có ứng dụng Android; web responsive đang thay thế — chờ quyết định Owner (F3/T-048)."
+  },
+  {
+   "id": "MOB-11",
+   "group": "MOB",
+   "name": "Tự động cập nhật có kiểm soát hoặc cung cấp quy trình phát hành APK nội bộ.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Chưa có ứng dụng Android; web responsive đang thay thế — chờ quyết định Owner (F3/T-048)."
+  },
+  {
+   "id": "MOB-12",
+   "group": "MOB",
+   "name": "Giao diện tiếng Việt; cỡ chữ và nút phù hợp thao tác bằng găng tay.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Chưa có ứng dụng Android; web responsive đang thay thế — chờ quyết định Owner (F3/T-048)."
+  },
+  {
+   "id": "MOB-13",
+   "group": "MOB",
+   "name": "Không bắt buộc ứng dụng iOS trong giai đoạn này.",
+   "status": "C",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Điều khoản loại trừ: không yêu cầu iOS trong giai đoạn này."
+  },
+  {
+   "id": "AIX-01",
+   "group": "AIX",
+   "name": "AI Gateway tách provider/model khỏi Core; thay provider/model qua cấu hình/adapter, không sửa nghiệp vụ lõi.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-51) — chưa tới mốc."
+  },
+  {
+   "id": "AIX-02",
+   "group": "AIX",
+   "name": "Mọi inference lưu provider, model, version, request/input reference, timestamp, confidence/score, response hash và trạng thái xác nhận.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-51) — chưa tới mốc."
+  },
+  {
+   "id": "AIX-03",
+   "group": "AIX",
+   "name": "Hỗ trợ use case phân tích ảnh sâu/bệnh hoặc bất thường ở mức framework: ảnh, inference, top candidates, confidence và khuyến nghị bước kiểm tra.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-51) — chưa tới mốc."
+  },
+  {
+   "id": "AIX-04",
+   "group": "AIX",
+   "name": "Hỗ trợ anomaly/advisory từ Current State, Event Ledger và IoT theo quyền; output phải dẫn nguồn dữ liệu đầu vào chính.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-51) — chưa tới mốc."
+  },
+  {
+   "id": "AIX-05",
+   "group": "AIX",
+   "name": "Khi inference có thể tạo Observation/DiseaseCase/Activity, phải qua human confirmation hoặc workflow cấu hình trước khi thành dữ liệu chính thức.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-51) — chưa tới mốc."
+  },
+  {
+   "id": "AIX-06",
+   "group": "AIX",
+   "name": "Không cho AI tự phê duyệt ngoại lệ pháp lý, tiêu chuẩn bắt buộc, tiêu hủy, chứng nhận hoặc quyết định có hậu quả cao.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-51) — chưa tới mốc."
+  },
+  {
+   "id": "AIX-07",
+   "group": "AIX",
+   "name": "Entitlement/quota AI theo tenant/Producer/user/use-case; metering idempotent theo request/ảnh/token/đơn vị provider nếu áp dụng.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-51) — chưa tới mốc."
+  },
+  {
+   "id": "AIX-08",
+   "group": "AIX",
+   "name": "Dữ liệu gửi provider ngoài phải tuân policy dữ liệu cá nhân/bí mật kinh doanh; hỗ trợ redaction/minimization và danh sách provider được duyệt.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-51) — chưa tới mốc."
+  },
+  {
+   "id": "AIX-09",
+   "group": "AIX",
+   "name": "Hệ thống degrade gracefully khi AI lỗi/hết quota; workflow nghiệp vụ cốt lõi vẫn hoạt động.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-51) — chưa tới mốc."
+  },
+  {
+   "id": "AIX-10",
+   "group": "AIX",
+   "name": "Feedback người dùng/chuyên gia về inference được lưu để đánh giá chất lượng nhưng không tự dùng train lại nếu chưa có phê duyệt data/model governance.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-51) — chưa tới mốc."
+  },
+  {
+   "id": "LFC-01",
+   "group": "LFC",
+   "name": "Subject hỗ trợ Individual, Group, Cohort, Population và AreaBasedAsset; type mở rộng qua Vertical Pack.",
+   "status": "P",
+   "tasks": "T-042",
+   "api": "/livestock-units, /livestock-decl-items",
+   "tests": "test_gd3_monitoring",
+   "note": "Đơn vị chăn nuôi theo cá thể/đàn (Bảng 14) + đơn vị không gian; mô hình Subject hợp nhất chưa có."
+  },
+  {
+   "id": "LFC-02",
+   "group": "LFC",
+   "name": "Một Subject/Cohort gắn Producer, Site/ProductionUnit, loài/giống/dòng và trạng thái vòng đời.",
+   "status": "P",
+   "tasks": "T-042",
+   "api": "/livestock-units, /livestock-decl-items",
+   "tests": "test_gd3_monitoring",
+   "note": "Đơn vị chăn nuôi gắn cơ sở + trạng thái vòng đời."
+  },
+  {
+   "id": "LFC-03",
+   "group": "LFC",
+   "name": "ProductionCycle quản lý vụ/lứa/chu kỳ sản xuất-sinh trưởng-nuôi-khai thác, ngày bắt đầu-kết thúc và trạng thái; liên kết Subject nhưng không đồng nhất với Subject/Cohort.",
+   "status": "C",
+   "tasks": "T-042",
+   "api": "/livestock-units, /livestock-decl-items",
+   "tests": "test_gd3_monitoring",
+   "note": "Chu kỳ sản xuất = mùa vụ (Bảng 15) dùng chung đa ngành."
+  },
+  {
+   "id": "LFC-04",
+   "group": "LFC",
+   "name": "Event Ledger ghi event_id, event_type, occurred_at, recorded_at, actor, subject/cycle, quantity delta, unit, reason, evidence và source. Bổ sung effective time/validity khi cần và recorded_at bất biến. Truy vấn lịch sử nhận as_of_event_time và tùy chọn known_at; thiếu known_at hiểu là dữ liệu đã biết hiện tại. Correction không sửa bản ghi gốc; snapshot đã phát hành bất biến và dẫn correction/snapshot mới.",
+   "status": "P",
+   "tasks": "T-042",
+   "api": "/livestock-units, /livestock-decl-items",
+   "tests": "test_gd3_monitoring",
+   "note": "Nhật ký + audit là sổ sự kiện dạng đơn giản; event lượng thay đổi (quantity delta) chưa có."
+  },
+  {
+   "id": "LFC-05",
+   "group": "LFC",
+   "name": "Các event biến động số lượng tối thiểu: opening/import/birth/addition, mortality, culling, transfer in/out, sale, harvest và adjustment có phê duyệt.",
+   "status": "N",
+   "tasks": "T-042",
+   "api": "/livestock-units, /livestock-decl-items",
+   "tests": "test_gd3_monitoring",
+   "note": "Đơn vị chăn nuôi có; Event Ledger/Current State projection chưa có."
+  },
+  {
+   "id": "LFC-06",
+   "group": "LFC",
+   "name": "Current State projection được tính/đối soát từ Event Ledger; có snapshot/version và rebuild.",
+   "status": "N",
+   "tasks": "T-042",
+   "api": "/livestock-units, /livestock-decl-items",
+   "tests": "test_gd3_monitoring",
+   "note": "Đơn vị chăn nuôi có; Event Ledger/Current State projection chưa có."
+  },
+  {
+   "id": "LFC-07",
+   "group": "LFC",
+   "name": "Không cho Current State âm hoặc vượt ràng buộc sinh học/nghiệp vụ được cấu hình; ngoại lệ phải có workflow/audit.",
+   "status": "P",
+   "tasks": "T-042",
+   "api": "/livestock-units, /livestock-decl-items",
+   "tests": "test_gd3_monitoring",
+   "note": "Các cổng khối lượng/PHI chặn trạng thái âm/vượt ở điểm nghiệp vụ chính."
+  },
+  {
+   "id": "LFC-08",
+   "group": "LFC",
+   "name": "Mortality event lưu số lượng, nguyên nhân biết/nghi ngờ, triệu chứng/health case liên quan, cách xử lý và evidence.",
+   "status": "N",
+   "tasks": "T-042",
+   "api": "/livestock-units, /livestock-decl-items",
+   "tests": "test_gd3_monitoring",
+   "note": "Đơn vị chăn nuôi có; Event Ledger/Current State projection chưa có."
+  },
+  {
+   "id": "LFC-09",
+   "group": "LFC",
+   "name": "Hỗ trợ membership Group↔Individual khi ngành cần quản lý từng cá thể trong đàn/nhóm. Chuyển membership/quantity giữa cohort/cycle kiểm tra bất biến và ghi nguyên tử; không tạo quantity âm, thuộc đồng thời trái quy tắc hoặc đếm đôi khi request chạy đồng thời. Key idempotent giữ qua retry.",
+   "status": "N",
+   "tasks": "T-042",
+   "api": "/livestock-units, /livestock-decl-items",
+   "tests": "test_gd3_monitoring",
+   "note": "Đơn vị chăn nuôi có; Event Ledger/Current State projection chưa có."
+  },
+  {
+   "id": "LFC-10",
+   "group": "LFC",
+   "name": "Hỗ trợ area/quantity state cho cây trồng, rừng và thủy sản theo đơn vị phù hợp; không áp một đơn vị cho mọi vertical.",
+   "status": "P",
+   "tasks": "T-042",
+   "api": "/livestock-units, /livestock-decl-items",
+   "tests": "test_gd3_monitoring",
+   "note": "Trạng thái theo diện tích/số đầu/sản lượng tùy ngành có trong mô hình dữ liệu."
+  },
+  {
+   "id": "LFC-11",
+   "group": "LFC",
+   "name": "Activity/Observation không làm thay đổi quantity nếu không khai báo effect; event effect phải deterministic và test được.",
+   "status": "P",
+   "tasks": "T-042",
+   "api": "/livestock-units, /livestock-decl-items",
+   "tests": "test_gd3_monitoring",
+   "note": "Sự kiện và số lượng tách riêng theo thiết kế; hiệu ứng xác định ở các cổng."
+  },
+  {
+   "id": "LFC-12",
+   "group": "LFC",
+   "name": "Đóng/mở lại cycle, merge/split cohort hoặc chuyển ProductionUnit phải có rule, approval khi cần và audit.",
+   "status": "P",
+   "tasks": "T-042",
+   "api": "/livestock-units, /livestock-decl-items",
+   "tests": "test_gd3_monitoring",
+   "note": "Đổi trạng thái chu kỳ có audit; merge/split cohort chưa có."
+  },
+  {
+   "id": "LFC-13",
+   "group": "LFC",
+   "name": "Dashboard Current State hiển thị số hiện tại và giải thích được từ các event chính; hỗ trợ snapshot theo ngày quá khứ.",
+   "status": "P",
+   "tasks": "T-042",
+   "api": "/livestock-units, /livestock-decl-items",
+   "tests": "test_gd3_monitoring",
+   "note": "Dashboard + báo cáo hiện trạng có; giải thích từ sự kiện/snapshot theo ngày chưa có."
+  },
+  {
+   "id": "BLC-01",
+   "group": "BLC",
+   "name": "Canonicalize event envelope theo RFC 8785 JCS (baseline) hoặc cơ chế tương đương được IAICT phê duyệt, sau đó băm bằng SHA-256 hoặc thuật toán mạnh hơn đã khóa. Payload/hash record phải lưu schema_version, canonicalization_id/version và hash_algorithm; không cho phép thay đổi âm thầm giữa các release.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+  },
+  {
+   "id": "BLC-02",
+   "group": "BLC",
+   "name": "Gom event hash thành Merkle root theo lô/ngày bằng quy tắc deterministic đã tài liệu hóa: leaf ordering, duplicate handling, odd-node policy, hash algorithm/domain separation nếu dùng, tree_version; lưu proof và metadata đủ để tái tạo.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+  },
+  {
+   "id": "BLC-03",
+   "group": "BLC",
+   "name": "Nếu sử dụng blockchain anchoring, hồ sơ kỹ thuật/giá phải nêu đích danh 01 mạng chính để làm cơ sở; Polygon PoS chỉ là phương án tham chiếu, không khóa hãng. Mạng khác được chấp nhận nếu nêu rõ và IAICT phê duyệt tại M2.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+  },
+  {
+   "id": "BLC-04",
+   "group": "BLC",
+   "name": "Khi dùng blockchain, adapter phải tách rời để thay mạng/cơ chế anchoring mà không sửa nghiệp vụ lõi.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+  },
+  {
+   "id": "BLC-05",
+   "group": "BLC",
+   "name": "Nếu ghi on-chain, tuyệt đối không ghi dữ liệu cá nhân, tài liệu, bí mật kinh doanh hoặc cảm biến thô lên chuỗi.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+  },
+  {
+   "id": "BLC-06",
+   "group": "BLC",
+   "name": "Trang/công cụ xác minh cho biết bằng chứng toàn vẹn hợp lệ/không hợp lệ, thời điểm tạo/chốt bằng chứng và metadata phiên bản. Nếu anchoring/blockchain được bật, hiển thị thêm thời điểm/reference/trạng thái anchor.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+  },
+  {
+   "id": "BLC-07",
+   "group": "BLC",
+   "name": "Khóa ký Data Integrity phải lưu bằng secret store/KMS. Nếu dùng blockchain, ví/account production và quy trình xoay vòng/thu hồi thuộc IAICT control; bằng chứng lịch sử vẫn xác minh được.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+  },
+  {
+   "id": "BLC-08",
+   "group": "BLC",
+   "name": "Nếu dùng blockchain, không yêu cầu người dùng sở hữu ví/tiền mã hóa; hệ thống quản lý service account theo IAICT control. Tần suất neo là tham số kỹ thuật, không phải quota thương mại bán cho người dùng cuối.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+  },
+  {
+   "id": "BLC-09",
+   "group": "BLC",
+   "name": "Nếu dùng blockchain, hồ sơ mạng chính phải nêu tên mạng, chain ID, mainnet/L2, native token, RPC/explorer, finality, giữ khóa, giả định phí kỹ thuật, retry/idempotency, reorg/chuyển mạng và trường ghi on-chain. Không xây đơn giá bán theo anchor/RPC cho người dùng cuối.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "= D-10 — chưa xây (đã khuyến nghị ở T-048)."
+  },
+  {
+   "id": "HLT-01",
+   "group": "HLT",
+   "name": "Ghi HealthObservation theo subject/cohort/cycle: tình trạng, triệu chứng, chỉ số, ảnh/tệp, vị trí, người quan sát.",
+   "status": "P",
+   "tasks": "T-042",
+   "api": "/monitoring-declarations, /pre-harvest-supervisions, /water-quality-tests, /residue-test-details",
+   "tests": "test_gd3_monitoring",
+   "note": "Khai báo giám sát + giám sát trước thu hoạch ghi quan sát tuân thủ."
+  },
+  {
+   "id": "HLT-02",
+   "group": "HLT",
+   "name": "Tạo DiseaseCase từ quan sát hoặc khai báo; lưu suspected/confirmed/rejected, disease code, onset, severity, scope và owner.",
+   "status": "N",
+   "tasks": "T-042",
+   "api": "/monitoring-declarations, /pre-harvest-supervisions, /water-quality-tests, /residue-test-details",
+   "tests": "test_gd3_monitoring",
+   "note": "Giám sát/xét nghiệm có một phần; ca bệnh/dịch tễ chưa có."
+  },
+  {
+   "id": "HLT-03",
+   "group": "HLT",
+   "name": "Quản lý Sample/LabResult: mã mẫu, loại, ngày lấy, nơi xét nghiệm, chỉ tiêu, kết quả, tệp và liên kết ca bệnh.",
+   "status": "P",
+   "tasks": "T-042",
+   "api": "/monitoring-declarations, /pre-harvest-supervisions, /water-quality-tests, /residue-test-details",
+   "tests": "test_gd3_monitoring",
+   "note": "Kết quả xét nghiệm nước/dư lượng có; mẫu gắn ca bệnh chưa có."
+  },
+  {
+   "id": "HLT-04",
+   "group": "HLT",
+   "name": "Quản lý Vaccination/Prevention theo cohort/individual: vaccine/chế phẩm, lô, liều, người thực hiện, lịch nhắc.",
+   "status": "N",
+   "tasks": "T-042",
+   "api": "/monitoring-declarations, /pre-harvest-supervisions, /water-quality-tests, /residue-test-details",
+   "tests": "test_gd3_monitoring",
+   "note": "Giám sát/xét nghiệm có một phần; ca bệnh/dịch tễ chưa có."
+  },
+  {
+   "id": "HLT-05",
+   "group": "HLT",
+   "name": "Quản lý Treatment: thuốc/chế phẩm, liều, thời gian, người thực hiện, thời gian ngừng/cách ly khi applicable.",
+   "status": "P",
+   "tasks": "T-042",
+   "api": "/monitoring-declarations, /pre-harvest-supervisions, /water-quality-tests, /residue-test-details",
+   "tests": "test_gd3_monitoring",
+   "note": "Xử lý thuốc cho cây trồng có kèm PHI; điều trị động vật chưa có."
+  },
+  {
+   "id": "HLT-06",
+   "group": "HLT",
+   "name": "Mortality/Culling liên kết Event Ledger và DiseaseCase khi có; hỗ trợ nguyên nhân chưa xác định.",
+   "status": "N",
+   "tasks": "T-042",
+   "api": "/monitoring-declarations, /pre-harvest-supervisions, /water-quality-tests, /residue-test-details",
+   "tests": "test_gd3_monitoring",
+   "note": "Giám sát/xét nghiệm có một phần; ca bệnh/dịch tễ chưa có."
+  },
+  {
+   "id": "HLT-07",
+   "group": "HLT",
+   "name": "Tạo Outbreak/Incident sức khỏe với phạm vi địa lý, danh sách Producer/site/cohort liên quan, thời gian, mức độ và trạng thái.",
+   "status": "N",
+   "tasks": "T-042",
+   "api": "/monitoring-declarations, /pre-harvest-supervisions, /water-quality-tests, /residue-test-details",
+   "tests": "test_gd3_monitoring",
+   "note": "Giám sát/xét nghiệm có một phần; ca bệnh/dịch tễ chưa có."
+  },
+  {
+   "id": "HLT-08",
+   "group": "HLT",
+   "name": "Quản lý BiosecurityAction: cách ly, vệ sinh/tiêu độc, kiểm soát ra vào, khoanh vùng, tiêu hủy hoặc hành động khác theo pack.",
+   "status": "N",
+   "tasks": "T-042",
+   "api": "/monitoring-declarations, /pre-harvest-supervisions, /water-quality-tests, /residue-test-details",
+   "tests": "test_gd3_monitoring",
+   "note": "Giám sát/xét nghiệm có một phần; ca bệnh/dịch tễ chưa có."
+  },
+  {
+   "id": "HLT-09",
+   "group": "HLT",
+   "name": "Rule cảnh báo tỷ lệ chết/số ca bất thường theo cửa sổ thời gian và baseline cấu hình.",
+   "status": "N",
+   "tasks": "T-042",
+   "api": "/monitoring-declarations, /pre-harvest-supervisions, /water-quality-tests, /residue-test-details",
+   "tests": "test_gd3_monitoring",
+   "note": "Giám sát/xét nghiệm có một phần; ca bệnh/dịch tễ chưa có."
+  },
+  {
+   "id": "HLT-10",
+   "group": "HLT",
+   "name": "Tổng hợp dịch bệnh/sức khỏe theo địa giới và Producer mà vẫn tôn trọng quyền truy cập dữ liệu cá nhân/kinh doanh.",
+   "status": "N",
+   "tasks": "T-042",
+   "api": "/monitoring-declarations, /pre-harvest-supervisions, /water-quality-tests, /residue-test-details",
+   "tests": "test_gd3_monitoring",
+   "note": "Giám sát/xét nghiệm có một phần; ca bệnh/dịch tễ chưa có."
+  },
+  {
+   "id": "HLT-11",
+   "group": "HLT",
+   "name": "Shared Engine không hard-code tên bệnh; disease/symptom/action catalog nằm trong Vertical Pack/seed master có nguồn/version/ngày hiệu lực.",
+   "status": "P",
+   "tasks": "T-042",
+   "api": "/monitoring-declarations, /pre-harvest-supervisions, /water-quality-tests, /residue-test-details",
+   "tests": "test_gd3_monitoring",
+   "note": "Engine không hard-code tên bệnh; danh mục qua khai báo/giám sát."
+  },
+  {
+   "id": "HLT-12",
+   "group": "HLT",
+   "name": "Hệ thống hỗ trợ quy trình khai báo→xác minh→lấy mẫu→kết quả→xử lý→theo dõi→kết thúc; pack có thể giản lược/mở rộng.",
+   "status": "P",
+   "tasks": "T-042",
+   "api": "/monitoring-declarations, /pre-harvest-supervisions, /water-quality-tests, /residue-test-details",
+   "tests": "test_gd3_monitoring",
+   "note": "Quy trình khai báo → kết luận giám sát có một phần; vòng đời ca bệnh đầy đủ chưa có."
+  },
+  {
+   "id": "PRO-01",
+   "group": "PRO",
+   "name": "Quản lý AdministrativeUnit có mã, tên, loại, cha-con, thời gian hiệu lực và trạng thái; không hard-code số cấp. Với Việt Nam 2026, official current tree là cấp tỉnh → cấp xã (xã/phường/đặc khu); dữ liệu lịch sử được giữ theo effective period.",
+   "status": "C",
+   "tasks": "T-015, T-040",
+   "api": "/actors, /ref-admin-units",
+   "tests": "test_gd3_refs, test_m3_traceability",
+   "note": "Cây đơn vị hành chính tự tham chiếu, không hard-code số cấp (Bảng 1)."
+  },
+  {
+   "id": "PRO-02",
+   "group": "PRO",
+   "name": "Cho phép ánh xạ tenant/OrganizationUnit với một hoặc nhiều AdministrativeUnit mà vẫn giữ hai khái niệm độc lập.",
+   "status": "P",
+   "tasks": "T-015, T-040",
+   "api": "/actors, /ref-admin-units",
+   "tests": "test_gd3_refs, test_m3_traceability",
+   "note": "Vùng gắn mã xã quản lý; khái niệm OrganizationUnit độc lập chưa có."
+  },
+  {
+   "id": "PRO-03",
+   "group": "PRO",
+   "name": "Quản lý Producer/Operator: hộ, cá nhân, trang trại, HTX, tổ hợp tác, doanh nghiệp, ban quản lý, cơ sở sản xuất/nuôi trồng.",
+   "status": "C",
+   "tasks": "T-015, T-040",
+   "api": "/actors, /ref-admin-units",
+   "tests": "test_gd3_refs, test_m3_traceability",
+   "note": "Chủ thể đủ loại hình theo Bảng 6 (hộ/cá nhân/trang trại/HTX/doanh nghiệp/cơ sở)."
+  },
+  {
+   "id": "PRO-04",
+   "group": "PRO",
+   "name": "Một Producer có nhiều Site, ProductionUnit, ngành/Vertical Pack, đàn/lứa/vụ cùng lúc.",
+   "status": "P",
+   "tasks": "T-015, T-040",
+   "api": "/actors, /ref-admin-units",
+   "tests": "test_gd3_refs, test_m3_traceability",
+   "note": "Chủ thể liên kết được nhiều vùng/đơn vị/chu kỳ qua các quan hệ hiện có."
+  },
+  {
+   "id": "PRO-05",
+   "group": "PRO",
+   "name": "Quản lý quan hệ Producer với HTX/doanh nghiệp liên kết, chủ sở hữu, đơn vị vận hành, cán bộ phụ trách và khoảng hiệu lực.",
+   "status": "P",
+   "tasks": "T-015, T-040",
+   "api": "/actors, /ref-admin-units",
+   "tests": "test_gd3_refs, test_m3_traceability",
+   "note": "Có quan hệ cha-con (parent_code); loại quan hệ liên kết/đơn vị vận hành/cán bộ phụ trách chưa có."
+  },
+  {
+   "id": "PRO-06",
+   "group": "PRO",
+   "name": "Phân quyền theo subtree địa giới, OrganizationUnit, Producer group và Site/ProductionUnit.",
+   "status": "N",
+   "tasks": "T-015, T-040",
+   "api": "/actors, /ref-admin-units",
+   "tests": "test_gd3_refs, test_m3_traceability",
+   "note": "Phân quyền hiện phẳng theo tenant + vai trò."
+  },
+  {
+   "id": "PRO-07",
+   "group": "PRO",
+   "name": "Import/export Producer và mapping địa giới bằng CSV/XLSX/API; có dedup/matching và báo cáo lỗi.",
+   "status": "N",
+   "tasks": "T-015, T-040",
+   "api": "/actors, /ref-admin-units",
+   "tests": "test_gd3_refs, test_m3_traceability",
+   "note": ""
+  },
+  {
+   "id": "PRO-08",
+   "group": "PRO",
+   "name": "Không bắt buộc Producer là tenant; Producer có thể có account/role riêng trong tenant và cổng sử dụng dịch vụ.",
+   "status": "P",
+   "tasks": "T-015, T-040",
+   "api": "/actors, /ref-admin-units",
+   "tests": "test_gd3_refs, test_m3_traceability",
+   "note": "User liên kết chủ thể (linked_actor_code) có; cổng tự phục vụ cho Producer chưa có."
+  },
+  {
+   "id": "PRO-09",
+   "group": "PRO",
+   "name": "Cho phép Producer tự khai báo có kiểm soát và cán bộ xác minh/phê duyệt theo workflow.",
+   "status": "N",
+   "tasks": "T-015, T-040",
+   "api": "/actors, /ref-admin-units",
+   "tests": "test_gd3_refs, test_m3_traceability",
+   "note": "Có khai báo giám sát; quy trình Producer tự khai + cán bộ duyệt chưa có."
+  },
+  {
+   "id": "PRO-10",
+   "group": "PRO",
+   "name": "Cho phép tổng hợp chỉ tiêu theo tenant, AdministrativeUnit, Producer type, Vertical Pack và thời gian hiệu lực.",
+   "status": "P",
+   "tasks": "T-015, T-040",
+   "api": "/actors, /ref-admin-units",
+   "tests": "test_gd3_refs, test_m3_traceability",
+   "note": "Báo cáo tổng hợp theo vùng có; tổng hợp theo địa giới/loại chủ thể chưa có."
+  },
+  {
+   "id": "CRM-01",
+   "group": "CRM",
+   "name": "Customer/Account trong CRM phải reuse Customer/Payer/BusinessParty hiện có; không tạo master khách hàng thứ hai. Phạm vi là CRM nội bộ IAICT theo Mục 4.11.1; tách tenant_id/owner scope và dữ liệu thương mại nội bộ, không tái sử dụng quyền tenant admin để xem pipeline IAICT.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-54) — chưa tới mốc."
+  },
+  {
+   "id": "CRM-02",
+   "group": "CRM",
+   "name": "Quản lý Contact: họ tên, chức vụ, kênh liên hệ, organization/account, consent/nguồn và vai trò trong giao dịch.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-54) — chưa tới mốc."
+  },
+  {
+   "id": "CRM-03",
+   "group": "CRM",
+   "name": "Lead có nguồn, nhu cầu, địa bàn, vertical/service quan tâm, owner, trạng thái, qualification và lịch sử.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-54) — chưa tới mốc."
+  },
+  {
+   "id": "CRM-04",
+   "group": "CRM",
+   "name": "Opportunity có pipeline/stage, giá trị dự kiến, xác suất, expected close date, payer/beneficiary scope, owner, competitor/note và Won/Lost.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-54) — chưa tới mốc."
+  },
+  {
+   "id": "CRM-05",
+   "group": "CRM",
+   "name": "Activity/Task cho call/email/meeting/follow-up, due date, owner, reminder, liên kết lead/opportunity/account/quote.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-54) — chưa tới mốc."
+  },
+  {
+   "id": "CRM-06",
+   "group": "CRM",
+   "name": "Quote tạo từ Commercial Service Catalog/Price Book: plan, add-on, quota, managed service, white-label, discount, term, tax mode và beneficiary scope; versioned.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-54) — chưa tới mốc."
+  },
+  {
+   "id": "CRM-07",
+   "group": "CRM",
+   "name": "Workflow phê duyệt Quote/discount theo threshold/role; exception bắt buộc lý do, người duyệt, thời hạn.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-54) — chưa tới mốc."
+  },
+  {
+   "id": "CRM-08",
+   "group": "CRM",
+   "name": "Won Opportunity/Quote được convert sang Contract/Order reference và Subscription/Entitlement bằng transaction idempotent; mapping field có tài liệu.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-54) — chưa tới mốc."
+  },
+  {
+   "id": "CRM-09",
+   "group": "CRM",
+   "name": "Lost Opportunity bắt buộc lost reason và optional competitor; dashboard win rate/sales cycle/pipeline value/forecast.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-54) — chưa tới mốc."
+  },
+  {
+   "id": "CRM-10",
+   "group": "CRM",
+   "name": "Renewal Opportunity tự sinh từ subscription/contract sắp hết hạn; hỗ trợ upsell/cross-sell/add-on và account owner.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-54) — chưa tới mốc."
+  },
+  {
+   "id": "CRM-11",
+   "group": "CRM",
+   "name": "Commercial handoff sau Won tạo checklist onboarding/support/managed-ops; owner và trạng thái giữa Sales→Delivery→Customer Success rõ.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-54) — chưa tới mốc."
+  },
+  {
+   "id": "CRM-12",
+   "group": "CRM",
+   "name": "CRM Lite cung cấp API/export/event; không yêu cầu marketing automation, call center, social listening hoặc bulk campaign engine trong Core.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thuộc M7 (D-54) — chưa tới mốc."
+  },
+  {
+   "id": "MOP-01",
+   "group": "MOP",
+   "name": "Managed Service Plan xác định phạm vi IAICT vận hành: onboarding/import, user/role, QR/IoT, configuration, monitoring, report, support, backup/ops; scope versioned theo hợp đồng.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Managed operations — chưa xây."
+  },
+  {
+   "id": "MOP-02",
+   "group": "MOP",
+   "name": "DelegatedAdminGrant gồm tenant, operator/user/group, permission set, purpose, contract/order reference, effective_from/to, approver và status.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Managed operations — chưa xây."
+  },
+  {
+   "id": "MOP-03",
+   "group": "MOP",
+   "name": "Role IAICT Managed Operator tách Super-admin; chỉ thấy tenant được grant, không mặc định thấy giá/billing/secret nếu scope không cho phép.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Managed operations — chưa xây."
+  },
+  {
+   "id": "MOP-04",
+   "group": "MOP",
+   "name": "Managed-ops task/checklist/evidence cho thao tác định kỳ/one-off, owner, due date, before/after, attachment/log và customer approval khi cần.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Managed operations — chưa xây."
+  },
+  {
+   "id": "MOP-05",
+   "group": "MOP",
+   "name": "IAICT có thể import/cấu hình thay khách hàng nhưng dữ liệu nghiệp vụ trọng yếu hoặc bulk change phải có validation/dry-run/approval theo policy.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Managed operations — chưa xây."
+  },
+  {
+   "id": "MOP-06",
+   "group": "MOP",
+   "name": "Monitoring/alerting và Monthly Managed Operations Report gồm availability, incident, ticket, backup, domain/TLS, usage/quota, device health, change và action outstanding.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Managed operations — chưa xây."
+  },
+  {
+   "id": "MOP-07",
+   "group": "MOP",
+   "name": "Support identity theo tenant: hotline/email/helpdesk/SLA/contact tree; ticket từ customer portal liên kết tenant/plan/managed service.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Managed operations — chưa xây."
+  },
+  {
+   "id": "MOP-08",
+   "group": "MOP",
+   "name": "Baseline hỗ trợ bằng delegated operation với tài khoản người vận hành riêng. Impersonation không triển khai trong baseline; nếu IAICT chọn tùy chọn Q.2 thì phải tuân SEC-18: mặc định tắt, approval/timebox, banner, reason và audit không thể phủ nhận.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Managed operations — chưa xây."
+  },
+  {
+   "id": "MOP-09",
+   "group": "MOP",
+   "name": "Managed Operations là service có price/quota/SLA/metering riêng; usage/time/task nếu dùng tính phí phải có unit, source, approval và reconciliation.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Managed operations — chưa xây."
+  },
+  {
+   "id": "MOP-10",
+   "group": "MOP",
+   "name": "Kết thúc managed service có handback: export config/data, danh sách access/secret/domain, revoke grant/operator, chuyển support owner, biên bản và evidence.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Managed operations — chưa xây."
+  },
+  {
+   "id": "STD-01",
+   "group": "STD",
+   "name": "Quản lý Standard Profile có mã, tên, version, owner/source, phạm vi, thị trường, ngày hiệu lực/hết hiệu lực và trạng thái. Rule bắt buộc có căn cứ pháp lý/phiên bản/effective period và owner trong legal register; không tự áp dụng biểu mẫu nguồn giống sang đối tượng ngoài phạm vi. Phê duyệt chuyên môn trước bật rule chặn.",
+   "status": "P",
+   "tasks": "T-040, T-041",
+   "api": "/ref-certification-schemes, /ref-market-regulations, /ref-active-substance-mrls, /entity-certifications",
+   "tests": "test_gd3_refs, test_gd3_market",
+   "note": "Danh mục scheme/thị trường có mã + nguồn + phạm vi; vòng đời profile đầy đủ chưa có."
+  },
+  {
+   "id": "STD-02",
+   "group": "STD",
+   "name": "Quản lý Criteria theo standard: mã, mô tả, mức bắt buộc/khuyến nghị, trọng số, rule/checklist, evidence yêu cầu và applicability.",
+   "status": "N",
+   "tasks": "T-040, T-041",
+   "api": "/ref-certification-schemes, /ref-market-regulations, /ref-active-substance-mrls, /entity-certifications",
+   "tests": "test_gd3_refs, test_gd3_market",
+   "note": "Danh mục + chứng nhận có khung; engine đánh giá chuẩn chưa có."
+  },
+  {
+   "id": "STD-03",
+   "group": "STD",
+   "name": "Cho Producer/Site/ProductionCycle/Lot lựa chọn hoặc được gán một/nhiều Standard Profile phù hợp.",
+   "status": "P",
+   "tasks": "T-040, T-041",
+   "api": "/ref-certification-schemes, /ref-market-regulations, /ref-active-substance-mrls, /entity-certifications",
+   "tests": "test_gd3_refs, test_gd3_market",
+   "note": "Chứng nhận gán cho vùng/cơ sở theo scheme (Bảng 10)."
+  },
+  {
+   "id": "STD-04",
+   "group": "STD",
+   "name": "Tạo ComplianceAssessment/GAP với trạng thái từng criteria, evidence, người đánh giá, thời gian và kết luận.",
+   "status": "P",
+   "tasks": "T-040, T-041",
+   "api": "/ref-certification-schemes, /ref-market-regulations, /ref-active-substance-mrls, /entity-certifications",
+   "tests": "test_gd3_refs, test_gd3_market",
+   "note": "Kết luận giám sát ở mức bản ghi; thực thể đánh giá GAP theo từng tiêu chí chưa có."
+  },
+  {
+   "id": "STD-05",
+   "group": "STD",
+   "name": "Quản lý CorrectiveAction cho criteria chưa đạt: owner, deadline, evidence, verification và closure.",
+   "status": "N",
+   "tasks": "T-040, T-041",
+   "api": "/ref-certification-schemes, /ref-market-regulations, /ref-active-substance-mrls, /entity-certifications",
+   "tests": "test_gd3_refs, test_gd3_market",
+   "note": "Danh mục + chứng nhận có khung; engine đánh giá chuẩn chưa có."
+  },
+  {
+   "id": "STD-06",
+   "group": "STD",
+   "name": "Rule có thể warn/block/require approval; điều kiện pháp luật/market bắt buộc không được bypass bằng ngoại lệ nội bộ.",
+   "status": "P",
+   "tasks": "T-040, T-041",
+   "api": "/ref-certification-schemes, /ref-market-regulations, /ref-active-substance-mrls, /entity-certifications",
+   "tests": "test_gd3_refs, test_gd3_market",
+   "note": "Cổng cứng PHI/khối lượng không bypass được; chế độ warn/approve chưa có."
+  },
+  {
+   "id": "STD-07",
+   "group": "STD",
+   "name": "Tái sử dụng dữ liệu Activity, InputMaterial, Health, IoT, test/lab và Traceability làm evidence; không yêu cầu nhập lại khi đã đủ dữ liệu.",
+   "status": "P",
+   "tasks": "T-040, T-041",
+   "api": "/ref-certification-schemes, /ref-market-regulations, /ref-active-substance-mrls, /entity-certifications",
+   "tests": "test_gd3_refs, test_gd3_market",
+   "note": "Các cổng đã dùng chéo dữ liệu nhật ký/vật tư/xét nghiệm/truy xuất làm bằng chứng."
+  },
+  {
+   "id": "STD-08",
+   "group": "STD",
+   "name": "Dashboard hiển thị %/mức hoàn thành, tiêu chí thiếu, bằng chứng thiếu, vi phạm và readiness theo standard/market.",
+   "status": "N",
+   "tasks": "T-040, T-041",
+   "api": "/ref-certification-schemes, /ref-market-regulations, /ref-active-substance-mrls, /entity-certifications",
+   "tests": "test_gd3_refs, test_gd3_market",
+   "note": "Danh mục + chứng nhận có khung; engine đánh giá chuẩn chưa có."
+  },
+  {
+   "id": "STD-09",
+   "group": "STD",
+   "name": "Danh mục standard/criteria phải export/import/version/migrate qua Vertical Pack Framework.",
+   "status": "N",
+   "tasks": "T-040, T-041",
+   "api": "/ref-certification-schemes, /ref-market-regulations, /ref-active-substance-mrls, /entity-certifications",
+   "tests": "test_gd3_refs, test_gd3_market",
+   "note": "Danh mục + chứng nhận có khung; engine đánh giá chuẩn chưa có."
+  },
+  {
+   "id": "STD-10",
+   "group": "STD",
+   "name": "Các tiêu chuẩn/điều kiện xuất hiện có của Vertical Pack 01 tiếp tục áp dụng và được ánh xạ vào Standard Profile/Rule Pack.",
+   "status": "N",
+   "tasks": "T-040, T-041",
+   "api": "/ref-certification-schemes, /ref-market-regulations, /ref-active-substance-mrls, /entity-certifications",
+   "tests": "test_gd3_refs, test_gd3_market",
+   "note": "Danh mục + chứng nhận có khung; engine đánh giá chuẩn chưa có."
+  },
+  {
+   "id": "COM-01",
+   "group": "COM",
+   "name": "Quản lý danh mục plan có mã, phiên bản, kỳ hạn, module, hạn mức, retention, SLA và trạng thái phát hành; giá là dữ liệu cấu hình, không hard-code.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-02",
+   "group": "COM",
+   "name": "Quản lý subscription theo Customer/Payer và phạm vi tenant/beneficiary với ngày hiệu lực/hết hạn, chu kỳ, hợp đồng/order tham chiếu, plan và lịch sử thay đổi. Đánh giá capability và quota theo chính sách tại 4.11.4; một usage record chỉ quy thuộc một payer/billing line. Bảng precedence versioned và có hiệu lực theo thời gian.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-03",
+   "group": "COM",
+   "name": "Mô hình hỗ trợ 07 nhãn trạng thái: Draft, Trial, Active, Grace, Read-only, Suspended, Terminated; Trial có thể không kích hoạt cho một plan/tenant; chính sách hành vi cấu hình được. Terminated không mặc định làm vô hiệu QR/trace page đã phát hành: public resolution tiếp tục theo retention, recall/consumer/legal policy được duyệt cho đến cửa xóa.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-04",
+   "group": "COM",
+   "name": "Nhắc hết hạn mặc định 60/30/7 ngày; thời gian ân hạn và read-only cấu hình theo hợp đồng; mọi thông báo có log.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-05",
+   "group": "COM",
+   "name": "Entitlement theo module/dịch vụ và hạn mức tối thiểu: named user, site, thiết bị, QR phát hành, object storage, API request, AI usage nếu bật và retention; hỗ trợ scope tenant/OrganizationUnit/Producer/Site. Không dùng blockchain anchor như một đơn vị thương mại bắt buộc cho người dùng cuối.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-06",
+   "group": "COM",
+   "name": "Mỗi hạn mức có soft/hard policy; cảnh báo mặc định 80/90/100%; không tự thu phí hoặc chặn dữ liệu nguy hiểm nếu chưa có chính sách duyệt.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-07",
+   "group": "COM",
+   "name": "Metering idempotent theo tenant/beneficiary/module/site/device/kỳ khi áp dụng; lưu nguồn, thời gian, lượng, unit, khóa chống trùng và trạng thái đối soát.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-08",
+   "group": "COM",
+   "name": "Chốt sổ sử dụng theo tháng/kỳ; điều chỉnh chỉ bằng bút toán bù có lý do, người duyệt và before/after audit.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-09",
+   "group": "COM",
+   "name": "Lưu metadata hợp đồng, order, hóa đơn và trạng thái thanh toán tham chiếu; đính kèm tài liệu theo quyền.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-10",
+   "group": "COM",
+   "name": "Cổng khách hàng hiển thị plan, kỳ hạn, hạn mức, usage, thông báo, tài liệu/hóa đơn tham chiếu và kênh hỗ trợ.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-11",
+   "group": "COM",
+   "name": "Dashboard IAICT hiển thị tenant/subscription sắp hết hạn, trạng thái dịch vụ, usage, overage, tenant health và chi phí hạ tầng phân bổ.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-12",
+   "group": "COM",
+   "name": "Onboarding tenant từ template gồm plan, module, danh mục, role, workflow, branding và dữ liệu mẫu; có dry-run/validation; tách provisioning khỏi bulk migration, media, DNS và SSO/tích hợp bên ngoài.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-13",
+   "group": "COM",
+   "name": "Nâng/hạ plan và add-on có effective date; kiểm tra phụ thuộc, dữ liệu vượt hạn mức và hiển thị tác động trước khi duyệt.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-14",
+   "group": "COM",
+   "name": "Kết thúc dịch vụ có export đầy đủ, checksum/manifest, thời gian lưu chờ xóa, phê duyệt và xác nhận xóa theo chính sách.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-15",
+   "group": "COM",
+   "name": "Tiếp nhận yêu cầu hỗ trợ từ portal/email với mã ticket, tenant, mức độ, SLA, owner, trao đổi và đóng/xác nhận.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-16",
+   "group": "COM",
+   "name": "Feature flag có phạm vi global/plan/tenant, lịch hiệu lực, owner, rollback và audit; flag hết hạn phải được dọn theo quy trình.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-17",
+   "group": "COM",
+   "name": "Quản lý version/release, maintenance window, release note, migration tương thích ngược và thông báo tenant.",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Phiên bản Worker + migration tương thích ngược có; cửa sổ bảo trì/release note/thông báo tenant chưa có."
+  },
+  {
+   "id": "COM-18",
+   "group": "COM",
+   "name": "Cung cấp API/webhook versioned cho hệ thống ngoài: CRM bên thứ ba, ERP/kế toán, hóa đơn điện tử và payment provider. Phạm vi cơ sở bắt buộc 01 payment provider production baseline theo PAY-04/PAY-05; CRM Lite nội bộ thuộc CRM-01..CRM-12. Các ERP/kế toán/CRM bên thứ ba khác dùng mock/sandbox/contract test nếu IAICT chưa cung cấp đặc tả/credential production.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-19",
+   "group": "COM",
+   "name": "Core quản lý sản xuất hoạt động độc lập khi không bật IoT, traceability/QR hoặc AI; capability tắt không tạo lỗi hoặc phụ thuộc bắt buộc. Data Integrity nội bộ không được làm điều kiện để hộ phải mua một dịch vụ blockchain riêng.",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lõi vận hành độc lập không cần IoT/AI; bật/tắt capability theo cấu hình chưa có."
+  },
+  {
+   "id": "COM-20",
+   "group": "COM",
+   "name": "Danh mục gói và bảng giá mẫu tại Phụ lục F chỉ là cấu hình UAT; IAICT sửa tên, hạn mức, giá và kỳ hạn không triển khai lại.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-21",
+   "group": "COM",
+   "name": "Quản lý danh mục đơn giá chi phí vận hành tham chiếu cho cloud/compute, storage/backup, SIM, email/SMS, bản đồ, AI provider, dịch vụ integrity/anchoring nếu có và license theo nhà cung cấp, đơn vị, tiền tệ, thuế và ngày hiệu lực; cho phép phân bổ tenant/module/beneficiary.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-22",
+   "group": "COM",
+   "name": "Subscription/entitlement phải hỗ trợ scope tenant, OrganizationUnit, Producer và Site; cùng tenant có Producer bật module khác nhau.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-23",
+   "group": "COM",
+   "name": "Tách Payer khỏi Beneficiary; payer có thể là tenant/cơ quan nhà nước, HTX, doanh nghiệp hoặc chính Producer.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-24",
+   "group": "COM",
+   "name": "Không bắt buộc mỗi Producer/hộ thành tenant; Producer account có quyền tự xem/cập nhật phạm vi được giao trong tenant.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-25",
+   "group": "COM",
+   "name": "Hỗ trợ catalog dịch vụ Core, IoT, Traceability/QR, AI/Decision Support, Compliance nâng cao, Integration và dịch vụ chuyên môn; dependency/version cấu hình được.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-26",
+   "group": "COM",
+   "name": "Metering phải có dimension tenant/beneficiary/module/site/device/period khi applicable; cho phép gộp usage theo payer.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-27",
+   "group": "COM",
+   "name": "Chính sách sponsored service cho phép tỉnh/HTX/doanh nghiệp cấp quota hoặc thời hạn dịch vụ cho danh sách/nhóm Producer.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-28",
+   "group": "COM",
+   "name": "Self-service của Producer chỉ được bật nếu tenant/plan cho phép; mua/nâng dịch vụ không được tự vượt chính sách dữ liệu, pháp lý hoặc tài chính của tenant.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-29",
+   "group": "COM",
+   "name": "Blockchain/anchoring không xuất hiện như SKU bắt buộc hoặc add-on bán độc lập; nếu kỹ thuật sử dụng thì gắn vào Data Integrity/Traceability và chi phí phản ánh trong cost catalog nội bộ.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-30",
+   "group": "COM",
+   "name": "Phân loại Funding Class tách khỏi lifecycle: Free/Freemium, Self-paid, Sponsored-paid, Complimentary; có effective period, nguồn quyết định và audit. Trial được xác định bằng lifecycle=Trial, không phải Funding Class riêng.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-31",
+   "group": "COM",
+   "name": "Dashboard phân khúc tối thiểu: total account/named user/Producer, Active Paid subscription, Free/Freemium không ở lifecycle Trial, Trial theo lifecycle, Sponsored-paid, Complimentary, Grace (lifecycle), PastDue (billing/payment status), Suspended/Terminated; lọc theo tenant/payer/plan/module/địa bàn.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-32",
+   "group": "COM",
+   "name": "Tính KPI recurring revenue: MRR/ARR, New/Expansion/Contraction/Churned MRR, renewal; định nghĩa revenue tham chiếu trước VAT, loại one-time fee và có effective-dated price/discount.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-33",
+   "group": "COM",
+   "name": "Tính GRR/NRR, ARPA/ARPU, Free→Paid, Trial→Paid, cohort retention và churn theo customer/subscription; công thức/config versioned.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-34",
+   "group": "COM",
+   "name": "Revenue dashboard IAICT theo payer type, plan, module/add-on, vertical, địa bàn, sales owner và funding class; có revenue, usage, cost allocation và gross margin tham chiếu.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-35",
+   "group": "COM",
+   "name": "Price Book versioned: recurring/one-time/usage price, discount, annual discount, volume/tier và grandfathered pricing; effective date/approval bắt buộc. Coupon/promotion chỉ triển khai nếu chọn tại Q.2; không nằm trong giá baseline khi chưa chọn.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-36",
+   "group": "COM",
+   "name": "Nâng/hạ plan, add-on, pause/resume/cancel hỗ trợ effective date và proration rule cấu hình; hiển thị preview tác động trước phê duyệt.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-37",
+   "group": "COM",
+   "name": "Tự tạo renewal signal/opportunity trước hết hạn theo mốc cấu hình; nhận diện upsell/cross-sell từ plan/usage/overage nhưng không tự mua khi chưa có quyền/phê duyệt.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-38",
+   "group": "COM",
+   "name": "Commercial snapshot theo ngày/tháng cho KPI và dashboard; khóa snapshot đã phát hành, adjustment bằng bút toán có lý do/approval; dữ liệu thô vẫn là nguồn sự thật.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-39",
+   "group": "COM",
+   "name": "Tách money metric và usage metric; currency, tax mode, rounding, timezone và exchange-rate reference (nếu có) là cấu hình versioned; baseline VND.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-40",
+   "group": "COM",
+   "name": "Self-service thương mại của customer/Producer chỉ hoạt động theo policy tenant: xem plan, yêu cầu nâng/hạ, gia hạn, cập nhật billing contact/payment method token nếu provider cho phép; hành động nhạy cảm có approval.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "COM-41",
+   "group": "COM",
+   "name": "Commercial service catalog thống nhất Core, Vertical Pack, IoT, Traceability/QR, AI, Integration, CRM/Revenue, Billing/Payment, Managed Operations, Premium Support, White-label/Custom Domain và Dedicated/HA; dependency/version cấu hình.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Lớp thương mại thuộc M5–M7 (D-53..D-64) — chưa tới mốc."
+  },
+  {
+   "id": "RPT-01",
+   "group": "RPT",
+   "name": "Dashboard tổng quan vùng, cây đầu dòng, lô, sự kiện, cảnh báo và thiết bị.",
+   "status": "C",
+   "tasks": "T-022, T-043",
+   "api": "/dashboard, /reports/*",
+   "tests": "test_dashboard",
+   "note": "Dashboard một lần gọi: vùng/cây/lô/sự kiện/thiết bị + audit gần nhất."
+  },
+  {
+   "id": "RPT-02",
+   "group": "RPT",
+   "name": "Biểu đồ thời tiết, đất, kho và thống kê cảnh báo.",
+   "status": "N",
+   "tasks": "T-022, T-043",
+   "api": "/dashboard, /reports/*",
+   "tests": "test_dashboard",
+   "note": "Mới có dashboard + 3 báo cáo truy xuất trên tổng số REP 82."
+  },
+  {
+   "id": "RPT-03",
+   "group": "RPT",
+   "name": "Báo cáo hồ sơ cây đầu dòng và lịch sử bảo tồn.",
+   "status": "N",
+   "tasks": "T-022, T-043",
+   "api": "/dashboard, /reports/*",
+   "tests": "test_dashboard",
+   "note": "Mới có dashboard + 3 báo cáo truy xuất trên tổng số REP 82."
+  },
+  {
+   "id": "RPT-04",
+   "group": "RPT",
+   "name": "Báo cáo nhật ký canh tác, vật tư, thu hoạch và truy vết lô.",
+   "status": "P",
+   "tasks": "T-022, T-043",
+   "api": "/dashboard, /reports/*",
+   "tests": "test_dashboard",
+   "note": "Báo cáo cân bằng khối lượng theo chu kỳ/đóng gói có; báo cáo nhật ký đầy đủ chưa có."
+  },
+  {
+   "id": "RPT-05",
+   "group": "RPT",
+   "name": "Báo cáo thiết bị: uptime, pin, RSSI/SNR, dữ liệu thiếu và hiệu chuẩn.",
+   "status": "N",
+   "tasks": "T-022, T-043",
+   "api": "/dashboard, /reports/*",
+   "tests": "test_dashboard",
+   "note": "Mới có dashboard + 3 báo cáo truy xuất trên tổng số REP 82."
+  },
+  {
+   "id": "RPT-06",
+   "group": "RPT",
+   "name": "Xuất dữ liệu nghiệp vụ và IoT theo CSV/JSON có giới hạn và audit.",
+   "status": "N",
+   "tasks": "T-022, T-043",
+   "api": "/dashboard, /reports/*",
+   "tests": "test_dashboard",
+   "note": "Mới có dashboard + 3 báo cáo truy xuất trên tổng số REP 82."
+  },
+  {
+   "id": "RPT-07",
+   "group": "RPT",
+   "name": "Báo cáo tuân thủ canh tác theo FLD-20 và báo cáo điều kiện xuất theo từng thị trường.",
+   "status": "N",
+   "tasks": "T-022, T-043",
+   "api": "/dashboard, /reports/*",
+   "tests": "test_dashboard",
+   "note": "Mới có dashboard + 3 báo cáo truy xuất trên tổng số REP 82."
+  },
+  {
+   "id": "RPT-08",
+   "group": "RPT",
+   "name": "Báo cáo mã số vùng trồng: hiệu lực, sắp hết hạn, vùng đủ và không đủ điều kiện theo thị trường.",
+   "status": "P",
+   "tasks": "T-022, T-043",
+   "api": "/dashboard, /reports/*",
+   "tests": "test_dashboard",
+   "note": "Báo cáo chỉ số vùng có PUC + trạng thái; điều kiện theo thị trường nằm ở mục phê duyệt."
+  },
+  {
+   "id": "RPT-09",
+   "group": "RPT",
+   "name": "Báo cáo thu hồi và khiếu nại: số hồ sơ, phạm vi ảnh hưởng, thời gian xử lý và kết quả.",
+   "status": "N",
+   "tasks": "T-022, T-043",
+   "api": "/dashboard, /reports/*",
+   "tests": "test_dashboard",
+   "note": "Mới có dashboard + 3 báo cáo truy xuất trên tổng số REP 82."
+  },
+  {
+   "id": "RPT-10",
+   "group": "RPT",
+   "name": "Báo cáo đối soát toàn vẹn dữ liệu theo kỳ và trạng thái checkpoint hash/Merkle. Chỉ bổ sung reference/trạng thái blockchain hoặc external anchor khi lựa chọn tương ứng tại Q.2 được kích hoạt.",
+   "status": "N",
+   "tasks": "T-022, T-043",
+   "api": "/dashboard, /reports/*",
+   "tests": "test_dashboard",
+   "note": "Mới có dashboard + 3 báo cáo truy xuất trên tổng số REP 82."
+  },
+  {
+   "id": "RPT-11",
+   "group": "RPT",
+   "name": "Báo cáo dành riêng cho IAICT: mức sử dụng theo tenant và theo hạn mức, doanh thu thuê bao tham chiếu, tỷ lệ gia hạn và mức độ hoạt động người dùng.",
+   "status": "N",
+   "tasks": "T-022, T-043",
+   "api": "/dashboard, /reports/*",
+   "tests": "test_dashboard",
+   "note": "Mới có dashboard + 3 báo cáo truy xuất trên tổng số REP 82."
+  },
+  {
+   "id": "RPT-12",
+   "group": "RPT",
+   "name": "Danh mục báo cáo có sẵn theo các mã REP tại Phụ lục I; công cụ tự tạo báo cáo vẫn là khuyến nghị và tách giá. Mỗi báo cáo có mốc, điều kiện áp dụng và tiêu chí kiểm chứng riêng.",
+   "status": "P",
+   "tasks": "T-022, T-043",
+   "api": "/dashboard, /reports/*",
+   "tests": "test_dashboard",
+   "note": "Mới 3/82 báo cáo REP dạng endpoint; chưa có danh mục báo cáo trong sản phẩm."
+  },
+  {
+   "id": "PAY-01",
+   "group": "PAY",
+   "name": "Billing Account gắn Customer/Payer, billing contact, currency/tax mode, term, payment terms và provider profile; beneficiary không mặc nhiên là billing account.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thanh toán thuộc M7 (D-58) — chưa tới mốc."
+  },
+  {
+   "id": "PAY-02",
+   "group": "PAY",
+   "name": "Billing Schedule/Billing Document tạo từ subscription/usage/proration; tách one-time, recurring, usage/overage, discount, tax reference và kỳ.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thanh toán thuộc M7 (D-58) — chưa tới mốc."
+  },
+  {
+   "id": "PAY-03",
+   "group": "PAY",
+   "name": "Payment Order state machine tối thiểu Created/Pending/Paid/Failed/Cancelled/Expired; liên kết billing document, payer, amount, currency, provider reference.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thanh toán thuộc M7 (D-58) — chưa tới mốc."
+  },
+  {
+   "id": "PAY-04",
+   "group": "PAY",
+   "name": "Payment Orchestrator thay được adapter; 01 provider production bắt buộc theo baseline 4.11.2.1. IAICT chọn provider cụ thể theo năng lực đã khóa và đứng tên merchant/credential. Có mock và sandbox phục vụ phát triển; chúng không thay nghiệm thu production.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thanh toán thuộc M7 (D-58) — chưa tới mốc."
+  },
+  {
+   "id": "PAY-05",
+   "group": "PAY",
+   "name": "Webhook/callback phải xác minh chữ ký, timestamp/replay protection, idempotency, retry/backoff, duplicate/out-of-order handling và dead-letter. Khi timeout sau lệnh tạo/thu tiền, giữ trạng thái Unknown/Pending cần đối soát và truy vấn provider bằng merchant reference/idempotency key; không tạo order mới để retry mù. Persist ý định bằng outbox trước gọi; callback/replay có inbox dedup.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thanh toán thuộc M7 (D-58) — chưa tới mốc."
+  },
+  {
+   "id": "PAY-06",
+   "group": "PAY",
+   "name": "Reconciliation đối chiếu Payment Order/Transaction với provider settlement và file/API ngân hàng khi được cung cấp; mismatch có queue xử lý.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thanh toán thuộc M7 (D-58) — chưa tới mốc."
+  },
+  {
+   "id": "PAY-07",
+   "group": "PAY",
+   "name": "Failed-payment/revenue recovery: retry schedule, notification, dunning, grace period, escalation; không xóa dữ liệu vì payment fail.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thanh toán thuộc M7 (D-58) — chưa tới mốc."
+  },
+  {
+   "id": "PAY-08",
+   "group": "PAY",
+   "name": "Trạng thái thanh toán và lý do chặn truy cập được lưu riêng. Dunning có thể áp dụng Grace/Read-only/Suspended do nợ; Paid chỉ gỡ chặn do thanh toán sau đối soát. Không tự gỡ suspension do bảo mật/pháp lý, không tự Terminate/xóa dữ liệu. Trạng thái hiển thị tổng hợp theo mức hạn chế cao nhất còn hiệu lực.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thanh toán thuộc M7 (D-58) — chưa tới mốc."
+  },
+  {
+   "id": "PAY-09",
+   "group": "PAY",
+   "name": "Refund/partial refund/void/adjustment có reason, amount, original transaction, approval và provider reference; four-eyes trên threshold. Tổng refund đã hoàn tất và đang giữ chỗ không vượt số tiền thực thu còn được hoàn. Khóa/kiểm tra nguyên tử theo payment, giữ refund reference ổn định; xử lý đồng thời và khôi phục sau crash không hoàn hai lần.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thanh toán thuộc M7 (D-58) — chưa tới mốc."
+  },
+  {
+   "id": "PAY-10",
+   "group": "PAY",
+   "name": "Không lưu PAN/CVV hoặc secret thanh toán nhạy cảm; chỉ lưu token/reference do provider cho phép; redirect/hosted page ưu tiên khi phù hợp.",
+   "status": "C",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Điều cấm về lưu trữ: hệ thống không lưu PAN/CVV (chưa có thanh toán)."
+  },
+  {
+   "id": "PAY-11",
+   "group": "PAY",
+   "name": "01 adapter hóa đơn điện tử theo API/event/export versioned là baseline: tạo draft/request, nhận reference/status/ack, retry và export dữ liệu cho kế toán. Mock/sandbox luôn bắt buộc; production e-invoice chỉ áp dụng khi IAICT chọn tại Q.2 và cấp provider/credential. Không gồm ERP hay sổ kế toán pháp định; không mặc định thêm adapter thứ hai.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thanh toán thuộc M7 (D-58) — chưa tới mốc."
+  },
+  {
+   "id": "PAY-12",
+   "group": "PAY",
+   "name": "Customer Billing Portal hiển thị billing history, payment status, receipt/reference, due date, payment link/method token nếu provider hỗ trợ; không lộ tenant khác.",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thanh toán thuộc M7 (D-58) — chưa tới mốc."
+  },
+  {
+   "id": "API-01",
+   "group": "API",
+   "name": "REST API được mô tả bằng OpenAPI 3.x; versioning và pagination.",
+   "status": "C",
+   "tasks": "T-002, T-047",
+   "api": "/api/v1/*, /openapi.json, /docs",
+   "tests": "test_cleanup_t047",
+   "note": "REST /api/v1 + OpenAPI 3.x (FastAPI) + phân trang toàn bộ danh sách (T-047)."
+  },
+  {
+   "id": "API-02",
+   "group": "API",
+   "name": "OAuth2/JWT hoặc cơ chế tương đương; rate limit và scope.",
+   "status": "P",
+   "tasks": "T-002, T-047",
+   "api": "/api/v1/*, /openapi.json, /docs",
+   "tests": "test_cleanup_t047",
+   "note": "Định danh header + scope theo vai trò; OAuth2/JWT và rate limit chưa có."
+  },
+  {
+   "id": "API-03",
+   "group": "API",
+   "name": "Webhook cho sự kiện/cảnh báo quan trọng; cấu hình subscription theo tenant/module; retry/backoff/dead-letter, chữ ký xác thực, replay protection và idempotency.",
+   "status": "N",
+   "tasks": "T-002, T-047",
+   "api": "/api/v1/*, /openapi.json, /docs",
+   "tests": "test_cleanup_t047",
+   "note": "Chưa có webhook (xem T-048, phát hiện F/D-29)."
+  },
+  {
+   "id": "API-04",
+   "group": "API",
+   "name": "Không khóa khả năng kết nối cổng truy xuất hoặc ERP trong tương lai.",
+   "status": "P",
+   "tasks": "T-002, T-047",
+   "api": "/api/v1/*, /openapi.json, /docs",
+   "tests": "test_cleanup_t047",
+   "note": "Kiến trúc mở (API + contract Protobuf/GraphQL sinh sẵn) giữ đường nối cổng/ERP; tích hợp thật chưa có (Q-TX-02)."
+  },
+  {
+   "id": "NFR-01",
+   "group": "NFR",
+   "name": "Sẵn sàng",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Chạy trên hạ tầng Cloudflare; chưa có đo/cam kết 99,5% theo tháng."
+  },
+  {
+   "id": "NFR-02",
+   "group": "NFR",
+   "name": "Hiệu năng web",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đã đo thực tế: ấm 0,4–2s; lần gọi đầu sau nghỉ 2–5s (T-030) — chưa đạt p95 ≤2s mọi lúc."
+  },
+  {
+   "id": "NFR-03",
+   "group": "NFR",
+   "name": "Tải đồng thời",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-04",
+   "group": "NFR",
+   "name": "IoT throughput",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-05",
+   "group": "NFR",
+   "name": "Khả năng mở rộng",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Worker stateless + D1; chưa kiểm thử quy mô lớn."
+  },
+  {
+   "id": "NFR-06",
+   "group": "NFR",
+   "name": "RPO — RPO ≤01 giờ cho Event Ledger/Current State trọng yếu, nhật ký, lô và sự kiện truy xuất; ≤24 giờ cho dữ liệu còn lại",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-07",
+   "group": "NFR",
+   "name": "RTO — Không quá 08 giờ cho sự cố production nghiêm trọng",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-08",
+   "group": "NFR",
+   "name": "Khả dụng mobile",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Web mobile-first + cache SWR đọc khi mạng yếu; ghi ngoại tuyến chưa có."
+  },
+  {
+   "id": "NFR-09",
+   "group": "NFR",
+   "name": "Tương thích",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Chạy trên trình duyệt hiện đại; chưa có ma trận tương thích chính thức."
+  },
+  {
+   "id": "NFR-10",
+   "group": "NFR",
+   "name": "Quốc tế hóa",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-11",
+   "group": "NFR",
+   "name": "Quan sát",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Có /health + audit + log Worker; metrics/cảnh báo vận hành chưa có."
+  },
+  {
+   "id": "NFR-12",
+   "group": "NFR",
+   "name": "Bảo trì",
+   "status": "C",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Registry một nguồn + codegen + migration versioned + test chống lệch (T-032/T-039/T-044)."
+  },
+  {
+   "id": "NFR-13",
+   "group": "NFR",
+   "name": "Dữ liệu",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Hạn lưu trữ tính theo từng bản ghi truy xuất; sao lưu/chính sách dữ liệu tổng thể chưa có."
+  },
+  {
+   "id": "NFR-14",
+   "group": "NFR",
+   "name": "Khả năng tiếp cận",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-15",
+   "group": "NFR",
+   "name": "Không khóa nhà cung cấp",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Store trừu tượng + gói Docker/Fly thoát hiểm (T-013); D1 là điểm khóa duy nhất đã ghi nhận (DEC-008)."
+  },
+  {
+   "id": "NFR-16",
+   "group": "NFR",
+   "name": "Hiệu năng mobile",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "UI mobile-first, đã đo tải trang tĩnh 0,3–0,9s."
+  },
+  {
+   "id": "NFR-17",
+   "group": "NFR",
+   "name": "Đồng bộ offline",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-18",
+   "group": "NFR",
+   "name": "Khả năng phục hồi cloud",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Edge đa điểm; D1 một vùng — phục hồi vùng chưa có."
+  },
+  {
+   "id": "NFR-19",
+   "group": "NFR",
+   "name": "Dư địa tài nguyên",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-20",
+   "group": "NFR",
+   "name": "Cách ly tenant",
+   "status": "C",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Cách ly tenant bằng guard + khóa ngoại phức hợp; test chéo tenant ở mọi chế độ store."
+  },
+  {
+   "id": "NFR-21",
+   "group": "NFR",
+   "name": "Noisy-neighbor",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-22",
+   "group": "NFR",
+   "name": "Quy mô thương mại",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-23",
+   "group": "NFR",
+   "name": "Onboarding",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Tạo tenant + tài khoản đầu trong vài phút; template onboarding chưa có."
+  },
+  {
+   "id": "NFR-24",
+   "group": "NFR",
+   "name": "Độ chính xác metering",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-25",
+   "group": "NFR",
+   "name": "Xuất và thoát dữ liệu",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "API đọc toàn bộ dữ liệu theo tenant; gói export kèm checksum/manifest chưa có."
+  },
+  {
+   "id": "NFR-26",
+   "group": "NFR",
+   "name": "Nâng cấp sản phẩm",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Migration versioned + deploy không gián đoạn; canary/rollback tự động chưa có."
+  },
+  {
+   "id": "NFR-27",
+   "group": "NFR",
+   "name": "Domain và thương hiệu",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-28",
+   "group": "NFR",
+   "name": "Tính sẵn sàng theo gói",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-29",
+   "group": "NFR",
+   "name": "Thử tải tái lập",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-30",
+   "group": "NFR",
+   "name": "Hiệu năng truy xuất",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Truy vấn chuỗi truy xuất tính trực tiếp; quy mô pilot đáp ứng, chưa đo tải lớn."
+  },
+  {
+   "id": "NFR-31",
+   "group": "NFR",
+   "name": "Giấy phép mã nguồn mở",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-32",
+   "group": "NFR",
+   "name": "Kiểm tra tuân thủ ngoại tuyến",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-33",
+   "group": "NFR",
+   "name": "Cấu hình danh mục và luật nghiệp vụ theo Vertical Pack",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Danh mục theo tenant có; luật nghiệp vụ vẫn trong code."
+  },
+  {
+   "id": "NFR-34",
+   "group": "NFR",
+   "name": "Mở rộng ngành hàng",
+   "status": "C",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Một lõi chạy 4 ngành trồng trọt/chăn nuôi/lâm nghiệp/thủy sản (T-035/T-036)."
+  },
+  {
+   "id": "NFR-35",
+   "group": "NFR",
+   "name": "Đồng bộ thời gian",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Timestamp server UTC; giờ đo của thiết bị được giữ nguyên khi ingest."
+  },
+  {
+   "id": "NFR-36",
+   "group": "NFR",
+   "name": "Audit chống sửa",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Audit append-only + snapshot trước/sau; chuỗi băm chống sửa thuộc D-10, chưa có."
+  },
+  {
+   "id": "NFR-37",
+   "group": "NFR",
+   "name": "API/Webhook lifecycle",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "API versioning có; webhook lifecycle chưa có."
+  },
+  {
+   "id": "NFR-38",
+   "group": "NFR",
+   "name": "Device profile extensibility",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Thêm loại thiết bị qua registry; profile mở rộng chưa có."
+  },
+  {
+   "id": "NFR-39",
+   "group": "NFR",
+   "name": "IoT lifecycle security",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Khóa riêng từng thiết bị + xoay vòng/thu hồi (T-046); vòng đời thiết bị đầy đủ chưa có."
+  },
+  {
+   "id": "NFR-40",
+   "group": "NFR",
+   "name": "Data Integrity/anchoring key custody",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-41",
+   "group": "NFR",
+   "name": "Data residency",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-42",
+   "group": "NFR",
+   "name": "Vertical Pack portability",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Contract Protobuf/GraphQL sinh từ registry là đường may portability (T-032)."
+  },
+  {
+   "id": "NFR-43",
+   "group": "NFR",
+   "name": "Event Ledger consistency",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Nhật ký append-only + toàn vẹn FK; projection nhất quán chưa có."
+  },
+  {
+   "id": "NFR-44",
+   "group": "NFR",
+   "name": "Query hiện trạng",
+   "status": "C",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Dashboard/báo cáo tính hiện trạng trực tiếp từ dữ liệu vận hành."
+  },
+  {
+   "id": "NFR-45",
+   "group": "NFR",
+   "name": "Historical snapshot",
+   "status": "P",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Snapshot audit + lịch sử trạng thái cho điểm thời gian; truy vấn snapshot tổng quát chưa có."
+  },
+  {
+   "id": "NFR-46",
+   "group": "NFR",
+   "name": "AI resilience & provenance",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-47",
+   "group": "NFR",
+   "name": "Scoped entitlement enforcement",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-48",
+   "group": "NFR",
+   "name": "Commercial metric determinism",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-49",
+   "group": "NFR",
+   "name": "Payment idempotency",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-50",
+   "group": "NFR",
+   "name": "Payment webhook reliability",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-51",
+   "group": "NFR",
+   "name": "Commercial audit",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-52",
+   "group": "NFR",
+   "name": "Tenant experience isolation",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-53",
+   "group": "NFR",
+   "name": "Domain/TLS automation",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-54",
+   "group": "NFR",
+   "name": "Managed-ops authorization",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-55",
+   "group": "NFR",
+   "name": "CRM/commercial performance",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "NFR-56",
+   "group": "NFR",
+   "name": "Commercial export & portability",
+   "status": "N",
+   "tasks": "",
+   "api": "",
+   "tests": "",
+   "note": "Đánh giá theo từng mã; bằng chứng: đo tải T-027/T-030, kiểm thử đa store."
+  },
+  {
+   "id": "SEC-01",
+   "group": "SEC",
+   "name": "TLS 1.2/1.3 cho mọi kết nối Internet; cấm SSL/TLS <1.2 và cipher/thuật toán lỗi thời; ưu tiên ECDHE + AEAD hoặc profile tương đương được phê duyệt. HSTS production tối thiểu 01 năm trừ ngoại lệ có risk assessment; cookie Secure/HttpOnly/SameSite phù hợp.",
+   "status": "C",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "HTTPS qua Cloudflare edge (TLS 1.2/1.3) cho toàn bộ bề mặt beta."
+  },
+  {
+   "id": "SEC-02",
+   "group": "SEC",
+   "name": "Mật khẩu cục bộ băm bằng Argon2id hoặc bcrypt/scrypt/PBKDF2 với tham số hiện hành được phê duyệt; tối thiểu 12 ký tự, chặn mật khẩu phổ biến/rò rỉ và rate-limit/temporary lock sau nhiều lần sai. MFA bắt buộc cho tài khoản đặc quyền; TOTP tối thiểu, hỗ trợ WebAuthn/FIDO2/passkey cho super-admin; recovery/break-glass có audit.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Chưa tồn tại mật khẩu cục bộ (định danh bằng header) — khác mô hình SOW, cần quyết định phê duyệt."
+  },
+  {
+   "id": "SEC-03",
+   "group": "SEC",
+   "name": "RBAC và kiểm tra quyền ở backend; chống IDOR/truy cập chéo tenant.",
+   "status": "C",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "RBAC backend + guard tenant + test truy cập chéo (T-003)."
+  },
+  {
+   "id": "SEC-04",
+   "group": "SEC",
+   "name": "Xác thực thiết bị IoT bằng khóa/credential riêng; quản lý DevEUI/AppKey và xoay vòng. Downlink/command chỉ được phát từ backend/adapter đã xác thực, kiểm tra quyền tenant/role, command schema và audit; thiết bị đã revoke/decommission không nhận lệnh hợp lệ.",
+   "status": "C",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Credential riêng từng thiết bị, chỉ lưu băm, xoay vòng/thu hồi (T-046); khóa LoRaWAN thuộc phạm vi thiết bị thật."
+  },
+  {
+   "id": "SEC-05",
+   "group": "SEC",
+   "name": "Dữ liệu lưu trữ production DB/volume, object storage, backup và dữ liệu cục bộ mobile phải mã hóa bằng AES-256-GCM hoặc cơ chế tương đương hiện hành được phê duyệt khi lớp lưu trữ hỗ trợ; secrets/keys tách trong secret store/KMS/HSM hoặc tương đương. Rotate/recover key có audit; disk encryption không thay thế quản trị khóa và kiểm soát ứng dụng.",
+   "status": "P",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Mã hóa lưu trữ ở tầng hạ tầng; mã hóa trường PII chờ Owner đặt IAICT_PII_KEY (T-031)."
+  },
+  {
+   "id": "SEC-06",
+   "group": "SEC",
+   "name": "Kiểm tra input, chống SQLi/XSS/CSRF/SSRF, upload độc hại và traversal.",
+   "status": "P",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "SQL tham số hóa + validation + thoát XSS phía UI; bề mặt upload chưa tồn tại."
+  },
+  {
+   "id": "SEC-07",
+   "group": "SEC",
+   "name": "Rate limit, API scope, token expiry/revocation và audit export.",
+   "status": "P",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Scope theo vai trò + thu hồi khóa thiết bị có; rate limit và xuất audit chưa có."
+  },
+  {
+   "id": "SEC-08",
+   "group": "SEC",
+   "name": "Quét dependency/SBOM; không dùng thư viện hết hỗ trợ hoặc giấy phép không phù hợp.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Đánh giá theo từng mã; chưa có pentest/SBOM (D-18/D-26)."
+  },
+  {
+   "id": "SEC-09",
+   "group": "SEC",
+   "name": "SAST/DAST và kiểm thử theo OWASP ASVS v5.0.0 Level 2 cho web/API; ứng dụng Android theo OWASP MASVS v2.1.0, ánh xạ weakness MASWE v1.0.0 và ca kiểm thử/technique MASTG v2.0.0 phù hợp với threat model. Báo cáo phải ghi rõ control/weakness/test áp dụng, kết quả, ngoại lệ và bằng chứng; không viện dẫn 'MASVS phần phù hợp' mà không có mapping.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Đánh giá theo từng mã; chưa có pentest/SBOM (D-18/D-26)."
+  },
+  {
+   "id": "SEC-10",
+   "group": "SEC",
+   "name": "Không còn lỗ hổng Critical/High chưa khắc phục tại thời điểm Go-live.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Đánh giá theo từng mã; chưa có pentest/SBOM (D-18/D-26)."
+  },
+  {
+   "id": "SEC-11",
+   "group": "SEC",
+   "name": "Giữ log bảo mật/audit trọng yếu từ beta qua hết 18 tháng pilot kể từ Go-live. Retention sau đó theo pháp luật/DPA/chính sách được duyệt; không mặc định phát sinh thêm 18 tháng cloud. Cho phép tier/archive nhưng luôn truy xuất, kiểm tra integrity và export trong thời hạn lưu; bàn giao trước khi chấm dứt dịch vụ.",
+   "status": "P",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Audit lưu trong D1 không thời hạn mặc định; chính sách retention 18 tháng chưa ban hành văn bản."
+  },
+  {
+   "id": "SEC-12",
+   "group": "SEC",
+   "name": "Quy trình thông báo sự cố, cô lập, phục hồi và báo cáo nguyên nhân gốc.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Đánh giá theo từng mã; chưa có pentest/SBOM (D-18/D-26)."
+  },
+  {
+   "id": "SEC-13",
+   "group": "SEC",
+   "name": "Quét dependency/lỗ hổng tối thiểu hằng tháng và tại mỗi bản phát hành; lưu kết quả, đối chiếu SBOM và khắc phục theo SLA tại Mục 13.3.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Đánh giá theo từng mã; chưa có pentest/SBOM (D-18/D-26)."
+  },
+  {
+   "id": "SEC-14",
+   "group": "SEC",
+   "name": "Trước Go-live phải có ít nhất 01 đợt pentest do pháp nhân bên thứ ba được IAICT chọn/phê duyệt bằng văn bản; đơn vị này không tham gia thiết kế/phát triển/kiểm thử nội bộ và không phải bộ phận, công ty mẹ/con/đơn vị liên kết của đội triển khai nội bộ IAICT hoặc đơn vị cung cấp ngoài (nếu có) đã phát triển hệ thống. Có Rules of Engagement và phạm vi tối thiểu web/API/mobile, cloud/hạ tầng/cấu hình, IoT gateway/network server/device identity và các endpoint tích hợp có thể truy cập; quản lý dữ liệu thử, báo cáo bằng chứng và ít nhất 01 retest; không còn Critical/High. Tại M7 và trước khi bật tính năng production mới, đánh giá delta, pentest độc lập phần thay đổi/tác động liên quan và retest. Chi phí thuộc gói H; không dùng báo cáo trước Go-live để miễn kiểm tra bề mặt mới.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Đánh giá theo từng mã; chưa có pentest/SBOM (D-18/D-26)."
+  },
+  {
+   "id": "SEC-15",
+   "group": "SEC",
+   "name": "Kiểm thử chống truy cập chéo tenant bao phủ IDOR, query thiếu tenant filter, cache poisoning, queue/event, object URL, export, log/search và API key; chạy tự động trong CI và pentest.",
+   "status": "P",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Test chức năng chéo tenant có (kể cả FK ở tầng DB); pentest/cache/queue chưa có bề mặt."
+  },
+  {
+   "id": "SEC-16",
+   "group": "SEC",
+   "name": "Cơ chế subscription/entitlement phải có mã nguồn, tài liệu, test và khóa/cấu hình do IAICT kiểm soát; cấm license server, kill switch, backdoor hoặc khóa bí mật của đội triển khai nội bộ IAICT.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Đánh giá theo từng mã; chưa có pentest/SBOM (D-18/D-26)."
+  },
+  {
+   "id": "SEC-17",
+   "group": "SEC",
+   "name": "Giá, hợp đồng, hóa đơn tham chiếu và usage ledger là dữ liệu hạn chế; phân quyền riêng, mã hóa phù hợp, log truy cập/xuất và che dữ liệu trên màn hình hỗ trợ.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Đánh giá theo từng mã; chưa có pentest/SBOM (D-18/D-26)."
+  },
+  {
+   "id": "SEC-18",
+   "group": "SEC",
+   "name": "Impersonation ngoài baseline theo Q.2; hỗ trợ mặc định bằng DelegatedAdminGrant và danh tính operator riêng. Nếu được chọn: mặc định tắt, approval có hạn tối đa 15 phút/session, banner/reason, audit không thể phủ nhận, không xem secret/credential. UAT-111 kiểm tra nhánh áp dụng và bằng chứng không có đường impersonation khi không chọn.",
+   "status": "P",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Không có impersonation; vận hành qua tài khoản riêng + khóa platform tách biệt."
+  },
+  {
+   "id": "SEC-19",
+   "group": "SEC",
+   "name": "Xóa tenant là thao tác hủy dữ liệu: xác minh phạm vi, phê duyệt hai bước, export window, legal hold/retention, thời gian chờ và chứng cứ hoàn thành. Active data phải được xóa/ẩn không thể truy cập sau điểm hiệu lực; dữ liệu trong backup bất biến được giữ đến khi hết retention hoặc xóa theo cơ chế được phê duyệt. Mọi restore từ backup phải áp dụng deletion ledger/tombstone trước khi mở dịch vụ để không hồi sinh tenant, tài khoản hoặc đối tượng đã xóa. Có cơ chế dừng khẩn cấp trước điểm không thể hoàn tác.",
+   "status": "P",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Chưa có đường xóa tenant trong API — thao tác hủy chưa tồn tại để mà bảo vệ."
+  },
+  {
+   "id": "SEC-20",
+   "group": "SEC",
+   "name": "Build artifact/container image production và mọi executable plugin/adapter phải truy vết được tới commit/tag, SBOM và pipeline IAICT; có checksum/chữ ký hoặc provenance tương đương; cấm deploy bản build thủ công, plugin upload tùy ý hoặc artifact không xác minh nguồn gốc.",
+   "status": "P",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Mỗi bản deploy gắn commit + phiên bản Worker trong STATE; ký artifact chưa có."
+  },
+  {
+   "id": "SEC-21",
+   "group": "SEC",
+   "name": "Data Integrity/anchoring key (nếu dùng), app signing key, API root secret và credential quản trị nhạy cảm phải do IAICT kiểm soát, lưu trong secret store/HSM hoặc giải pháp được duyệt; truy cập least privilege, rotate/recover có audit và phê duyệt bốn mắt khi áp dụng.",
+   "status": "P",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Secret để trong Cloudflare secret store; khóa toàn vẹn (D-10) chưa có."
+  },
+  {
+   "id": "SEC-22",
+   "group": "SEC",
+   "name": "Thiết bị IoT khi mất, thay thế hoặc kết thúc vòng đời phải revoke credential, ngừng nhận dữ liệu, đánh dấu trạng thái, bảo toàn audit và thực hiện xóa/reset theo capability của thiết bị; không tái sử dụng secret cũ.",
+   "status": "P",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Thu hồi khóa thiết bị có; đánh dấu trạng thái thiết bị mất/thay thế chưa có."
+  },
+  {
+   "id": "SEC-23",
+   "group": "SEC",
+   "name": "Payment data minimization: cấm lưu PAN/CVV/PIN hoặc credential ngân hàng; chỉ lưu token/reference masked theo provider và dữ liệu tối thiểu cần đối soát. Log/trace phải redact.",
+   "status": "C",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Điều cấm về dữ liệu thanh toán: không lưu PAN/CVV — hệ thống không có dữ liệu thanh toán."
+  },
+  {
+   "id": "SEC-24",
+   "group": "SEC",
+   "name": "Payment/provider webhook secret, API key và signing key do IAICT kiểm soát trong secret store; rotation, scope, dual control/break-glass và audit; cấm hard-code trong source/config public.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Đánh giá theo từng mã; chưa có pentest/SBOM (D-18/D-26)."
+  },
+  {
+   "id": "SEC-25",
+   "group": "SEC",
+   "name": "Dữ liệu CRM thương mại, quote, price, billing, payment, revenue và margin có permission set riêng; role nghiệp vụ sản xuất không mặc nhiên xem giá/doanh thu; export có log.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Đánh giá theo từng mã; chưa có pentest/SBOM (D-18/D-26)."
+  },
+  {
+   "id": "SEC-26",
+   "group": "SEC",
+   "name": "Contact/lead/customer PII áp dụng data minimization, purpose/consent/source khi cần, retention/export/delete policy và masking trên màn hình support; không dùng CRM Lite làm kho dữ liệu cá nhân không kiểm soát.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Đánh giá theo từng mã; chưa có pentest/SBOM (D-18/D-26)."
+  },
+  {
+   "id": "SEC-27",
+   "group": "SEC",
+   "name": "DelegatedAdminGrant và Managed Operator áp dụng least privilege, MFA, effective period, approval và auto-revoke; cấm shared account; session/token sau revoke phải mất hiệu lực theo NFR-54.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Đánh giá theo từng mã; chưa có pentest/SBOM (D-18/D-26)."
+  },
+  {
+   "id": "SEC-28",
+   "group": "SEC",
+   "name": "Brand HTML/text/template/asset upload phải sanitize, allowlist type, malware scan và CSP phù hợp; cấm script tùy ý từ tenant gây XSS hoặc data exfiltration.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Đánh giá theo từng mã; chưa có pentest/SBOM (D-18/D-26)."
+  },
+  {
+   "id": "SEC-29",
+   "group": "SEC",
+   "name": "Custom domain chống takeover: verify ownership trước bind, uniqueness, domain lifecycle, revoke/hold/redirect policy và kiểm tra DNS/TLS; không cho tenant chiếm domain tenant khác.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Đánh giá theo từng mã; chưa có pentest/SBOM (D-18/D-26)."
+  },
+  {
+   "id": "SEC-30",
+   "group": "SEC",
+   "name": "Discount/refund/write-off/manual payment adjustment vượt threshold áp dụng four-eyes/approval; người tạo không được tự duyệt; mọi ngoại lệ có reason/evidence.",
+   "status": "N",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Đánh giá theo từng mã; chưa có pentest/SBOM (D-18/D-26)."
+  },
+  {
+   "id": "SEC-31",
+   "group": "SEC",
+   "name": "Audit tài chính/thương mại và managed operation phải có correlation ID, actor/service account, tenant, object, before/after và immutable retention theo policy; clock/time-sync dùng NFR-35.",
+   "status": "P",
+   "tasks": "T-003, T-031, T-046",
+   "api": "",
+   "tests": "test_t031_sys, test_iot",
+   "note": "Audit có actor/tenant/đối tượng/snapshot; correlation ID và dữ liệu thương mại chưa có."
+  }
+ ]
+}
