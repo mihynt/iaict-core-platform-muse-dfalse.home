@@ -1058,10 +1058,15 @@ VIEWS.packing = async () => {
     wireCardDetails(el, plots, (pk) => `Lô đóng gói ${pk.code}`, "packing_lots");
     el.querySelectorAll("[data-del-packing]").forEach((b) => b.onclick = () =>
       confirmDelete(`lô đóng gói ${b.dataset.delPacking}`, `/packing-lots/${encodeURIComponent(b.dataset.delPacking)}`, ["packing"]));
-    el.querySelectorAll("[data-edit-packing]").forEach((b) => b.onclick = () => {
+    el.querySelectorAll("[data-edit-packing]").forEach((b) => b.onclick = async () => {
       const pk = plots.find((x) => x.code === b.dataset.editPacking);
       if (!pk) return;
+      const actors = await ensure("actors", "/actors").catch(() => []);
       openSheet(`Sửa lô đóng gói ${pk.code}`, [
+        { k: "facility_code", label: "Cơ sở đóng gói", type: "select", def: pk.facility_code || "",
+          options: [{ v: "", t: "— Chọn cơ sở —" }, ...actors.map(fmtActorOpt)],
+          addNew: quickActor,
+          refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Chọn cơ sở —", fmtActorOpt) },
         { k: "phc_code", label: "Mã số cơ sở đóng gói (PHC)", def: pk.phc_code || "" },
         { k: "food_safety_cert_id", label: "Số chứng nhận an toàn thực phẩm của cơ sở", def: pk.food_safety_cert_id || "" },
         { k: "carcass_serial_id", label: "Mã thân thịt (nếu là thịt)", def: pk.carcass_serial_id || "" },
