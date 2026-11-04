@@ -607,3 +607,76 @@ CREATE TABLE IF NOT EXISTS ref_transport_modes (
     UNIQUE (tenant_id, code),
     UNIQUE (tenant_id, id)
 );
+
+CREATE TABLE IF NOT EXISTS zone_market_approvals (
+    id              BIGSERIAL,
+    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    zone_id         BIGINT,
+    zone_code       TEXT,
+    market_id       BIGINT,
+    market_code     TEXT,
+    foreign_approval_code TEXT,
+    submitted_to_foreign_date TEXT,
+    foreign_approved_date TEXT,
+    foreign_market_status TEXT,
+    data            JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (tenant_id, id),
+    UNIQUE (tenant_id, zone_code, market_code),
+    FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id),
+    FOREIGN KEY (tenant_id, market_id) REFERENCES ref_market_regulations (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS foreign_warnings (
+    id              BIGSERIAL,
+    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    zone_id         BIGINT,
+    zone_code       TEXT,
+    market_id       BIGINT,
+    market_code     TEXT,
+    violated_facility_actor_id BIGINT,
+    violated_facility_actor_code TEXT,
+    violated_packing_lot_id BIGINT,
+    violated_packing_lot_code TEXT,
+    official_notice_number TEXT,
+    notification_date TEXT,
+    violation_type  TEXT,
+    detected_pest_or_substance TEXT,
+    foreign_sanction_action TEXT,
+    remediation_report_sent_at TEXT,
+    sanction_lifted_date TEXT,
+    data            JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (tenant_id, id),
+    FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id),
+    FOREIGN KEY (tenant_id, market_id) REFERENCES ref_market_regulations (tenant_id, id),
+    FOREIGN KEY (tenant_id, violated_facility_actor_id) REFERENCES actors (tenant_id, id),
+    FOREIGN KEY (tenant_id, violated_packing_lot_id) REFERENCES packing_lots (tenant_id, id)
+);
+
+CREATE TABLE IF NOT EXISTS entity_certifications (
+    id              BIGSERIAL,
+    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,
+    certified_entity_type TEXT,
+    zone_id         BIGINT,
+    zone_code       TEXT,
+    facility_actor_id BIGINT,
+    facility_actor_code TEXT,
+    scheme_id       BIGINT,
+    scheme_code     TEXT,
+    certificate_number TEXT,
+    cert_body_name  TEXT,
+    issue_date      TEXT,
+    expiry_date     TEXT,
+    cert_status     TEXT,
+    cert_scan_url   TEXT,
+    data            JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (tenant_id, id),
+    FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id),
+    FOREIGN KEY (tenant_id, facility_actor_id) REFERENCES actors (tenant_id, id),
+    FOREIGN KEY (tenant_id, scheme_id) REFERENCES ref_certification_schemes (tenant_id, id)
+);

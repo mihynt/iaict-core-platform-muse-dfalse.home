@@ -28,7 +28,7 @@ window.IAICT_META = {
   "end_date": "Ngày kết thúc",
   "target_yield_kg": "Sản lượng mục tiêu (kg)",
   "status": "Trạng thái",
-  "zone_code": "Vùng",
+  "zone_code": "Vùng sản xuất",
   "plant_code": "Cây đầu dòng",
   "parcel_code": "Thửa đất",
   "forest_harvest_plan_no": "Số VB phê duyệt PA khai thác rừng (nếu có)",
@@ -41,7 +41,7 @@ window.IAICT_META = {
   "location_trace_code": "Mã truy xuất địa điểm",
   "batch_lot_number": "Số lô",
   "event_time": "Thời điểm sự kiện",
-  "scheme_code": "Mã tiêu chuẩn / chứng nhận",
+  "scheme_code": "Tiêu chuẩn / quy chuẩn",
   "event_type": "Loại sự kiện",
   "occurred_at": "Thời điểm",
   "phi_days": "Ngày cách ly (PHI)",
@@ -60,7 +60,7 @@ window.IAICT_META = {
   "batch_no": "Số lô nhà sản xuất",
   "purchase_date": "Ngày mua",
   "quantity": "Sản lượng",
-  "expiry_date": "Hạn dùng",
+  "expiry_date": "Ngày hết hạn",
   "purchase_invoice_no": "Số hóa đơn mua",
   "qcvn_scheme_id": "Mã quy chuẩn (QCVN)",
   "supplier_code": "Nhà cung cấp",
@@ -145,7 +145,7 @@ window.IAICT_META = {
   "sector_category": "Ngành",
   "market_scope": "Thị trường",
   "primary_species": "Đối tượng SX chính",
-  "issue_date": "Ngày cấp mã",
+  "issue_date": "Ngày cấp",
   "post_inspect_due_date": "Hạn hậu kiểm",
   "vsic_code": "Mã ngành VSIC",
   "dist_to_residential_m": "Cách khu dân cư (m)",
@@ -169,7 +169,7 @@ window.IAICT_META = {
   "quarantine_special_rules": "Quy định kiểm dịch đặc thù",
   "substance_name": "Tên hoạt chất",
   "substance_category": "Phân loại hoạt chất",
-  "market_code": "Thị trường áp dụng",
+  "market_code": "Thị trường cảnh báo",
   "commodity_group_code": "Mã nhóm nông sản",
   "approval_status": "Trạng thái pháp lý",
   "mrl_threshold_value": "Ngưỡng MRL tối đa",
@@ -185,6 +185,25 @@ window.IAICT_META = {
   "mode_name": "Tên phương thức",
   "vehicle_id_format_rule": "Quy tắc định danh phương tiện",
   "customs_circular_ref": "Văn bản hải quan dẫn chiếu",
+  "foreign_approval_code": "Mã phê duyệt của nước nhập khẩu",
+  "submitted_to_foreign_date": "Ngày gửi hồ sơ sang nước nhập khẩu",
+  "foreign_approved_date": "Ngày nước nhập khẩu phê duyệt",
+  "foreign_market_status": "Trạng thái tại thị trường đích",
+  "violated_facility_actor_code": "Cơ sở đóng gói liên đới",
+  "violated_packing_lot_code": "Lô thành phẩm bị vi phạm",
+  "official_notice_number": "Số công hàm / thông báo cảnh báo",
+  "notification_date": "Ngày phát hành cảnh báo",
+  "violation_type": "Loại vi phạm",
+  "detected_pest_or_substance": "Sinh vật / hoạt chất bị phát hiện",
+  "foreign_sanction_action": "Biện pháp chế tài",
+  "remediation_report_sent_at": "Ngày gửi báo cáo khắc phục",
+  "sanction_lifted_date": "Ngày được khôi phục mã số",
+  "certified_entity_type": "Loại thực thể được chứng nhận",
+  "facility_actor_code": "Cơ sở đóng gói / chế biến",
+  "certificate_number": "Số giấy chứng nhận",
+  "cert_body_name": "Tổ chức chứng nhận",
+  "cert_status": "Trạng thái chứng nhận",
+  "cert_scan_url": "Bản sao điện tử (URL)",
   "registration_no": "Số đăng ký",
   "active_ingredient": "Hoạt chất",
   "quantity_received": "Số lượng nhập",
@@ -455,6 +474,39 @@ window.IAICT_META = {
    "mode_name",
    "vehicle_id_format_rule",
    "customs_circular_ref"
+  ],
+  "zone_market_approvals": [
+   "zone_code",
+   "market_code",
+   "foreign_approval_code",
+   "submitted_to_foreign_date",
+   "foreign_approved_date",
+   "foreign_market_status"
+  ],
+  "foreign_warnings": [
+   "zone_code",
+   "market_code",
+   "violated_facility_actor_code",
+   "violated_packing_lot_code",
+   "official_notice_number",
+   "notification_date",
+   "violation_type",
+   "detected_pest_or_substance",
+   "foreign_sanction_action",
+   "remediation_report_sent_at",
+   "sanction_lifted_date"
+  ],
+  "entity_certifications": [
+   "certified_entity_type",
+   "zone_code",
+   "facility_actor_code",
+   "scheme_code",
+   "certificate_number",
+   "cert_body_name",
+   "issue_date",
+   "expiry_date",
+   "cert_status",
+   "cert_scan_url"
   ]
  },
  "enums": {
@@ -786,6 +838,108 @@ window.IAICT_META = {
    {
     "v": "ALL_SECTORS",
     "t": "Mọi ngành"
+   }
+  ],
+  "FOREIGN_MARKET_STATUSES": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "PENDING_FOREIGN_APPROVAL",
+    "t": "Chờ nước nhập khẩu phê duyệt"
+   },
+   {
+    "v": "APPROVED_FOR_EXPORT",
+    "t": "Đã phê duyệt xuất khẩu"
+   },
+   {
+    "v": "WARNED_NON_COMPLIANCE",
+    "t": "Bị cảnh báo không tuân thủ"
+   },
+   {
+    "v": "SUSPENDED_BY_IMPORT_COUNTRY",
+    "t": "Bị nước nhập khẩu tạm dừng"
+   },
+   {
+    "v": "REVOKED_BY_IMPORT_COUNTRY",
+    "t": "Bị nước nhập khẩu thu hồi"
+   }
+  ],
+  "VIOLATION_TYPES": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "QUARANTINE_PEST_DETECTED",
+    "t": "Phát hiện sinh vật kiểm dịch"
+   },
+   {
+    "v": "MRL_RESIDUE_EXCEEDED",
+    "t": "Vượt ngưỡng dư lượng"
+   },
+   {
+    "v": "INVALID_PUC_PHC_FRAUD",
+    "t": "Gian lận / mượn mã số"
+   },
+   {
+    "v": "DOC_DISCREPANCY",
+    "t": "Sai lệch hồ sơ chứng từ"
+   }
+  ],
+  "FOREIGN_SANCTION_ACTIONS": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "WARNING_INVESTIGATION_REQUIRED",
+    "t": "Cảnh báo — yêu cầu điều tra"
+   },
+   {
+    "v": "TEMPORARY_IMPORT_SUSPENSION",
+    "t": "Tạm dừng nhập khẩu"
+   },
+   {
+    "v": "PERMANENT_CODE_REVOCATION",
+    "t": "Thu hồi mã số vĩnh viễn"
+   }
+  ],
+  "CERT_ENTITY_TYPES": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "PRODUCTION_ZONE",
+    "t": "Vùng sản xuất"
+   },
+   {
+    "v": "FACILITY_ACTOR",
+    "t": "Cơ sở đóng gói / chế biến"
+   }
+  ],
+  "CERT_STATUSES": [
+   {
+    "v": "",
+    "t": "— Chưa rõ —"
+   },
+   {
+    "v": "VALID",
+    "t": "Còn hiệu lực"
+   },
+   {
+    "v": "EXPIRED",
+    "t": "Hết hạn"
+   },
+   {
+    "v": "SUSPENDED",
+    "t": "Bị đình chỉ"
+   },
+   {
+    "v": "WITHDRAWN",
+    "t": "Bị thu hồi"
    }
   ]
  }

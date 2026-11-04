@@ -319,3 +319,39 @@ message RefTransportMode {
   string vehicle_id_format_rule = 3;  // Quy tắc định danh phương tiện
   string customs_circular_ref = 4;  // Văn bản hải quan dẫn chiếu
 }
+
+message ZoneMarketApproval {
+  string zone_code = 1;  // Vùng sản xuất
+  string market_code = 2;  // Thị trường đích
+  string foreign_approval_code = 3;  // Mã phê duyệt của nước nhập khẩu
+  string submitted_to_foreign_date = 4;  // Ngày gửi hồ sơ sang nước nhập khẩu
+  string foreign_approved_date = 5;  // Ngày nước nhập khẩu phê duyệt
+  string foreign_market_status = 6;  // Trạng thái tại thị trường đích
+}
+
+message ForeignWarning {
+  string zone_code = 1;  // Vùng bị cảnh báo
+  string market_code = 2;  // Thị trường cảnh báo
+  string violated_facility_actor_code = 3;  // Cơ sở đóng gói liên đới
+  string violated_packing_lot_code = 4;  // Lô thành phẩm bị vi phạm
+  string official_notice_number = 5;  // Số công hàm / thông báo cảnh báo
+  string notification_date = 6;  // Ngày phát hành cảnh báo
+  string violation_type = 7;  // Loại vi phạm
+  string detected_pest_or_substance = 8;  // Sinh vật / hoạt chất bị phát hiện
+  string foreign_sanction_action = 9;  // Biện pháp chế tài
+  string remediation_report_sent_at = 10;  // Ngày gửi báo cáo khắc phục
+  string sanction_lifted_date = 11;  // Ngày được khôi phục mã số
+}
+
+message EntityCertification {
+  string certified_entity_type = 1;  // Loại thực thể được chứng nhận
+  string zone_code = 2;  // Vùng sản xuất
+  string facility_actor_code = 3;  // Cơ sở đóng gói / chế biến
+  string scheme_code = 4;  // Tiêu chuẩn / quy chuẩn
+  string certificate_number = 5;  // Số giấy chứng nhận
+  string cert_body_name = 6;  // Tổ chức chứng nhận
+  string issue_date = 7;  // Ngày cấp
+  string expiry_date = 8;  // Ngày hết hạn
+  string cert_status = 9;  // Trạng thái chứng nhận
+  string cert_scan_url = 10;  // Bản sao điện tử (URL)
+}

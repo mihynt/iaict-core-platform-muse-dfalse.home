@@ -495,6 +495,11 @@ Object.assign(DETAIL_VALUE_MAPS, {
   mrl_measurement_unit: _enumMap("MRL_UNITS"),
   scheme_level: _enumMap("SCHEME_LEVELS"),
   applicable_sector: _enumMap("SCHEME_SECTORS"),
+  foreign_market_status: _enumMap("FOREIGN_MARKET_STATUSES"),
+  violation_type: _enumMap("VIOLATION_TYPES"),
+  foreign_sanction_action: _enumMap("FOREIGN_SANCTION_ACTIONS"),
+  certified_entity_type: _enumMap("CERT_ENTITY_TYPES"),
+  cert_status: _enumMap("CERT_STATUSES"),
 });
 
 function fmtDetailVal(k2, v) {
@@ -594,6 +599,7 @@ const NAV = [
   { id: "parcels", ic: "🧩", label: "Thửa đất" },
   { id: "actors", ic: "🧑‍🌾", label: "Chủ thể" },
   { id: "refs", ic: "📚", label: "Danh mục" },
+  { id: "market", ic: "🌏", label: "Thị trường" },
   { id: "philogs", ic: "🛡️", label: "Kiểm tra PHI" },
   { id: "users", ic: "👥", label: "Người dùng" },
   { id: "tenants", ic: "🏢", label: "Tenant" },
@@ -1553,6 +1559,112 @@ VIEWS.refs = async () => {
   fab("Thêm vào danh mục", async () => {
     openSheet("Thêm " + cfg.title.toLowerCase(), await refFormFields(refTab), async (p) => {
       await T(cfg.path, { method: "POST", body: p }); invalidate(refTab);
+    });
+  });
+};
+
+/* ---------------- market approvals, warnings, certifications (GD3 Bang 8-10) ---------------- */
+const GD3A_KINDS = {
+  zone_market_approvals: { path: "/zone-market-approvals", title: "Phê duyệt thị trường", editable: true,
+    titleOf: (r) => `${r.zone_code || "?"} · ${r.market_code || "?"}`,
+    subOf: (r) => r.foreign_approval_code || "",
+    fields: [
+      { k: "zone_code", label: "Vùng sản xuất", type: "select", target: "zones", empty: "— Chọn vùng —" },
+      { k: "market_code", label: "Thị trường đích", type: "select", target: "ref_market_regulations", empty: "— Chọn thị trường —" },
+      { k: "foreign_approval_code", label: "Mã phê duyệt của nước nhập khẩu" },
+      { k: "submitted_to_foreign_date", label: "Ngày gửi hồ sơ sang nước nhập khẩu", type: "date" },
+      { k: "foreign_approved_date", label: "Ngày nước nhập khẩu phê duyệt", type: "date" },
+      { k: "foreign_market_status", label: "Trạng thái tại thị trường đích", type: "select", enum: "FOREIGN_MARKET_STATUSES" },
+    ]},
+  foreign_warnings: { path: "/foreign-warnings", title: "Cảnh báo quốc tế", editable: false,
+    titleOf: (r) => r.official_notice_number || `${r.zone_code || "?"} · ${r.market_code || "?"}`,
+    subOf: (r) => r.detected_pest_or_substance || "",
+    fields: [
+      { k: "zone_code", label: "Vùng bị cảnh báo", type: "select", target: "zones", empty: "— Chọn vùng —" },
+      { k: "market_code", label: "Thị trường cảnh báo", type: "select", target: "ref_market_regulations", empty: "— Chọn thị trường —" },
+      { k: "violated_facility_actor_code", label: "Cơ sở đóng gói liên đới", type: "select", target: "actors", empty: "— Không có —" },
+      { k: "violated_packing_lot_code", label: "Lô thành phẩm bị vi phạm", type: "select", target: "packing_lots", empty: "— Không có —", noAdd: true },
+      { k: "official_notice_number", label: "Số công hàm / thông báo cảnh báo" },
+      { k: "notification_date", label: "Ngày phát hành cảnh báo", type: "date" },
+      { k: "violation_type", label: "Loại vi phạm", type: "select", enum: "VIOLATION_TYPES" },
+      { k: "detected_pest_or_substance", label: "Sinh vật / hoạt chất bị phát hiện" },
+      { k: "foreign_sanction_action", label: "Biện pháp chế tài", type: "select", enum: "FOREIGN_SANCTION_ACTIONS" },
+      { k: "remediation_report_sent_at", label: "Ngày gửi báo cáo khắc phục", type: "date" },
+      { k: "sanction_lifted_date", label: "Ngày được khôi phục mã số", type: "date" },
+    ]},
+  entity_certifications: { path: "/entity-certifications", title: "Chứng nhận", editable: true,
+    titleOf: (r) => r.certificate_number || r.scheme_code || "Chứng nhận",
+    subOf: (r) => r.cert_body_name || "",
+    fields: [
+      { k: "certified_entity_type", label: "Loại thực thể được chứng nhận", type: "select", enum: "CERT_ENTITY_TYPES" },
+      { k: "zone_code", label: "Vùng sản xuất", type: "select", target: "zones", empty: "— Không gắn —" },
+      { k: "facility_actor_code", label: "Cơ sở đóng gói / chế biến", type: "select", target: "actors", empty: "— Không gắn —" },
+      { k: "scheme_code", label: "Tiêu chuẩn / quy chuẩn", type: "select", target: "ref_certification_schemes", empty: "— Chọn tiêu chuẩn —" },
+      { k: "certificate_number", label: "Số giấy chứng nhận" },
+      { k: "cert_body_name", label: "Tổ chức chứng nhận" },
+      { k: "issue_date", label: "Ngày cấp", type: "date" },
+      { k: "expiry_date", label: "Ngày hết hạn", type: "date" },
+      { k: "cert_status", label: "Trạng thái chứng nhận", type: "select", enum: "CERT_STATUSES" },
+      { k: "cert_scan_url", label: "Bản sao điện tử (URL)" },
+    ]},
+};
+const GD3A_TARGETS = {
+  zones: { path: "/zones", fmt: fmtZoneOpt, addNew: (d, b) => quickZone(d, b) },
+  actors: { path: "/actors", fmt: fmtActorOpt, addNew: (d, b) => quickActor(d, b) },
+  packing_lots: { path: "/packing-lots", fmt: (r) => ({ v: r.code, t: r.code }), addNew: null },
+};
+async function gd3FormFields(kind, rec) {
+  const cfg = GD3A_KINDS[kind];
+  const out = [];
+  for (const f of cfg.fields) {
+    const nf = { k: f.k, label: f.label, type: f.type };
+    if (rec && rec[f.k] !== undefined && rec[f.k] !== null) nf.def = rec[f.k];
+    if (f.type === "select" && f.enum) nf.options = (window.IAICT_META.enums[f.enum] || []).map((o) => ({ ...o }));
+    if (f.type === "select" && f.target) {
+      const tgt = GD3A_TARGETS[f.target] || (REF_KINDS[f.target] ? { path: REF_KINDS[f.target].path, fmt: fmtRefOpt(f.target), addNew: (d, b) => quickRef(f.target, d, b) } : null);
+      const items = await ensure(f.target, tgt.path).catch(() => []);
+      nf.options = [{ v: "", t: f.empty || "— Chọn —" }, ...items.map(tgt.fmt)];
+      if (tgt.addNew && !f.noAdd) {
+        nf.addNew = tgt.addNew;
+        nf.refreshOptions = async () => optOf(await ensure(f.target, tgt.path), f.empty || "— Chọn —", tgt.fmt);
+      }
+    }
+    out.push(nf);
+  }
+  return out;
+}
+let gd3Tab = "zone_market_approvals";
+VIEWS.market = async () => {
+  const el = $("#view");
+  el.innerHTML = `<div class="section-head"><h2>🌏 Thị trường & chứng nhận</h2>
+    <button class="btn btn-ghost btn-sm" id="reload">↻ Làm mới</button></div>
+    <div class="chips">${Object.entries(GD3A_KINDS).map(([k, c]) => `<button class="chip${k === gd3Tab ? " on" : ""}" data-gd3tab="${k}">${c.title}</button>`).join("")}</div>
+    <div id="gd3Body"></div>`;
+  $("#reload").onclick = () => { invalidate(gd3Tab); navigate("market", true); };
+  el.querySelectorAll("[data-gd3tab]").forEach((b) => b.onclick = () => { gd3Tab = b.dataset.gd3tab; navigate("market", true); });
+  const cfg = GD3A_KINDS[gd3Tab];
+  const body = el.querySelector("#gd3Body");
+  try {
+    const items = await ensure(gd3Tab, cfg.path);
+    body.innerHTML = items.length ? `<div class="list">${items.map((r) => `
+      <div class="card" data-card="${esc(r.code ?? r.id)}"><div class="thumb slate">🌏</div><div class="body">
+        <div class="title">${esc(cfg.titleOf(r))}</div>
+        <div class="sub">${esc(cfg.subOf(r))}</div>
+        ${cfg.editable ? `<div style="margin-top:8px"><button class="btn btn-ghost btn-sm" data-edit-gd3="${r.id}">✏️ Sửa</button></div>` : ""}
+      </div></div>`).join("")}</div>`
+      : emptyState("🌏", "Chưa có bản ghi nào", "Bấm nút + để thêm " + cfg.title.toLowerCase() + ".");
+    if (cfg.editable) body.querySelectorAll("[data-edit-gd3]").forEach((b) => b.onclick = async () => {
+      const rec = items.find((x) => x.id === Number(b.dataset.editGd3));
+      openSheet("Sửa " + cfg.titleOf(rec), await gd3FormFields(gd3Tab, rec), async (p) => {
+        await T(`${cfg.path}/${rec.id}`, { method: "PATCH", body: p });
+        invalidate(gd3Tab);
+      });
+    });
+    wireCardDetails(body, items, (r) => cfg.titleOf(r), gd3Tab);
+  } catch (err) { body.innerHTML = banner(err); }
+  fab("Thêm " + cfg.title.toLowerCase(), async () => {
+    openSheet("Thêm " + cfg.title.toLowerCase(), await gd3FormFields(gd3Tab), async (p) => {
+      await T(cfg.path, { method: "POST", body: p }); invalidate(gd3Tab);
     });
   });
 };

@@ -49,6 +49,27 @@ class RecordIn(BaseModel):
     code: str | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]{1,63}$")
     name: str | None = None
     status: str | None = None
+    # GD3 Bang 8-10: market approvals, foreign warnings, certifications
+    foreign_approval_code: str | None = None
+    submitted_to_foreign_date: str | None = None
+    foreign_approved_date: str | None = None
+    foreign_market_status: str | None = None
+    violated_facility_actor_code: str | None = None
+    violated_packing_lot_code: str | None = None
+    official_notice_number: str | None = None
+    notification_date: str | None = None
+    violation_type: str | None = None
+    detected_pest_or_substance: str | None = None
+    foreign_sanction_action: str | None = None
+    remediation_report_sent_at: str | None = None
+    sanction_lifted_date: str | None = None
+    certified_entity_type: str | None = None
+    facility_actor_code: str | None = None
+    scheme_code: str | None = None
+    certificate_number: str | None = None
+    cert_body_name: str | None = None
+    cert_status: str | None = None
+    cert_scan_url: str | None = None
     # REF catalogues (GD3, Bang 1-5) + zone jurisdiction link
     parent_unit_code: str | None = None
     admin_level: str | None = None
@@ -564,6 +585,21 @@ def _snap(record: dict | None) -> str | None:
                        default=str)[:8000]
 
 
+async def _prepare_certification(tenant: str, fields: dict) -> None:
+    """Bang 10: the certified target must match the declared entity type."""
+    etype = fields.get("certified_entity_type")
+    if etype == "PRODUCTION_ZONE" and not fields.get("zone_code"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "CERT_TARGET_REQUIRED",
+                    "message": "certified_entity_type=PRODUCTION_ZONE requires zone_code"})
+    if etype == "FACILITY_ACTOR" and not fields.get("facility_actor_code"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "CERT_TARGET_REQUIRED",
+                    "message": "certified_entity_type=FACILITY_ACTOR requires facility_actor_code"})
+
+
 async def _create(tenant: str, actor: User, kind: str, prefix: str, body: RecordIn) -> dict:
     fields = body.model_dump(mode="json", exclude_none=True)
     for key in RESERVED:
@@ -579,6 +615,8 @@ async def _create(tenant: str, actor: User, kind: str, prefix: str, body: Record
         await _prepare_field_event(tenant, fields)
     elif kind == "lots":
         await _prepare_lot(tenant, fields)
+    if kind == "entity_certifications":
+        await _prepare_certification(tenant, fields)
     elif kind == "packing_inputs":
         await _prepare_packing_input(tenant, fields)
     elif kind == "traceability_records":
@@ -964,6 +1002,39 @@ async def get_ref_transport_mode(code: str, tenant: str = Depends(require_tenant
     return await _get(tenant, "ref_transport_modes", code)
 
 
+# ---- GD3 group B: approvals, warnings, certifications (Bang 8-10) ----------
+
+@router.post("/zone-market-approvals", status_code=status.HTTP_201_CREATED)
+async def create_zone_market_approval(body: RecordIn, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "zone_market_approvals", "ZMA", body)
+
+
+@router.get("/zone-market-approvals")
+async def list_zone_market_approvals(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "zone_market_approvals")
+
+@router.post("/foreign-warnings", status_code=status.HTTP_201_CREATED)
+async def create_foreign_warning(body: RecordIn, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "foreign_warnings", "FWN", body)
+
+
+@router.get("/foreign-warnings")
+async def list_foreign_warnings(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "foreign_warnings")
+
+@router.post("/entity-certifications", status_code=status.HTTP_201_CREATED)
+async def create_entity_certification(body: RecordIn, tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _create(tenant, actor, "entity_certifications", "ECT", body)
+
+
+@router.get("/entity-certifications")
+async def list_entity_certifications(tenant: str = Depends(require_tenant)) -> dict:
+    return await _list(tenant, "entity_certifications")
+
+
 # ---- Updates (T-023) -------------------------------------------------------
 # Master-data kinds can be corrected after creation; evidence-like kinds
 # (field events, harvest lots, packing links, traceability records, CTE
@@ -1120,6 +1191,52 @@ async def update_ref_transport_mode(code: str, body: RecordIn,
                        tenant: str = Depends(require_tenant),
                        actor: User = Depends(require_role("OPERATOR"))) -> dict:
     return await _update(tenant, actor, "ref_transport_modes", "TRM", code, body)
+
+
+async def _update_by_id(tenant: str, actor: User, kind: str, prefix: str,
+                        rec_id: int, body: RecordIn) -> dict:
+    """PATCH for uncoded record kinds (approvals, certifications),
+    addressed by numeric id; mirrors _update's audit discipline."""
+    fields = body.model_dump(mode="json", exclude_none=True)
+    for key in RESERVED:
+        fields.pop(key, None)
+    fields.pop("code", None)
+    import copy as _copy
+    rows = await store.list_records(tenant, kind)
+    before = next((r for r in rows if r.get("id") == rec_id), None)
+    if before is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                            detail={"code": "NOT_FOUND",
+                                    "message": "Object not found"})
+    before = _copy.deepcopy(before)
+    try:
+        record = await store.update_record_by_id(tenant, kind, rec_id, fields)
+    except RefUnknown as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "REF_UNKNOWN",
+                    "message": f"Reference does not exist in this tenant: {exc.field_name}"},
+        ) from exc
+    await store.record_audit(
+        scope="tenant", tenant_id=tenant, actor=actor.username,
+        action=f"{prefix}_UPDATE", target=str(rec_id), outcome="OK",
+        old_value=_snap(before), new_value=_snap(record))
+    return record
+
+
+
+@router.patch("/zone-market-approvals/{rec_id}")
+async def update_zone_market_approval(rec_id: int, body: RecordIn,
+                       tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update_by_id(tenant, actor, "zone_market_approvals", "ZMA", rec_id, body)
+
+
+@router.patch("/entity-certifications/{rec_id}")
+async def update_entity_certification(rec_id: int, body: RecordIn,
+                       tenant: str = Depends(require_tenant),
+                       actor: User = Depends(require_role("OPERATOR"))) -> dict:
+    return await _update_by_id(tenant, actor, "entity_certifications", "ECT", rec_id, body)
 
 
 # ---- Deletes (T-026) -------------------------------------------------------

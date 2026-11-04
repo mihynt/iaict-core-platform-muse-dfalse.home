@@ -50,6 +50,18 @@
   "stage_no": 2,
   "traceability_code": 1
  },
+ "entity_certifications": {
+  "cert_body_name": 6,
+  "cert_scan_url": 10,
+  "cert_status": 9,
+  "certificate_number": 5,
+  "certified_entity_type": 1,
+  "expiry_date": 8,
+  "facility_actor_code": 3,
+  "issue_date": 7,
+  "scheme_code": 4,
+  "zone_code": 2
+ },
  "field_events": {
   "actor": 5,
   "application_method": 15,
@@ -74,6 +86,19 @@
   "target_pest_disease_reason": 23,
   "total_quantity_applied": 21,
   "zone_code": 18
+ },
+ "foreign_warnings": {
+  "detected_pest_or_substance": 8,
+  "foreign_sanction_action": 9,
+  "market_code": 2,
+  "notification_date": 6,
+  "official_notice_number": 5,
+  "remediation_report_sent_at": 10,
+  "sanction_lifted_date": 11,
+  "violated_facility_actor_code": 3,
+  "violated_packing_lot_code": 4,
+  "violation_type": 7,
+  "zone_code": 1
  },
  "input_lots": {
   "batch_no": 5,
@@ -261,6 +286,14 @@
   "sync_status": 11,
   "synced_at": 12,
   "traceability_code": 1
+ },
+ "zone_market_approvals": {
+  "foreign_approval_code": 3,
+  "foreign_approved_date": 5,
+  "foreign_market_status": 6,
+  "market_code": 2,
+  "submitted_to_foreign_date": 4,
+  "zone_code": 1
  },
  "zone_parcel_links": {
   "joined_date": 3,

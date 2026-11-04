@@ -326,6 +326,45 @@ type RefTransportMode {
   customs_circular_ref: String
 }
 
+type ZoneMarketApproval {
+  id: ID
+  zone_code: String
+  market_code: String
+  foreign_approval_code: String
+  submitted_to_foreign_date: String
+  foreign_approved_date: String
+  foreign_market_status: String
+}
+
+type ForeignWarning {
+  id: ID
+  zone_code: String
+  market_code: String
+  violated_facility_actor_code: String
+  violated_packing_lot_code: String
+  official_notice_number: String
+  notification_date: String
+  violation_type: String
+  detected_pest_or_substance: String
+  foreign_sanction_action: String
+  remediation_report_sent_at: String
+  sanction_lifted_date: String
+}
+
+type EntityCertification {
+  id: ID
+  certified_entity_type: String
+  zone_code: String
+  facility_actor_code: String
+  scheme_code: String
+  certificate_number: String
+  cert_body_name: String
+  issue_date: String
+  expiry_date: String
+  cert_status: String
+  cert_scan_url: String
+}
+
 type Query {
   actors: [Actor!]!
   crop_plans: [CropPlan!]!
@@ -348,4 +387,7 @@ type Query {
   ref_active_substance_mrls: [RefActiveSubstanceMrl!]!
   ref_certification_schemes: [RefCertificationScheme!]!
   ref_transport_modes: [RefTransportMode!]!
+  zone_market_approvals: [ZoneMarketApproval!]!
+  foreign_warnings: [ForeignWarning!]!
+  entity_certifications: [EntityCertification!]!
 }

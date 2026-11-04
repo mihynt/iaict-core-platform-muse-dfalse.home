@@ -26,10 +26,13 @@ _SCHEMA = pathlib.Path(__file__).with_name("schema_d1.sql").read_text(encoding="
 _DDL = [stmt.strip() for stmt in _SCHEMA.split(";\n") if stmt.strip()]
 
 _TABLES_CHILD_FIRST = [
-    "audit_log", "packing_inputs", "lot_relations", "field_events", "lots",
+    "audit_log", "foreign_warnings", "entity_certifications",
+    "zone_market_approvals", "ref_active_substance_mrls",
+    "packing_inputs", "lot_relations", "field_events", "lots",
     "crop_plans", "cte_stages", "traceability_records", "packaging_units",
     "packing_lots",
-    "phi_validations", "zone_parcel_links", "input_lots", "spatial_units",
+    "phi_validations", "zone_parcel_links", "zone_status_history",
+    "input_lots", "spatial_units",
     "actors",
     "mother_plant_status_history", "mother_plants", "zone_boundary_versions",
     "zones", "workspaces", "users", "tenants",
@@ -163,6 +166,12 @@ _MIGRATIONS: list[tuple[int, list[str]]] = [
         # T-039/GD3: zone jurisdiction link (Bang 7 via Bang 1).
         "ALTER TABLE zones ADD COLUMN jurisdiction_admin_unit_id INTEGER",
         "ALTER TABLE zones ADD COLUMN jurisdiction_commune_code TEXT",
+    ]),
+    (6, [
+        # T-041/GD3: market approvals, foreign warnings, certifications (Bang 8-10).
+        "CREATE TABLE IF NOT EXISTS zone_market_approvals (\n    id              INTEGER PRIMARY KEY AUTOINCREMENT,\n    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,\n    zone_id         INTEGER,\n    zone_code       TEXT,\n    market_id       INTEGER,\n    market_code     TEXT,\n    foreign_approval_code TEXT,\n    submitted_to_foreign_date TEXT,\n    foreign_approved_date TEXT,\n    foreign_market_status TEXT,\n    data            TEXT NOT NULL DEFAULT '{}',\n    created_at      TEXT NOT NULL,\n    updated_at      TEXT NOT NULL,\n    UNIQUE (tenant_id, id),\n    UNIQUE (tenant_id, zone_code, market_code),\n    FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id),\n    FOREIGN KEY (tenant_id, market_id) REFERENCES ref_market_regulations (tenant_id, id)\n)",
+        "CREATE TABLE IF NOT EXISTS foreign_warnings (\n    id              INTEGER PRIMARY KEY AUTOINCREMENT,\n    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,\n    zone_id         INTEGER,\n    zone_code       TEXT,\n    market_id       INTEGER,\n    market_code     TEXT,\n    violated_facility_actor_id INTEGER,\n    violated_facility_actor_code TEXT,\n    violated_packing_lot_id INTEGER,\n    violated_packing_lot_code TEXT,\n    official_notice_number TEXT,\n    notification_date TEXT,\n    violation_type  TEXT,\n    detected_pest_or_substance TEXT,\n    foreign_sanction_action TEXT,\n    remediation_report_sent_at TEXT,\n    sanction_lifted_date TEXT,\n    data            TEXT NOT NULL DEFAULT '{}',\n    created_at      TEXT NOT NULL,\n    updated_at      TEXT NOT NULL,\n    UNIQUE (tenant_id, id),\n    FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id),\n    FOREIGN KEY (tenant_id, market_id) REFERENCES ref_market_regulations (tenant_id, id),\n    FOREIGN KEY (tenant_id, violated_facility_actor_id) REFERENCES actors (tenant_id, id),\n    FOREIGN KEY (tenant_id, violated_packing_lot_id) REFERENCES packing_lots (tenant_id, id)\n)",
+        "CREATE TABLE IF NOT EXISTS entity_certifications (\n    id              INTEGER PRIMARY KEY AUTOINCREMENT,\n    tenant_id       TEXT NOT NULL REFERENCES tenants (slug) ON DELETE CASCADE,\n    certified_entity_type TEXT,\n    zone_id         INTEGER,\n    zone_code       TEXT,\n    facility_actor_id INTEGER,\n    facility_actor_code TEXT,\n    scheme_id       INTEGER,\n    scheme_code     TEXT,\n    certificate_number TEXT,\n    cert_body_name  TEXT,\n    issue_date      TEXT,\n    expiry_date     TEXT,\n    cert_status     TEXT,\n    cert_scan_url   TEXT,\n    data            TEXT NOT NULL DEFAULT '{}',\n    created_at      TEXT NOT NULL,\n    updated_at      TEXT NOT NULL,\n    UNIQUE (tenant_id, id),\n    FOREIGN KEY (tenant_id, zone_id) REFERENCES zones (tenant_id, id),\n    FOREIGN KEY (tenant_id, facility_actor_id) REFERENCES actors (tenant_id, id),\n    FOREIGN KEY (tenant_id, scheme_id) REFERENCES ref_certification_schemes (tenant_id, id)\n)",
     ]),
 ]
 
