@@ -1,5 +1,5 @@
 {
- "revision": 70,
+ "revision": 71,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-055",
-   "last_completed_step": "T-054 TECH_DONE (V2-3): Event Ledger + Current State xong, so phu LFC-05/06 len PARTIAL",
-   "next_action": "Xay V2-4 Pack Engine + Rule Engine + Pack 01 manifest (T-055); cong PHI phai chay bang rule khai bao, khong code cung.",
+   "active_task": "T-056",
+   "last_completed_step": "T-055 TECH_DONE (V2-4): Pack Engine + Rule Engine + Pack 01 — cong PHI chay bang rule khai bao, golden vectors dat",
+   "next_action": "Xay V2-5 TraceEngine + profile TT 02/2024 (T-056) theo DESIGN.md muc 3.4.",
    "blockers": []
   },
   "decisions": [
@@ -889,7 +889,7 @@
    {
     "id": "T-055",
     "title": "V2-4 Pack Engine + Rule Engine + Pack 01 manifest: nap manifest, extension validation bang JSON Schema, rule khai bao (kieu JSON Logic/AST) danh gia tren ledger; cong PHI cua v1 tai hien bang rule cua Pack 01 (golden test vectors)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [
      "GEN-02",
      "GEN-03",
@@ -898,11 +898,24 @@
      "FLD-16",
      "FLD-17"
     ],
-    "evidence": "Chua bat dau; theo DESIGN.md muc 4-5 + muc 9 lat V2-4. Lat nay duoc doc tai lieu nganh cua Pack 01 (AGENTS.md muc 4) nhung CAM ghi vao core/engines ngoai engine generic.",
+    "evidence": "V2-4 xong (repo v2 19c14e7): engines/rules.py evaluator khai bao kieu JSON Logic/AST (all/any/not/cmp gte-lte-gt-lt-eq-ne-in, add_days, for_each_prior_event voi on_missing_data BLOCK/CONDITIONAL_BLOCK/ALLOW) — trong engine khong co mot chu 'phi' nao (grep = 0), moi khai niem nganh nam o manifest; engines/packs.py JSON Schema lite (type/required/properties/additionalProperties/enum/min-max/length/format date) + check_manifest. Store: pack_versions (bat bien theo pack_id+version, dang ky o platform), tenant_packs (kich hoat theo tenant), rule_evaluations (nhat ky moi luot danh gia); D1 migration v4, ledger [1,2,3,4]. Moc runtime: records_api validate extension theo (kind, alias) cua pack dang kich hoat (EXTENSION_INVALID); ledger_api validate extension su kien + danh gia rule truoc khi ghi — BLOCK thi chan va ghi nhat ky, su kien bi chan khong de lai dau vet trong ledger. PACK 01 manifest 1.0.0 (JSON thuan, van la YAML hop le): alias + 2 recognition types + 3 extension schemas + form schemas + rule phi-gate + 4 GOLDEN TEST VECTORS chay qua API that: du cach ly PASS / trong cach ly BLOCK PHI_VIOLATION / thieu du lieu CONDITIONAL_BLOCK PHI_DATA_MISSING / khong co su kien truoc PASS — hanh vi khop v1 nhung 100% bang rule khai bao. UI: muc Goi nganh (danh sach pack, kich hoat/tat, nhat ky danh gia rule) — jsdom sim20 dat, nhan alias lay tu du lieu pack luc chay, khong hard-code. Suite: memory 52+2, D1 54, PG 50+4; script trung lap dat. So phu: GEN-02 N->P, GEN-03 N->P; tong 38/117/234.",
+    "blockers": []
+   },
+   {
+    "id": "T-056",
+    "title": "V2-5 TraceEngine generic + profile TT 02/2024 cua Pack 01: trace_lots tu su kien HARVEST, processing batches + inputs (chan vuot phan bo), products (GS1), finished/logistic units, trace events CTE, public_records theo profile cua pack — tai hien hanh vi truy xuat v1 tren spine moi",
+    "status": "PLANNED",
+    "srs_refs": [
+     "TRC-01",
+     "TRC-02",
+     "TRC-03",
+     "GEN-04"
+    ],
+    "evidence": "Chua bat dau; theo DESIGN.md muc 3.4 + muc 9 lat V2-5.",
     "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T04:43:11Z"
+ "updated_at": "2026-11-04T05:42:25Z"
 }

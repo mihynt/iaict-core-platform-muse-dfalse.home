@@ -286,21 +286,21 @@
    "id": "GEN-02",
    "group": "GEN",
    "name": "Mỗi Vertical Pack có ID/version/manifest, phụ thuộc Core version, schema extension, form, workflow, rule, report, role, device profile, seed data và migration.",
-   "status": "N",
+   "status": "P",
    "tasks": "T-032",
    "api": "",
    "tests": "test_fields_codegen",
-   "note": "Khung lõi + registry là nền; pack/entitlement chưa có."
+   "note": "Core v2 (T-055): pack co pack_id/version/manifest + core_requires, dang ky bat bien theo phien ban o platform, extension validate bang JSON Schema cua pack; cho cat chuyen V2-7."
   },
   {
    "id": "GEN-03",
    "group": "GEN",
    "name": "Tenant bật/tắt Vertical Pack bằng entitlement; một tenant có thể dùng nhiều pack nếu không xung đột.",
-   "status": "N",
+   "status": "P",
    "tasks": "T-032",
    "api": "",
    "tests": "test_fields_codegen",
-   "note": "Khung lõi + registry là nền; pack/entitlement chưa có."
+   "note": "Core v2 (T-055): tenant kich hoat/tat pack theo tung tenant (tenant_packs), nhieu pack cung luc; lop entitlement thuong mai (D-29/D-30) lam sau."
   },
   {
    "id": "GEN-04",

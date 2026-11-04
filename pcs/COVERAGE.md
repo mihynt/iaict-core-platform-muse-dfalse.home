@@ -16,14 +16,14 @@ Lập tại T-049 (2026-11-04), từ rà soát T-048. Bản máy đọc: `pcs/co
 
 ## Tổng hợp
 
-- Toàn bộ 389 mã: **COVERED 38 · PARTIAL 115 · NOT_STARTED 236**.
-- Riêng 302 FR: COVERED 29 · PARTIAL 81 · NOT_STARTED 192 — phần đã phủ tập trung ở lõi sản xuất/truy xuất (ZON/MPL/FLD/LOT/TRC + Phụ lục U); phần chưa phủ lớn nhất là lớp thương mại/vận hành (COM/CRM/PAY/MOP/AIX) thuộc mốc M5–M7 và nền tảng lõi còn thiếu (BLC = D-10, entitlement/metering trong COM/ADM).
+- Toàn bộ 389 mã: **COVERED 38 · PARTIAL 117 · NOT_STARTED 234**.
+- Riêng 302 FR: COVERED 29 · PARTIAL 83 · NOT_STARTED 190 — phần đã phủ tập trung ở lõi sản xuất/truy xuất (ZON/MPL/FLD/LOT/TRC + Phụ lục U); phần chưa phủ lớn nhất là lớp thương mại/vận hành (COM/CRM/PAY/MOP/AIX) thuộc mốc M5–M7 và nền tảng lõi còn thiếu (BLC = D-10, entitlement/metering trong COM/ADM).
 
 | Nhóm | Tên | Tổng | COVERED | PARTIAL | NOT_STARTED |
 |---|---|---|---|---|---|
 | TEN | Tenant Experience & thương hiệu | 12 | 0 | 2 | 10 |
 | ADM | Quản trị & danh tính | 15 | 1 | 7 | 7 |
-| GEN | Khung lõi / Vertical Pack | 12 | 2 | 6 | 4 |
+| GEN | Khung lõi / Vertical Pack | 12 | 2 | 8 | 2 |
 | ZON | Vùng sản xuất & PUC | 10 | 2 | 4 | 4 |
 | MPL | Cây đầu dòng | 16 | 0 | 6 | 10 |
 | FLD | Canh tác & tuân thủ PHI | 20 | 6 | 5 | 9 |
@@ -88,8 +88,8 @@ Lập tại T-049 (2026-11-04), từ rà soát T-048. Bản máy đọc: `pcs/co
 | Mã | Yêu cầu (rút gọn) | Trạng thái | Bằng chứng (task · test) | Ghi chú |
 |---|---|---|---|---|
 | GEN-01 | Core Domain phải dùng mô hình trung lập ngành trong phạm vi tenant: AdministrativeUnit/Organiza… | COVERED | T-032 · test_fields_codegen | Mô hình lõi trung lập ngành đã chạy cho 4 ngành (T-035/T-036). |
-| GEN-02 | Mỗi Vertical Pack có ID/version/manifest, phụ thuộc Core version, schema extension, form, workf… | NOT_STARTED | T-032 · test_fields_codegen | Khung lõi + registry là nền; pack/entitlement chưa có. |
-| GEN-03 | Tenant bật/tắt Vertical Pack bằng entitlement; một tenant có thể dùng nhiều pack nếu không xung… | NOT_STARTED | T-032 · test_fields_codegen | Khung lõi + registry là nền; pack/entitlement chưa có. |
+| GEN-02 | Mỗi Vertical Pack có ID/version/manifest, phụ thuộc Core version, schema extension, form, workf… | PARTIAL | T-032 · test_fields_codegen | Core v2 (T-055): pack co pack_id/version/manifest + core_requires, dang ky bat bien theo phien ban o platform, extension validate bang JSON Schema cua pack; cho cat chuyen V2-7. |
+| GEN-03 | Tenant bật/tắt Vertical Pack bằng entitlement; một tenant có thể dùng nhiều pack nếu không xung… | PARTIAL | T-032 · test_fields_codegen | Core v2 (T-055): tenant kich hoat/tat pack theo tung tenant (tenant_packs), nhieu pack cung luc; lop entitlement thuong mai (D-29/D-30) lam sau. |
 | GEN-04 | Form/field/checklist đặc thù ngành được cấu hình qua schema/metadata trong giới hạn framework. … | COVERED | T-032 · test_fields_codegen | Form/trường sinh từ field registry duy nhất; test chống lệch (drift) khóa hành vi này. |
 | GEN-05 | Rule/approval/exception đặc thù ngành được version hóa, có ngày hiệu lực và quản trị bốn mắt kh… | PARTIAL | T-032 · test_fields_codegen | Luật tuân thủ đang là cổng cứng trong code, chưa version hóa/cấu hình hiệu lực. |
 | GEN-06 | Báo cáo/dashboard đặc thù ngành dùng template/dataset contract, không viết logic truy vấn hard-… | PARTIAL | T-032 · test_fields_codegen | 3 endpoint báo cáo tính trực tiếp từ dữ liệu vận hành; chưa có template/dataset contract. |
