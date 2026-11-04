@@ -1,5 +1,5 @@
 {
- "revision": 65,
+ "revision": 66,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": null,
-   "last_completed_step": "T-050 TECH_DONE (D-10): integrity checkpoints live tren beta — 88/88 audit rows da niem phong, verify VALID; so phu len COVERED 38/389",
-   "next_action": "Owner chon: (a) chot huong MOB native-hay-web (F3 cua T-048), (b) dien du lieu danh muc tham chieu cho beta (F2), (c) goi chuan bi T-006 kem goi van hanh F5 (D-14/D-16/D-17/D-25/D-27), (d) dat secret IAICT_INTEGRITY_KEY de bat che do HMAC cho chuoi toan ven.",
+   "active_task": "T-052",
+   "last_completed_step": "T-051 TECH_DONE (DEC-014): thiet ke loi chuan Core v2 + scaffold du an iaict-core-v2; v1 dong bang lam pilot",
+   "next_action": "Xay V2-1 foundation trong du an iaict-core-v2 theo DESIGN.md (T-052). Owner tao repo GitHub cho v2 khi can push (nhu v1); deploy beta v2 o lat V2-6.",
    "blockers": []
   },
   "decisions": [
@@ -114,6 +114,12 @@
     "date": "2026-11-04",
     "title": "Field baseline: the 33 dossier tables, provisionally",
     "detail": "Owner ruling 2026-11-04 04:55 +07: 'Cac truong tam thoi lay theo 33 bang' — for the time being, the platform's field set follows the 33-table traceability dossier as extracted and analysed in T-030. This ratifies DEC-011/DEC-012 in operational terms: any new build (phase-3 tables, the SYS pack for Bang 32/33, portal sync) takes its fields from the dossier tables field-by-field; platform deviations remain recorded deltas, never silent. 'Provisionally' = until IAICT locks INT-01..06 / Q-TX-01..03, which may amend the baseline through the SRS delta process."
+   },
+   {
+    "id": "DEC-014",
+    "date": "2026-11-04",
+    "title": "Direction correction: build sector-neutral Core v2 (option B); v1 frozen as pilot",
+    "detail": "Owner ruling 2026-11-04 10:56 +07 after reviewing an external diagnosis document (kept at ~/workspace/user/files/c_T__Ki_m_So_t_AI_Agent_Thi_t_K__Core_Platform_Trung_L_p_Ng_nh.md). Diagnosis VERIFIED on the primary sources before acceptance: (1) SOW R30 Appendix U table U.2 labels ENT_PRODUCTION_ZONE 'Core + Vertical: vung' and ENT_ACTOR_HOUSEHOLD 'Core: chu the' although both carry sector-specific columns; (2) SOW section 5.2 defines the canonical core entities (Subject with 5 types, Site, SpatialUnit, ProductionUnit, OperationalActivity, ProductionCycle, RecognitionDocument, TraceEvent, VerticalPack/FormSchema...) in one prose line each, with no physical schema; (3) the v1 build promoted the 33-table traceability dossier (Appendix U content) into the core schema under DEC-011/DEC-013: zones conflate Site+ProductionUnit+PUC recognition, mother_plants is a core kind, field_events carries fruit_bagging_count, spatial_units carries forestry/vessel/slope columns, the PHI gate is hard-coded. The canonical layer of SOW 5.2 (generic Subject/ProductionUnit/EventLedger/CurrentState/Pack manifests/Rule engine) was never built (own coverage register: GEN-02/03, LFC-04/05/06 NOT_STARTED). DECISION (Owner chose option B over A in-place refactor and C accept-as-is): build Core v2 greenfield in a new project (~/workspace/projects/iaict-core-v2) following the D-04 design gate at docs/DESIGN.md there; v1 is FROZEN for features (critical fixes only) and remains the running pilot until v2 slices V2-6/V2-7 qualify. v1 assets that carry over unchanged: tenancy/RBAC/audit/PII, D-10 integrity, per-device IoT keys, store abstraction + versioned migrations, registry/codegen machinery (re-aimed at packs), the coverage register, PCS discipline. The 33-table content is re-homed as Vertical Pack 01 data/configuration, not deleted. DEC-011/DEC-013 remain in force FOR V1 only; for v2 the dossier is Pack 01 reference material."
    }
   ],
   "features": [
@@ -314,6 +320,12 @@
     "name": "Data Integrity verifier (D-10): JCS + Merkle checkpoints + proof",
     "status": "TECH_DONE",
     "notes": "docs/INTEGRITY.md; khoa HMAC tuy chon qua secret IAICT_INTEGRITY_KEY (Owner tu dat neu muon); anchoring cho quyet dinh Q.2."
+   },
+   {
+    "id": "F-029",
+    "name": "Core v2 programme (DEC-014): sector-neutral core + Vertical Packs",
+    "status": "IN_PROGRESS",
+    "notes": "Du an ~/workspace/projects/iaict-core-v2; thiet ke da khoa o T-051; lat tiep theo V2-1 (T-052). v1 dong bang tinh nang."
    }
   ],
   "flows": [],
@@ -813,9 +825,38 @@
     ],
     "evidence": "backend/app/integrity.py thuan: JCS RFC 8785 (vector RFC dat, sap khoa UTF-16, so ECMAScript), envelope schema v1 {v,seq,ts,tenant,actor,action,target,outcome,old,new}, event hash SHA-256 hoac HMAC-SHA-256 khi co IAICT_INTEGRITY_KEY (key_id = van tay khoa; xoay vong -> UNVERIFIABLE, khong INVALID), chuoi bam domain 0x01 tu genesis theo tenant, Merkle domain 0x02 theo ngay UTC (la theo seq, nut le nhan doi, tree_version 1). Bang integrity_checkpoints (migration D1 v12, ca 2 schema; khong FK tenants), store methods o ca 4 store; endpoint POST /integrity/checkpoints (TENANT_ADMIN) + GET checkpoints/verify/proof/{seq} (proof kem truong anchor NOT_ENABLED - BLC-03/04/05 co dieu kien Q.2). UI: tab Toan ven trong Bao cao. docs/INTEGRITY.md co test vector chinh thuc khoa bang test tu dong. Suite: memory 109+4 skipped, D1 subset 19, PG ca 2 driver 106 dat + 1 loi cu previous_status. Deploy Worker 8676c276. PROBE PRODUCTION: beta-pilot co 88 audit rows chua niem phong -> POST tao 3 checkpoint theo ngay (1-6, 7-26, 27-88) -> verify VALID ca 3; proof seq 10 khop root checkpoint #2; D1 ledger v12, bang checkpoints = 3 dong. jsdom sim16 bat 1 loi that truoc deploy (REPORT_TABS thung 1 o do dau phay thua) da sua. Test trinh duyet live 10:48-10:49 xac nhan tab + banner Toan ven + the proof khop API. So phu cap nhat: BLC-01/02/06, NFR-36, RPT-10 -> COVERED; BLC-04/07, NFR-40 -> PARTIAL; tong 389 ma: COVERED 38 / PARTIAL 113 / NOT_STARTED 238.",
     "blockers": []
+   },
+   {
+    "id": "T-051",
+    "title": "Core v2 design gate (D-04) + scaffold: canonical schema, pack mechanism, v1->v2 mapping, neutrality guardrails",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "GEN-01",
+     "GEN-02",
+     "GEN-04",
+     "LFC-04",
+     "D-04",
+     "DEC-014"
+    ],
+    "evidence": "Thiet ke: ~/workspace/your_files/iaict-core-v2/thiet-ke-loi-chuan-v2.md = docs/DESIGN.md trong du an v2 (schema canonical 3.1-3.5, co che manifest pack, Rule Engine khai bao + vi du phi-gate, anh xa day du 33 bang v1 -> v2, guardrails denylist + co lap ngu canh + bai kiem chung GEN-12, lat cat V2-1..V2-7). Scaffold ~/workspace/projects/iaict-core-v2 (git init, commit dau): README mandate, scripts/verify-core-neutrality.sh (chay dat), vertical-packs/pack-01-plant-forestry/manifest.yaml khung (alias PUC/MOTHER_PLANT o phia pack). Repo GitHub cho v2 chua tao (Owner tao nhu v1 khi can push).",
+    "blockers": []
+   },
+   {
+    "id": "T-052",
+    "title": "V2-1 foundation: tenancy/users/audit/integrity port + store da che do + migration + UI shell (du an iaict-core-v2)",
+    "status": "PLANNED",
+    "srs_refs": [
+     "GEN-01",
+     "ADM-01",
+     "ADM-03",
+     "SEC-03",
+     "NFR-20"
+    ],
+    "evidence": "Chua bat dau; lam theo DESIGN.md muc 9 lat V2-1. Ngu canh xay Core: chi dung Muc 3/4.0/4.13/5.2 + DESIGN.md (guardrail muc 8).",
+    "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T03:49:31Z"
+ "updated_at": "2026-11-04T03:58:29Z"
 }
