@@ -386,11 +386,11 @@
    "id": "GEN-12",
    "group": "GEN",
    "name": "M7 phải qualification bằng ít nhất hai miền khác biệt với pilot: Aquaculture Qualification Pack và Livestock Qualification Scenario. Không chấp nhận chỉ đổi tên field/label hoặc tạo bảng/code path ngành nằm trong Core.",
-   "status": "N",
+   "status": "C",
    "tasks": "T-032",
    "api": "",
    "tests": "test_fields_codegen",
-   "note": "Khung lõi + registry là nền; pack/entitlement chưa có."
+   "note": "Core v2 (T-059): Pack 02 thuy san qua cong trung lap GEN-12 rut gon (DESIGN SS8) — chay tron ven tren tenant khong kich hoat Pack 01, 0 dong Core sua (commit chi gom manifest + test); bang chung: test_pack02.py o 3 che do store + probe live beta-aqua (WITHDRAWAL_VIOLATION)."
   },
   {
    "id": "ZON-01",
@@ -1070,7 +1070,7 @@
    "tasks": "T-016, T-017, T-047",
    "api": "/traceability-records, /cte-stages",
    "tests": "test_m4_packing, test_cleanup_t047",
-   "note": "Bản ghi mang đủ 10 trường công khai TT 02/2024; cấu hình nội dung công khai theo tenant chưa có."
+   "note": "Ban ghi mang du 10 truong cong khai TT 02/2024; Core v2 (T-056): noi dung bat buoc cau hinh bang trace profile cua pack (moi pack mot bo truong khac nhau, da chung minh bang Pack 02); cau hinh theo tenant/san pham chua co."
   },
   {
    "id": "TRC-06",
@@ -1086,11 +1086,11 @@
    "id": "TRC-07",
    "group": "TRC",
    "name": "Hiển thị sản phẩm, lô, vùng, dòng thời gian, hồ sơ công bố và trạng thái xác minh.",
-   "status": "N",
+   "status": "P",
    "tasks": "T-016, T-017, T-047",
    "api": "/traceability-records, /cte-stages",
    "tests": "test_m4_packing, test_cleanup_t047",
-   "note": "Chi tiết nội bộ có trong app; trang công khai chưa có."
+   "note": "Core v2 (T-056): endpoint tra cuu cong khai /public/trace/{code} (khong can tenant) + man Xem ban cong khai trong app hien thi cac truong cong khai cua ban ghi; trang cong khai doc lap co thuong hieu chua co."
   },
   {
    "id": "TRC-08",
@@ -1110,7 +1110,7 @@
    "tasks": "T-016, T-017, T-047",
    "api": "/traceability-records, /cte-stages",
    "tests": "test_m4_packing, test_cleanup_t047",
-   "note": "Có hồ sơ thu hồi; vô hiệu hóa từng mã chưa có."
+   "note": "Co ho so thu hoi (v1 + Core v2 T-056 recall_cases, qty chua thu hoi tinh phia server); vo hieu hoa tung ma chua co."
   },
   {
    "id": "TRC-10",
@@ -1170,7 +1170,7 @@
    "tasks": "T-016, T-017, T-047",
    "api": "/traceability-records, /cte-stages",
    "tests": "test_m4_packing, test_cleanup_t047",
-   "note": "Chuỗi dữ liệu truy ngược/xuôi đủ đầu-cuối; chưa có truy vấn truy vết chuyên dụng."
+   "note": "Chuoi du lieu truy nguoc/xuoi du dau-cuoi o ca v1 va Core v2 (T-056: lo thu hoach -> me che bien -> lo thanh pham -> ban ghi cong khai); chua co truy van truy vet chuyen dung."
   },
   {
    "id": "TRC-16",

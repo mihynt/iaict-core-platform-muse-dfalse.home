@@ -1,5 +1,5 @@
 {
- "revision": 73,
+ "revision": 74,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-056",
-   "last_completed_step": "T-058 TECH_DONE (rev 73): beta Core v2 ĐÃ LIVE tại https://iaict-core-v2.mihy.workers.dev theo yêu cầu Owner — D1 riêng, Pack 01 kích hoạt, cổng PHI chặn thật trên production, checkpoint toàn vẹn VALID, test trình duyệt đạt. V2-6 còn lại: pack thứ hai qua cổng trung lập GEN-12.",
-   "next_action": "T-056 V2-5 TraceEngine (chờ lệnh Owner như đã trình ở rev 72); hoặc V2-6 phần pack thứ hai nếu Owner muốn hoàn tất cổng trung lập trước.",
+   "active_task": "T-060",
+   "last_completed_step": "T-056 + T-059 TECH_DONE (rev 74): TraceEngine + profile TT 02/2024 va Pack 02 thuy san qua cong trung lap GEN-12 — toan bo lat xay dung cua Core v2 da xong va dang chay tren beta v2 (Worker 190641d8); so phu 39 C / 118 P / 232 N (GEN-12 -> C, TRC-07 -> P).",
+   "next_action": "T-060 V2-7 (anh xa du lieu beta-pilot v1 -> v2 + chay song song + quyet dinh chuyen doi) khi Owner ra lenh; hoac ra soat 2 luot V2-5/V2-6 neu Owner yeu cau nhu cac lat truoc.",
    "blockers": []
   },
   "decisions": [
@@ -902,19 +902,6 @@
     "blockers": []
    },
    {
-    "id": "T-056",
-    "title": "V2-5 TraceEngine generic + profile TT 02/2024 cua Pack 01: trace_lots tu su kien HARVEST, processing batches + inputs (chan vuot phan bo), products (GS1), finished/logistic units, trace events CTE, public_records theo profile cua pack — tai hien hanh vi truy xuat v1 tren spine moi",
-    "status": "PLANNED",
-    "srs_refs": [
-     "TRC-01",
-     "TRC-02",
-     "TRC-03",
-     "GEN-04"
-    ],
-    "evidence": "Chua bat dau; theo DESIGN.md muc 3.4 + muc 9 lat V2-5.",
-    "blockers": []
-   },
-   {
     "id": "T-057",
     "title": "Ra soat 2 luot V2-1..V2-4 (trong tam V2-4) + sua loi",
     "status": "TECH_DONE",
@@ -936,9 +923,43 @@
     ],
     "evidence": "Owner chọn 'Deploy v2 ngay để tôi kiểm tra' 2026-11-04 13:17. Đã tạo D1 iaict-core-v2 (id 5d10b6fd-6e5e-4aef-9e5e-fde7982b8d0f), điền binding DB vào wrangler.jsonc, deploy Worker iaict-core-v2 version 3ac2f205-dffc-4584-a132-ca61df32f5d8 — https://iaict-core-v2.mihy.workers.dev (health: storage d1, version 2.0.0). Seed qua API bằng khóa platform TẠM rồi XÓA secret ngay (secret list rỗng sau seed): tenant beta-pilot + user admin (Pilot Admin, TENANT_ADMIN); Pack 01 đăng ký PUBLISHED + kích hoạt; chuỗi demo PR-01 (COOPERATIVE) → ST-01 → SB-01 (GROUP) → CY-01; sự kiện OPENING 1000 plants + TREATMENT 2026-03-02 (phi_days 14). PROBE GHI THẬT trên production: HARVEST 2026-03-05 → 400 PHI_VIOLATION (rule phi-gate chặn), HARVEST 2026-03-20 → 201; current_state = 1000 plants, state_version 3; rule_evaluations có BLOCKED + PASSED. Niêm phong toàn vẹn: checkpoint 2026-11-04 (seq 1-11), verify VALID. Test trình duyệt thật 13:24-13:25: đăng nhập OK, dashboard/hồ sơ lõi (4 tab có bản ghi)/sổ sự kiện (state 1000 plants v3)/gói ngành (pack đang kích hoạt + dòng BLOCKED PHI_VIOLATION)/toàn vẹn đều hiển thị đúng số liệu API. Repo v2 commit f77036b (wrangler binding + pyproject/pylock/uv.lock; .gitignore bổ sung cache deploy). Ghi chú trung thực: giữa seed có 1 lần response 503 trong khi bản ghi vẫn được tạo (đã đối chiếu GET, không trùng dữ liệu) và proxy của VM làm vỡ luồng đọc response của script seed 2 lần — trạng thái cuối đối chiếu bằng API là đúng và duy nhất.",
     "blockers": []
+   },
+   {
+    "id": "T-056",
+    "title": "V2-5: TraceEngine generic + Pack 01 profile TT 02/2024",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "TRC-05",
+     "TRC-07",
+     "TRC-09",
+     "TRC-10",
+     "TRC-15"
+    ],
+    "evidence": "Chuoi truy xuat generic (DESIGN SS3.4): trace_lots -> processing_batches + batch_inputs -> finished_lots -> logistic_units (SSCC) -> public_records -> recall_cases; cong khoi luong generic o moi buoc phan bo (TRACE_LOT_OVER_ALLOCATED theo su kien HARVEST, BATCH_INPUT_OVER_ALLOCATED, FINISHED_LOT_OVER_ALLOCATED, ISSUED_QUANTITY_EXCEEDED); GS1 GTIN/SSCC check digit day du; phat hanh ban ghi cong khai theo trace profile cua pack dang kich hoat (truong bat buoc, ghep ma GTIN|location|lot|event_time, thoi han luu tru TT 17/2021 gom ca truong hop dong lanh); tra cuu cong khai /public/trace/{code} khong can tenant header; qty_unrecovered tinh phia server. Pack 01 len v1.1.0 mang profile day du. D1 migration v5 (ledger [1..5]). Suite: memory 61+2, D1 63, PG 59+4 — vong PG bat 1 loi that: _trace_out dung chung dict JSONB lam response tu tham chieu (da sua bang sao chep). UI man Truy xuat mobile-first; jsdom sim21 dat. LIVE tren beta v2 (Worker 190641d8): chuoi demo beta-pilot TL-02 -> PB-02 -> FL-02 -> ban ghi 8935000000014|ST-01|FL-02|2026-03-26, tra cuu cong khai tra du truong; test trinh duyet that 13:43-13:44 dat. Loi that thu hai tu probe live: me khong co don vi san xuat sinh ma rong doan location (GTIN||lot|date) — da chan o engine (PUBLIC_RECORD_FIELD_MISSING liet ke doan rong) + xoa ban ghi loi o tang du lieu.",
+    "blockers": []
+   },
+   {
+    "id": "T-059",
+    "title": "V2-6: Pack 02 thuy san — nghiem thu trung lap GEN-12 (0 sua Core) + deploy beta v2",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "GEN-12"
+    ],
+    "evidence": "Pack 02 aquaculture (manifest thuan) chay tron ven tren tenant beta-aqua khong kich hoat Pack 01: schema mo rong POND/AQUA_STOCK duoc thuc thi (EXTENSION_INVALID khi sai), rule khai bao withdrawal-gate chan thu hoach trong thoi gian ngung thuoc (WITHDRAWAL_VIOLATION), chuoi truy xuat phat hanh theo profile nhe hon cua chinh pack (chi bat buoc product_name + business_unit_name — chung minh profile khong bi cung hoa trong Core). Commit nghiem thu a5cc3f0 CHI gom manifest pack-02 + test cua no (0 file backend/app thay doi). Suite tong sau ca hai lat: memory 61+2, D1 63, PG 59+4; verify-core-neutrality dat. Da dang ky ca hai pack tren beta v2 live; tenant demo beta-aqua (Aqua Admin) co san du lieu + dong BLOCKED trong nhat ky rule. Phan deploy cua V2-6 da xong tu T-058.",
+    "blockers": []
+   },
+   {
+    "id": "T-060",
+    "title": "V2-7: anh xa du lieu pilot v1 -> v2, chay song song, quyet dinh chuyen doi",
+    "status": "PLANNED",
+    "srs_refs": [],
+    "evidence": "",
+    "blockers": [
+     "Cho lenh Owner sau khi kiem tra beta v2."
+    ]
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T06:25:48Z"
+ "updated_at": "2026-11-04T06:44:54Z"
 }

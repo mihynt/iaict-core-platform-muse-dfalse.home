@@ -16,19 +16,19 @@ Lập tại T-049 (2026-11-04), từ rà soát T-048. Bản máy đọc: `pcs/co
 
 ## Tổng hợp
 
-- Toàn bộ 389 mã: **COVERED 38 · PARTIAL 117 · NOT_STARTED 234**.
-- Riêng 302 FR: COVERED 29 · PARTIAL 83 · NOT_STARTED 190 — phần đã phủ tập trung ở lõi sản xuất/truy xuất (ZON/MPL/FLD/LOT/TRC + Phụ lục U); phần chưa phủ lớn nhất là lớp thương mại/vận hành (COM/CRM/PAY/MOP/AIX) thuộc mốc M5–M7 và nền tảng lõi còn thiếu (BLC = D-10, entitlement/metering trong COM/ADM).
+- Toàn bộ 389 mã: **COVERED 39 · PARTIAL 118 · NOT_STARTED 232**.
+- Riêng 302 FR: COVERED 30 · PARTIAL 84 · NOT_STARTED 188 — phần đã phủ tập trung ở lõi sản xuất/truy xuất (ZON/MPL/FLD/LOT/TRC + Phụ lục U); phần chưa phủ lớn nhất là lớp thương mại/vận hành (COM/CRM/PAY/MOP/AIX) thuộc mốc M5–M7 và nền tảng lõi còn thiếu (BLC = D-10, entitlement/metering trong COM/ADM).
 
 | Nhóm | Tên | Tổng | COVERED | PARTIAL | NOT_STARTED |
 |---|---|---|---|---|---|
 | TEN | Tenant Experience & thương hiệu | 12 | 0 | 2 | 10 |
 | ADM | Quản trị & danh tính | 15 | 1 | 7 | 7 |
-| GEN | Khung lõi / Vertical Pack | 12 | 2 | 8 | 2 |
+| GEN | Khung lõi / Vertical Pack | 12 | 3 | 8 | 1 |
 | ZON | Vùng sản xuất & PUC | 10 | 2 | 4 | 4 |
 | MPL | Cây đầu dòng | 16 | 0 | 6 | 10 |
 | FLD | Canh tác & tuân thủ PHI | 20 | 6 | 5 | 9 |
 | LOT | Lô, đóng gói, vận chuyển, thu hồi | 17 | 5 | 6 | 6 |
-| TRC | Truy xuất & mã GS1 | 17 | 2 | 5 | 10 |
+| TRC | Truy xuất & mã GS1 | 17 | 2 | 6 | 9 |
 | IOT | IoT | 15 | 0 | 5 | 10 |
 | MOB | Ứng dụng di động | 13 | 1 | 1 | 11 |
 | AIX | AI Gateway | 10 | 0 | 0 | 10 |
@@ -98,7 +98,7 @@ Lập tại T-049 (2026-11-04), từ rà soát T-048. Bản máy đọc: `pcs/co
 | GEN-09 | Không fork Core theo tenant/vertical. Mọi ngoại lệ cần code phải đi qua extension point/plugin … | PARTIAL | T-032 · test_fields_codegen | Không fork theo tenant (một bản dựng); extension point/plugin contract chưa có. |
 | GEN-10 | Vertical Pack có compatibility matrix với Core, migration versioned và test regression. | PARTIAL | T-032 · test_fields_codegen | Migration đánh số phiên bản + bộ test hồi quy đầy đủ có; ma trận tương thích pack chưa có. |
 | GEN-11 | IAICT có thể tự tạo/cập nhật pack sau bàn giao bằng tài liệu/công cụ được chuyển giao, không cầ… | NOT_STARTED | T-032 · test_fields_codegen | Khung lõi + registry là nền; pack/entitlement chưa có. |
-| GEN-12 | M7 phải qualification bằng ít nhất hai miền khác biệt với pilot: Aquaculture Qualification Pack… | NOT_STARTED | T-032 · test_fields_codegen | Khung lõi + registry là nền; pack/entitlement chưa có. |
+| GEN-12 | M7 phải qualification bằng ít nhất hai miền khác biệt với pilot: Aquaculture Qualification Pack… | COVERED | T-032 · test_fields_codegen | Core v2 (T-059): Pack 02 thuy san qua cong trung lap GEN-12 rut gon (DESIGN SS8) — chay tron ven tren tenant khong kich hoat Pack 01, 0 dong Core sua (commit chi gom manifest + test); bang chung: test_pack02.py o 3 che do store + probe live beta-aqua (WITHDRAWAL_VIOLATION). |
 
 ## ZON — Vùng sản xuất & PUC
 
@@ -191,17 +191,17 @@ Lập tại T-049 (2026-11-04), từ rà soát T-048. Bản máy đọc: `pcs/co
 | TRC-02 | Kiểm tra cấu trúc/check digit đối với mã GS1 do người dùng nhập. | COVERED | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Độ dài 8/12/13/14 + số kiểm tra mod-10 (T-047). |
 | TRC-03 | Sinh QR theo GS1 Digital Link hoặc URL truy xuất tương thích. | NOT_STARTED | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Mã truy xuất dạng chuỗi nối theo TT 02/2024; QR/GS1 Digital Link chưa sinh. |
 | TRC-04 | Sinh đơn lẻ và hàng loạt; xuất PDF/PNG và dữ liệu in tem. Template phải quản lý X-dimension/qui… | NOT_STARTED | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Cấp mã + chuỗi CTE có; trang công khai/QR/EPCIS chưa có. |
-| TRC-05 | Cấu hình nội dung công khai theo tenant/sản phẩm/lô; tách dữ liệu nội bộ. | PARTIAL | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Bản ghi mang đủ 10 trường công khai TT 02/2024; cấu hình nội dung công khai theo tenant chưa có. |
+| TRC-05 | Cấu hình nội dung công khai theo tenant/sản phẩm/lô; tách dữ liệu nội bộ. | PARTIAL | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Ban ghi mang du 10 truong cong khai TT 02/2024; Core v2 (T-056): noi dung bat buoc cau hinh bang trace profile cua pack (moi pack mot bo truong khac nhau, da chung minh bang Pack 02); cau hinh theo tenant/san pham chua co. |
 | TRC-06 | Trang truy xuất responsive, tải nhanh, có logo/thông tin liên hệ và hành vi vòng đời rõ ràng kh… | NOT_STARTED | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Chưa có trang truy xuất công khai (cả TRC-06/07/08/14/16/17 phụ thuộc trang này). |
-| TRC-07 | Hiển thị sản phẩm, lô, vùng, dòng thời gian, hồ sơ công bố và trạng thái xác minh. | NOT_STARTED | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Chi tiết nội bộ có trong app; trang công khai chưa có. |
+| TRC-07 | Hiển thị sản phẩm, lô, vùng, dòng thời gian, hồ sơ công bố và trạng thái xác minh. | PARTIAL | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Core v2 (T-056): endpoint tra cuu cong khai /public/trace/{code} (khong can tenant) + man Xem ban cong khai trong app hien thi cac truong cong khai cua ban ghi; trang cong khai doc lap co thuong hieu chua co. |
 | TRC-08 | Ghi nhật ký quét ở mức tối thiểu: thời gian, mã, referrer và vùng địa lý thô nếu được phép. | NOT_STARTED | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Cấp mã + chuỗi CTE có; trang công khai/QR/EPCIS chưa có. |
-| TRC-09 | Hỗ trợ vô hiệu hóa/thu hồi mã và thông báo trạng thái rõ ràng. | PARTIAL | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Có hồ sơ thu hồi; vô hiệu hóa từng mã chưa có. |
+| TRC-09 | Hỗ trợ vô hiệu hóa/thu hồi mã và thông báo trạng thái rõ ràng. | PARTIAL | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Co ho so thu hoi (v1 + Core v2 T-056 recall_cases, qty chua thu hoi tinh phia server); vo hieu hoa tung ma chua co. |
 | TRC-10 | Mô hình sự kiện tương thích GS1 EPCIS 2.0.1 và CBV 2.0.0 ở mức dữ liệu. | PARTIAL | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Mô hình CTE tương thích về ý nghĩa; chưa serial hóa EPCIS 2.0/CBV. |
 | TRC-11 | Xuất dữ liệu sự kiện theo JSON/CSV; endpoint capture/query EPCIS là tùy chọn. | NOT_STARTED | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Chưa có endpoint xuất JSON/CSV. |
 | TRC-12 | Không tự nhận hệ thống hoặc sản phẩm được GS1/TCVN chứng nhận khi chưa có xác nhận. | COVERED | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Điều cấm về tuyên bố: sản phẩm/tài liệu không tự nhận chứng nhận GS1/TCVN. |
 | TRC-13 | Cơ chế chống làm giả: mã kích hoạt hoặc mã ẩn dưới lớp phủ; tem chưa kích hoạt khi bị tra cứu h… | NOT_STARTED | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Cấp mã + chuỗi CTE có; trang công khai/QR/EPCIS chưa có. |
 | TRC-14 | Phát hiện tra cứu bất thường: một tem vượt số lần tra cứu cấu hình được, hoặc bị tra cứu từ nhi… | NOT_STARTED | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Cấp mã + chuỗi CTE có; trang công khai/QR/EPCIS chưa có. |
-| TRC-15 | Truy vết ngược từ tem hoặc lô về thửa và cây đầu dòng; truy vết xuôi từ một thửa hoặc một lần s… | PARTIAL | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Chuỗi dữ liệu truy ngược/xuôi đủ đầu-cuối; chưa có truy vấn truy vết chuyên dụng. |
+| TRC-15 | Truy vết ngược từ tem hoặc lô về thửa và cây đầu dòng; truy vết xuôi từ một thửa hoặc một lần s… | PARTIAL | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Chuoi du lieu truy nguoc/xuoi du dau-cuoi o ca v1 va Core v2 (T-056: lo thu hoach -> me che bien -> lo thanh pham -> ban ghi cong khai); chua co truy van truy vet chuyen dung. |
 | TRC-16 | Kết xuất bộ dữ liệu và báo cáo phục vụ lập hồ sơ công bố hợp chuẩn TCVN 12850:2019: kiểm tra tí… | NOT_STARTED | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Cấp mã + chuỗi CTE có; trang công khai/QR/EPCIS chưa có. |
 | TRC-17 | Trang truy xuất công khai hỗ trợ tiếng Việt và tiếng Anh; bổ sung ngôn ngữ khác bằng cấu hình. | NOT_STARTED | T-016, T-017, T-047 · test_m4_packing, test_cleanup_t047 | Giao diện hiện chỉ tiếng Việt; trang công khai chưa có. |
 
