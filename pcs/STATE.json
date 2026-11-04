@@ -1,5 +1,5 @@
 {
- "revision": 93,
+ "revision": 94,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-078",
-   "last_completed_step": "T-077 (AG13) TECH_DONE + DEPLOYED (rev 93): khung billing/payment + mock; Worker b5f8face.",
-   "next_action": "AG14 (T-078): trai nghiem tenant + MOP — hop thu workflow UI (du AG06), branding/cau hinh tenant, thong bao.",
+   "active_task": "T-079",
+   "last_completed_step": "T-078 (AG14) TECH_DONE + DEPLOYED (rev 94): trai nghiem tenant + thong bao + MOP; Worker 9ccc006e.",
+   "next_action": "AG15 (T-079): goi nganh livestock (GEN-12 lan 3) + cong AI gateway mock (du lieu that cho SRS-DEC17).",
    "blockers": []
   },
   "decisions": [
@@ -1113,9 +1113,9 @@
    {
     "id": "T-078",
     "title": "AG14 — Tenant experience va managed ops (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commit 8251ef4. Backend: bang notifications + tenant_settings (migration v15); notify.py best-effort — workflow khoi tao/act gui thong bao vao hop thu theo vai tro cua buoc tiep, yeu cau phieu duyet hai nguoi gui admin, canh bao IoT gui admin; API GET /notifications + POST /notifications/{id}/read (chi nguoi nhan), GET/PUT /settings (admin ghi, loc truong cho phep — ten mien rieng la SRS-DEC16, khong ap dung), GET /ops/summary (MOP: events/outbox pending/canh bao IoT mo/workflow dang chay/duyet cho/usage ky). UI: man 'Viec can xu ly' (hop thu workflow co nut Duyet/Tu choi theo buoc, thong bao, phieu duyet cho) + the Ho so tenant va the Van hanh trong Cai dat. Loi that bat duoc nho sim jsdom TRUOC deploy: view moi dung sai quy uoc api()/JSON.stringify thay vi T()/object — da sua; sim24 PASS. PG phat hien loi dialect insert returning=None trong set_tenant_settings — da sua returning='tenant_id'. Suite: memory 97+2, D1 99, PG 95+4; CI GREEN. DEPLOYED Worker 9ccc006e: probe API live (PUT settings ghi that, ops summary khop du lieu beta-pilot: 5 su kien/5 outbox cho), test trinh duyet that xac nhan form ho so tenant + the van hanh dung gia tri API; tieu de panel man tasks trong bao cao trinh duyet bi lech chuoi so voi code — da doi chieu truc tiep file app.js ban live (co tem noi dung) chua dung chuoi goc, ket hop sim24 va API lam bang chung.",
     "blockers": []
    },
    {
@@ -1153,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T10:33:52Z"
+ "updated_at": "2026-11-04T10:48:19Z"
 }
