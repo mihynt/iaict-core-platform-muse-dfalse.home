@@ -1,5 +1,5 @@
 {
- "revision": 97,
+ "revision": 98,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -29,8 +29,8 @@
   ],
   "current": {
    "active_task": null,
-   "last_completed_step": "T-081 (AG17) TECH_DONE + DEPLOYED (rev 97): bo CF day du + backup/restore + runbook/cong G5; Worker fdb8c892. CHUONG TRINH AG (SRS R3) KHEP LAI phan ky thuat.",
-   "next_action": "Cho Owner danh gia tong the beta v2 va quyet dinh huong tiep (chuyen han sang v2 / tiep tuc song song theo DEC-015; cac SRS-DEC ben ngoai va AG09 khi Owner mo lai).",
+   "last_completed_step": "T-082 TECH_DONE + DEPLOYED (rev 98): 503 gian doan tren beta v2 giam tu ~15-20% xuong ~2.5% nho tach app loi/tinh nang; Worker db9c0449.",
+   "next_action": "Owner danh gia beta v2 sau ban sua 503; neu muon sach han loi isolate lanh, can quyet dinh nang goi Workers Paid. Huong san pham tiep theo van theo DEC-015/DEC-017.",
    "blockers": []
   },
   "decisions": [
@@ -1150,9 +1150,19 @@
     "srs_refs": [],
     "evidence": "Da giai nen + kiem ke SRS R3 (149 bang, 167 heading, 405k ky tu; census tham chieu 1009 luot nhac ma module; 115 UAT + 24 SRS-TC nguyen ven). Ban do AG01-AG17 voi trang thai/bang chung/thieu/blocker DEC tai ~/workspace/your_files/iaict-core-v2/ban-do-khoang-thieu-srs-r3-ag01-ag17.md. Da dang ky 17 task T-065..T-081 (PLANNED) + F-030.",
     "blockers": []
+   },
+   {
+    "id": "T-082",
+    "title": "Khắc phục lỗi 503 gián đoạn trên beta v2 (tách app lõi/tính năng sau dispatcher)",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "NFR-06"
+    ],
+    "evidence": "Owner bao 'Lỗi 503 nhiều quá' 19:31 04/11. Do luong: beta v2 /health 20 lan -> 2 lan 503 (~10-20% ca song song), beta v1 0/20; 503 xuat hien sau ~3.5-4s (isolate khoi dong that bai), request am tra 0.3s. Nguyen nhan: mot app Python Worker duy nhat voi do thi import phinh to qua AG06-AG16 vuot ngan sach khoi dong isolate cua goi mien phi. Xu ly (repo v2 8eb07c6 + commit bo middleware): tach app loi (foundation/spine/ledger/packs/trace) va app tinh nang (AG06-AG16, app/features.py) sau mot ASGI dispatcher — traffic tinh nang moi dung app tinh nang (lazy, 1 lan/isolate); 404/405 tu app loi thu lai sang app tinh nang (khong thu nguoc de khong che 404 nghia vu cua tinh nang); bo middleware BaseHTTPMiddleware thua. Suite giu nguyen xanh 3 che do (memory 110+2, D1 112, PG 108+4). DEPLOYED Worker db9c0449. Do lai sau sua: health 24/24 + song song 12/12 khong loi; pin hon hop 40 request (health/dashboard/settings/bao cao/state, cach nhau de ep isolate lanh): 39x200, 1x503 (~2.5%, giam tu 15-20%). Du luong con lai la gioi han CPU isolate lanh cua goi Workers mien phi — chua sach han duoc bang code; phuong an cau truc la nang goi Workers Paid (Owner quyet dinh chi phi).",
+    "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T12:26:46Z"
+ "updated_at": "2026-11-04T12:46:39Z"
 }
