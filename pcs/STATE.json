@@ -1,5 +1,5 @@
 {
- "revision": 82,
+ "revision": 83,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-067",
-   "last_completed_step": "T-066 (AG02) TECH_DONE (rev 82): grant/scope engine + four-eyes + TC-02. Deploy beta tam hoan vi token het hieu luc.",
-   "next_action": "AG03 (T-067): phien ban dia gioi cho spatial_units + quan he chu the + import dry-run. Khi co token moi: deploy ban AG01+AG02 len beta v2 va test trinh duyet.",
+   "active_task": "T-068",
+   "last_completed_step": "T-067 (AG03) TECH_DONE (rev 83): dia gioi co phien ban + as-of, quan he chu the, import dry-run/commit.",
+   "next_action": "AG04 (T-068): transactional outbox + truy van trang thai as-of cho Ledger. Deploy gop AG01-AG03 cho token moi.",
    "blockers": []
   },
   "decisions": [
@@ -1023,9 +1023,9 @@
    {
     "id": "T-067",
     "title": "AG03 — Registry va du lieu nen (dia gioi, import) (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commit a52a854. (1) Phien ban dia gioi: bang spatial_versions (migration v7) + POST /spatial-units/{code}/geometry-versions (snapshot tu dong phien ban hien huu truoc khi ghi phien ban moi, dong cua so hieu luc phien ban truoc, cap nhat ban ghi don vi; chan GEOMETRY_INVALID va VERSION_ORDER_INVALID) + GET geometry-versions + GET geometry-as-of?date= (tra loi 'dia gioi ngay D trong qua khu'). (2) Quan he chu the: GET /producers/{code}/relationships (parent, ancestors, children, sites, linked users). (3) Cong cu import: tools/import_spine.py chay qua API cong khai, dry-run mac dinh (WOULD_CREATE/EXISTS/ERROR), --commit moi ghi; test that bang server uvicorn doc lap (test_import_tool.py) bat duoc loi thiet ke that — dry-run bao nham tham chieu toi ban ghi nam trong chinh file import — da sua bang chi muc ma trong file. Suite: memory 76+2, D1 78, PG 74+4 (DB test PG phai drop/recreate vi them bang — quy tac cu). CI gate GREEN, trung lap PASS. Du lieu phan cap hanh chinh chinh thuc chua nap (cho nguon IAICT/DEC07) — cong cu import la co che nap khi co nguon.",
     "blockers": []
    },
    {
@@ -1153,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T08:52:18Z"
+ "updated_at": "2026-11-04T08:56:33Z"
 }
