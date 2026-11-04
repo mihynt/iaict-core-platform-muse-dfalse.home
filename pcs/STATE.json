@@ -1,5 +1,5 @@
 {
- "revision": 75,
+ "revision": 76,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -29,7 +29,7 @@
   ],
   "current": {
    "active_task": "T-060",
-   "last_completed_step": "T-061 TECH_DONE (rev 75): ra soat 2 luot V2-5/V2-6 — 2 loi trung binh (F1 nhan hieu mac dinh GTIN, F2 don vi lo thu hoach) da sua, kiem chung live; diem mo M1-M4 ghi nhan.",
+   "last_completed_step": "T-062 TECH_DONE (rev 76): ra soat v1 sau dong bang — khong lech lac, khong loi moi; pilot van dung trang thai T-050 tren moi truc kiem chung.",
    "next_action": "T-060 V2-7 (anh xa du lieu beta-pilot v1 -> v2 + chay song song + quyet dinh chuyen doi) khi Owner ra lenh; hoac ra soat 2 luot V2-5/V2-6 neu Owner yeu cau nhu cac lat truoc.",
    "blockers": []
   },
@@ -965,9 +965,17 @@
     "srs_refs": [],
     "evidence": "Bien ban: ~/workspace/your_files/iaict-core-v2/bien-ban-ra-soat-2-luot-v2-5-v2-6.md. Luot 1 xac nhan 2 loi trung binh, da sua + test hoi quy (tests/test_trace_review.py): F1 truong brand_trademark_serial cua ban ghi cong khai bi mac dinh bang GTIN (sai nghia truong so 8 TT 02/2024) — nay chi lay tu du lieu phat hanh; ban ghi demo tren beta da don o tang du lieu. F2 lo thu hoach rut tu su kien khong bi kiem tra don vi (cong phan bo cong don khac don vi) — nay bat UNIT_MISMATCH theo quantity_unit cua su kien. Probe dat ngay: phat hanh trung ma 409, khong co route PATCH/DELETE cho ban ghi chuoi. Luot 2: GEN-12 kiem chung bang git (commit a5cc3f0 dung 2 file, 0 dong backend/app), Core khong chua tham chieu pack nao, DESIGN SS3.4/SS4/SS8 dat, hai manifest qua check_manifest, tab giao dien flex-wrap an toan mobile. Diem mo ghi nhan M1-M4 (ma cong khai phan giai toan cuc; check_manifest chua kiem hinh dang trace_profile; danh dau dong lanh chua co o nhap giao dien; lech kieu so-luong dang chuoi giua cac store). Suite sau sua: memory 65+2, D1 67, PG 63+4. Redeploy beta v2 Worker 16aaaf42; probe live: F2 -> 400 UNIT_MISMATCH, phat hanh Pack 02 tren beta-aqua brand=null + ma ghep dung.",
     "blockers": []
+   },
+   {
+    "id": "T-062",
+    "title": "Ra soat v1 sau dong bang (kiem chung lech lac)",
+    "status": "TECH_DONE",
+    "srs_refs": [],
+    "evidence": "Bien ban: ~/workspace/your_files/iaict-full-audit/bien-ban-ra-soat-v1-dong-bang-04-11-2026.md. Ket luan: KHONG co lech lac hay loi moi. Bang chung: (1) dashboard beta-pilot khop dung baseline sau T-050 (2 zones, 2 mother plants, 1 plan, 1 field event, 2 lots, 1 user; cac bang probe = 0); (2) integrity verify VALID, 3 checkpoint/88 dong, test trinh duyet that tren UI khop; (3) Worker dang chay van la ban T-050 8676c276 o 100%, khong deployment nao sau dong bang; (4) tu commit dong bang T-050 den HEAD chi 3 file pcs/ thay doi (STATE + coverage), 0 dong code/UI/contract; (5) suite v1 chay lai 109+4 dung con so da ghi; (6) cong IoT 401 khi khong khoa, platform 503 (tat nhu ghi nhan). Cac diem mo deu la hang muc da ghi nhan tu truoc (test PG loi 1 ca NULL-key, harness D1-mot-tien-trinh, users/audit chua phan trang, khoa PII/toan ven chua dat, Z-TMP bi ghim, PLAN-2026 RUNNING, spike chua don) — khong phai phat hien moi.",
+    "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T06:52:19Z"
+ "updated_at": "2026-11-04T06:58:43Z"
 }
