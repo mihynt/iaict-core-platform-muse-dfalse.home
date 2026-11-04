@@ -1,5 +1,5 @@
 {
- "revision": 85,
+ "revision": 86,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-069",
-   "last_completed_step": "T-068 (AG04) TECH_DONE + DEPLOYED (rev 85): outbox + as-of hai truc; Worker 62844aed.",
-   "next_action": "AG05 (T-069): cong cu import/export pack + migration/rollback pack + kiem tra tuong thich N-1.",
+   "active_task": "T-070",
+   "last_completed_step": "T-069 (AG05) TECH_DONE + DEPLOYED (rev 86): pack lifecycle tooling; Worker b5f19b8c.",
+   "next_action": "AG06 (T-070): WorkflowEngine thuc thi + ton kho vat tu dau vao trong v2.",
    "blockers": []
   },
   "decisions": [
@@ -1039,9 +1039,9 @@
    {
     "id": "T-069",
     "title": "AG05 — Framework Vertical Pack (import/export/migration) (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commits 38e164f + a3ff6d5 (fix). Cong cu: GET /platform/packs/{id}/{version}/export; tools/pack_tool.py (check-compat offline dung chung engine voi API, export/import/dry-run); engines/packs.check_compatibility (ALIAS_REMOVED/RECOGNITION_REMOVED/SCHEMA_REMOVED/FIELD_REMOVED/FIELD_TYPE_CHANGED/REQUIRED_ADDED = BREAKING; RULE_REMOVED/TRACE_* = WARNING/BREAKING theo muc); POST /packs/{id}/upgrade-dry-run (findings + vectors + so ban ghi bi anh huong; do nhay du lieu: BREAKING tinh ha xuong WARNING khi khong ban ghi tenant nao thuc su bi anh huong); upgrade/rollback qua 2 cong PACK_INCOMPATIBLE 409 + PACK_REGRESSION_FAILED 409 (chay golden vectors cua ban dich bang evaluator thuan). Test test_pack_lifecycle.py tron vong doi. Suite: memory 80+2, D1 82, PG 78+4; CI GREEN. DEPLOYED Worker b5f19b8c: probe live dau tra 500 — checker gia dinh trace_profile dang dict trong khi manifest v1.0.0 (thoi V2-4) de dang chuoi; da sua chiu dung ca hai dang + test hoi quy (ky luat probe ghi doc duong moi sau deploy lai cuu mot loi chi lo o production). Probe lai: dry-run 1.1.0->1.0.0 compatible, vectors_ok, khong findings. Diem mo nho: chua doi chieu profile_id khi mot ben dict mot ben chuoi (khong chan).",
     "blockers": []
    },
    {
@@ -1153,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T09:09:10Z"
+ "updated_at": "2026-11-04T09:18:32Z"
 }
