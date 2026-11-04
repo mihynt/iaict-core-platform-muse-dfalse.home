@@ -1,5 +1,5 @@
 {
- "revision": 87,
+ "revision": 88,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-071",
-   "last_completed_step": "T-070 (AG06) TECH_DONE + DEPLOYED (rev 87): WorkflowEngine + ton kho vat tu; Worker 1b3053b0.",
-   "next_action": "AG07 (T-071): HLT engine (dich benh/cach ly) + STD engine (tieu chuan/MRL canh bao).",
+   "active_task": "T-072",
+   "last_completed_step": "T-071 (AG07) TECH_DONE + DEPLOYED (rev 88): HLT + STD engines; Worker 328afd22.",
+   "next_action": "AG08 (T-072): cong IoT sang v2 (dang ky thiet bi, khoa rieng tung thiet bi, ingestion, canh bao).",
    "blockers": []
   },
   "decisions": [
@@ -1055,9 +1055,9 @@
    {
     "id": "T-071",
     "title": "AG07 — Health va Standard Engine (HLT/STD) (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commit a32c01f (+ docs fix). HLT: bang health_cases/health_samples/outbreaks (migration v10); ca benh state machine SUSPECTED->CONFIRMED/REJECTED->CLOSED (409 CASE_TRANSITION_INVALID); mau/ket qua xet nghiem sua bang supersession khong ghi de (HLT-03); outbreak kem snapshot pham vi; GET /health-alerts — toan hoc thuan tren ledger (ty le chet theo cua so/baseline cau hinh, id xac dinh nen khong trung canh bao, OBSERVATION khong doi so luong — SRS-X08); ten benh/catalog tu pack (health_catalog, HLT-11), Core khong chua ten benh. STD: standard profile + criteria la du lieu catalog trong manifest pack (STD-09); engines/compliance.score_assessment: N/A bat buoc ly do va khong tinh dat, FAIL o tieu chi mandatory -> NON_COMPLIANT bat ke diem trong so, diem = ty le dat co trong so tren tieu chi da danh gia; compliance_assessments + corrective_actions (OPEN->DONE->VERIFIED, verify chi TENANT_ADMIN); evidence dang tham chieu khong nhan ban (STD-07). Pack 01 v1.3.0 them PLANT-PROD-TEMPLATE + health_catalog toi thieu (ghi ro la ban mau, catalog benh gov thuoc IAICT). Suite: memory 86+2, D1 88, PG 84+4; CI GREEN. DEPLOYED Worker 328afd22: D1 production migration 10; probe live /standards + /health-alerts 200 (beta chay pack v1.1.0 nen catalog rong — dang ky v1.3.0 can khoa platform).",
     "blockers": []
    },
    {
@@ -1153,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T09:24:28Z"
+ "updated_at": "2026-11-04T09:33:56Z"
 }
