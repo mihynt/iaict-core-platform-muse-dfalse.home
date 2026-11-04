@@ -1,5 +1,5 @@
 {
- "revision": 92,
+ "revision": 93,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-077",
-   "last_completed_step": "T-076 (AG12) TECH_DONE + DEPLOYED (rev 92): CRM Lite noi bo; Worker 946616c6.",
-   "next_action": "AG13 (T-077): payment adapters + mock (production cho nha cung cap — SRS-DEC15).",
+   "active_task": "T-078",
+   "last_completed_step": "T-077 (AG13) TECH_DONE + DEPLOYED (rev 93): khung billing/payment + mock; Worker b5f8face.",
+   "next_action": "AG14 (T-078): trai nghiem tenant + MOP — hop thu workflow UI (du AG06), branding/cau hinh tenant, thong bao.",
    "blockers": []
   },
   "decisions": [
@@ -1105,9 +1105,9 @@
    {
     "id": "T-077",
     "title": "AG13 — Billing payment va adapter (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commit db7455e. Khung thanh toan + mock provider (production provider = SRS-DEC15, chua chon — dung PAY-04: mock khong thay nghiem thu production). 4 bang moi (migration v14): billing_documents/payment_orders/payment_events/refunds (dung lai may CRM rows). Chung tu sinh tu subscription + gia trong plan.data + vuot han muc theo overage_rates, tong tai tinh tu dong (PAY-02); chung tu da phat hanh khong sua — dieu chinh bang chung tu rieng. Order state machine PAY-03 (CREATED/PENDING/PAID/FAILED/CANCELLED/EXPIRED/UNKNOWN) + tao idempotent theo khoa. Webhook PAY-05: chu ky HMAC, cua so replay 300s, inbox dedup theo event_id, callback out-of-order ghi CONFLICT khong ap dung, order la mo ghi DEAD_LETTER; chi callback PAID da xac thuc moi danh dau chung tu PAID/PARTIALLY_PAID — redirect frontend khong bao gio du. Refund PAY-09: tong completed+reserved khong vuot so da thu, four-eyes tren nguong. Doi soat PAY-06: matched/mismatch/missing hai chieu. PAY-08: muc han che truy cap CHI TINH (NONE/GRACE/READ_ONLY/SUSPENDED) — van hanh ap dung thu cong, khong tu go hold bao mat/phap ly. PAY-10: tu choi thang truong the (SENSITIVE_FIELD). PAY-11: seam adapter hoa don dien tu mock. PAY-12: portal /billing theo tenant. Suite: memory 96+2, D1 98, PG 94+4; CI GREEN. DEPLOYED Worker b5f8face; probe live: portal 200, webhook khong chu ky bi 401 SIGNATURE_INVALID, migration 14 tren D1 production.",
     "blockers": []
    },
    {
@@ -1153,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T10:29:59Z"
+ "updated_at": "2026-11-04T10:33:52Z"
 }
