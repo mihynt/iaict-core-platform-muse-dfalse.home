@@ -1,5 +1,5 @@
 {
- "revision": 98,
+ "revision": 99,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -29,8 +29,8 @@
   ],
   "current": {
    "active_task": null,
-   "last_completed_step": "T-082 TECH_DONE + DEPLOYED (rev 98): 503 gian doan tren beta v2 giam tu ~15-20% xuong ~2.5% nho tach app loi/tinh nang; Worker db9c0449.",
-   "next_action": "Owner danh gia beta v2 sau ban sua 503; neu muon sach han loi isolate lanh, can quyet dinh nang goi Workers Paid. Huong san pham tiep theo van theo DEC-015/DEC-017.",
+   "last_completed_step": "T-083 TECH_DONE + DEPLOYED (rev 99): v2 nap nhanh theo cong thuc v1 (Worker be282cde); kem khoi phuc projection beta-pilot ve 400 qua rebuild.",
+   "next_action": "Owner dung thu lai beta v2: mo lai trang va chuyen man se thay toc do nhu v1. Quyet dinh con mo: nang goi Workers Paid de diet du luong 503 lanh ~2.5%.",
    "blockers": []
   },
   "decisions": [
@@ -1160,9 +1160,19 @@
     ],
     "evidence": "Owner bao 'Lỗi 503 nhiều quá' 19:31 04/11. Do luong: beta v2 /health 20 lan -> 2 lan 503 (~10-20% ca song song), beta v1 0/20; 503 xuat hien sau ~3.5-4s (isolate khoi dong that bai), request am tra 0.3s. Nguyen nhan: mot app Python Worker duy nhat voi do thi import phinh to qua AG06-AG16 vuot ngan sach khoi dong isolate cua goi mien phi. Xu ly (repo v2 8eb07c6 + commit bo middleware): tach app loi (foundation/spine/ledger/packs/trace) va app tinh nang (AG06-AG16, app/features.py) sau mot ASGI dispatcher — traffic tinh nang moi dung app tinh nang (lazy, 1 lan/isolate); 404/405 tu app loi thu lai sang app tinh nang (khong thu nguoc de khong che 404 nghia vu cua tinh nang); bo middleware BaseHTTPMiddleware thua. Suite giu nguyen xanh 3 che do (memory 110+2, D1 112, PG 108+4). DEPLOYED Worker db9c0449. Do lai sau sua: health 24/24 + song song 12/12 khong loi; pin hon hop 40 request (health/dashboard/settings/bao cao/state, cach nhau de ep isolate lanh): 39x200, 1x503 (~2.5%, giam tu 15-20%). Du luong con lai la gioi han CPU isolate lanh cua goi Workers mien phi — chua sach han duoc bang code; phuong an cau truc la nang goi Workers Paid (Owner quyet dinh chi phi).",
     "blockers": []
+   },
+   {
+    "id": "T-083",
+    "title": "Tối ưu tốc độ tải v2 theo đúng công thức v1 (khởi động lạc quan + prefetch + cache bền)",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "NFR-06"
+    ],
+    "evidence": "Owner: 'V1 load rất nhanh, tối ưu như v1 ý'. Do luong: API tho cua v1 KHONG nhanh hon v2 (dashboard ~3s ca hai) — toc do cam nhan cua v1 den tu lop client (T-027/T-030). V2 truoc sua: boot() cho await /context + enterApp cho await /health (2 cuoc goi lanh lien tiep khoa man hinh dau), dashboard goi T('/dashboard') tho moi lan, khong prefetch. Da ap dung nguyen cong thuc v1 (repo v2 commit bc41302, Worker be282cde): (1) boot vao thang ung dung tu phien da luu, ve dashboard tu cache ben (localStorage) ngay, xac thuc /context chay nen (chi dang xuat khi 401/403 — khong dang xuat vi 503 thoang qua); /health khong con khoa man hinh; (2) prefetchAll sau khi vao: lam am dashboard, users, 9 loai spine, cac bang truy xuat chinh, events/state; (3) dashboard va man So su kien di qua cache SWR (ensure/ensureBody). Sim jsdom 26/27: vao app + ve dashboard tu cache TRONG KHI /context chua tra loi; prefetch ban du; man su kien ve dung trang thai 400; 0 loi. Test trinh duyet that: tai lai trang -> dashboard hien thang kem the thong ke, chuyen cac man Ho so loi/So su kien/Truy xuat/Bao cao deu nhanh, khong xoay cho. SU CO PHAT HIEN KHI TEST: bang trang thai hien tai (projection) cua beta-pilot trong rong tren production du so su kien con nguyen 5 su kien — audit khong ghi thao tac xoa nao (rebuild 16:18 mismatches_fixed=0, sau do khong co ghi nao); chuoi toan ven kiem chung VALID. Da dung co che thiet ke san (POST /state/rebuild) khoi phuc dung 400 cay SB-01/CY-01 (mismatches_fixed=1). Nguyen nhan mat dong projection chua xac dinh duoc; day la dung lop du lieu phai sinh lai duoc tu so cai theo kien truc event-sourcing.",
+    "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T12:46:39Z"
+ "updated_at": "2026-11-04T14:04:45Z"
 }
