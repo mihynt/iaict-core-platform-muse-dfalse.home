@@ -223,6 +223,8 @@ const fmtActorOpt = (a) => ({ v: a.code, t: `${a.code} · ${a.name || ""}` });
 const fmtPlantOpt = (pl) => ({ v: pl.code, t: `${pl.code} · ${pl.species || ""}` });
 const fmtParcelOpt = (u) => ({ v: u.code, t: `${u.code}${u.parcel_number ? " · Thửa " + u.parcel_number : ""}` });
 const fmtInputOpt = (i) => ({ v: i.code, t: `${i.code} · ${i.name || i.substance_code || ""}${i.phi_days != null ? ` · cách ly ${i.phi_days} ngày` : ""}` });
+const fmtPlanOpt = (p) => ({ v: p.code, t: `${p.code} · ${p.name || p.crop_name || ""}` });
+const fmtLotOpt = (l) => ({ v: l.code, t: `${l.code} · ${l.quantity ?? "?"} ${l.unit || "kg"}` });
 const PUC_STATUSES = window.IAICT_META.enums.PUC_STATUSES;
 const MEMBERSHIP_STATUSES = window.IAICT_META.enums.MEMBERSHIP_STATUSES;
 const FARM_TIERS = window.IAICT_META.enums.FARM_TIERS;
@@ -388,6 +390,86 @@ async function quickParcel(done, back) {
   try {
     openSheet("Khai thửa / ao / lô rừng", await parcelCreateFields(), async (p) => { const r = await T("/spatial-units", { method: "POST", body: p }); invalidate("parcels"); toast("Đã thêm thửa " + r.code); done(r.code); }, { onCancel: back });
   } catch { toast("Không mở được form thửa đất.", true); back(); }
+}
+
+async function planCreateFields() {
+  const [zones, plants, parcels] = await Promise.all([
+    ensure("zones", "/zones").catch(() => []), ensure("plants", "/mother-plants").catch(() => []),
+    ensure("parcels", "/spatial-units").catch(() => []),
+  ]);
+  const forestZones = zones.filter((z) => z.sector_category === "FORESTRY_PLANTATION").map((z) => z.code);
+  const aquaZones = zones.filter((z) => z.sector_category === "AQUACULTURE").map((z) => z.code);
+  return [
+    { k: "code", label: "Mã kế hoạch", required: true, placeholder: "vd: PLAN-2026" },
+    { k: "name", label: "Tên kế hoạch", placeholder: "vd: Vụ rau Đông Xuân" },
+    { k: "crop_name", label: "Cây trồng", placeholder: "vd: Xà lách, Cà chua…" },
+    { k: "zone_code", label: "Vùng canh tác", type: "select",
+      options: [{ v: "", t: "— Chọn vùng —" }, ...zones.map(fmtZoneOpt)],
+      addNew: quickZone,
+      refreshOptions: async () => optOf(await ensure("zones", "/zones"), "— Chọn vùng —", fmtZoneOpt) },
+    { k: "plant_code", label: "Cây đầu dòng liên quan", type: "select",
+      options: [{ v: "", t: "— Không gắn cây —" }, ...plants.map(fmtPlantOpt)],
+      addNew: quickPlant,
+      refreshOptions: async () => optOf(await ensure("plants", "/mother-plants"), "— Không gắn cây —", fmtPlantOpt) },
+    { k: "parcel_code", label: "Thửa đất canh tác", type: "select",
+      options: [{ v: "", t: "— Không gắn thửa —" }, ...parcels.map(fmtParcelOpt)],
+      addNew: quickParcel,
+      refreshOptions: async () => optOf(await ensure("parcels", "/spatial-units"), "— Không gắn thửa —", fmtParcelOpt) },
+    { k: "variety_name", label: "Tên giống", placeholder: "vd: Ri6, ST25…" },
+    { k: "start_date", label: "Ngày bắt đầu", type: "date" },
+    { k: "end_date", label: "Ngày kết thúc dự kiến", type: "date" },
+    { k: "target_yield_kg", label: "Mục tiêu sản lượng (kg)", type: "number", step: "0.1" },
+    { k: "planting_density", label: "Mật độ trồng (cây/ha)", type: "number", step: "0.1" },
+    { k: "seed_origin_doc", label: "Hồ sơ nguồn gốc giống", placeholder: "Số giấy chứng nhận / hóa đơn giống" },
+    { k: "forest_harvest_plan_no", label: "Số VB phê duyệt PA khai thác rừng (nếu có)", visIf: { k: "zone_code", in: forestZones } },
+    { k: "departure_port_code", label: "Mã cảng xuất bến (thủy sản, nếu có)", visIf: { k: "zone_code", in: aquaZones } },
+    { k: "arrival_port_code", label: "Mã cảng cập bến (thủy sản, nếu có)", visIf: { k: "zone_code", in: aquaZones } },
+    { k: "status", label: "Trạng thái chu kỳ", type: "select", options: [
+      { v: "IN_PROGRESS", t: "Đang thực hiện" }, { v: "HARVESTING", t: "Đang thu hoạch" },
+      { v: "COMPLETED_CLOSED", t: "Đã kết thúc" }, { v: "ABORTED_BY_DISASTER_DISEASE", t: "Hủy do thiên tai / dịch bệnh" }] },
+  ];
+}
+async function lotCreateFields() {
+  const [zones, plans, actors, parcels] = await Promise.all([
+    ensure("zones", "/zones").catch(() => []), ensure("plans", "/crop-plans").catch(() => []),
+    ensure("actors", "/actors").catch(() => []), ensure("parcels", "/spatial-units").catch(() => []),
+  ]);
+  return [
+    { k: "code", label: "Mã lô", required: true, placeholder: "vd: LOT-001" },
+    { k: "zone_code", label: "Vùng thu hoạch", type: "select",
+      options: [{ v: "", t: "— Chọn vùng —" }, ...zones.map(fmtZoneOpt)],
+      addNew: quickZone,
+      refreshOptions: async () => optOf(await ensure("zones", "/zones"), "— Chọn vùng —", fmtZoneOpt) },
+    { k: "plan_code", label: "Kế hoạch mùa vụ", type: "select",
+      options: [{ v: "", t: "— Không gắn kế hoạch —" }, ...plans.map(fmtPlanOpt)],
+      addNew: quickPlan,
+      refreshOptions: async () => optOf(await ensure("plans", "/crop-plans"), "— Không gắn kế hoạch —", fmtPlanOpt) },
+    { k: "harvest_date", label: "Ngày thu hoạch", type: "date" },
+    { k: "harvest_time", label: "Giờ thu hoạch (nếu cần chi tiết)", type: "time" },
+    { k: "farmer_code", label: "Nông hộ thu hoạch", type: "select",
+      options: [{ v: "", t: "— Chọn nông hộ —" }, ...actors.map(fmtActorOpt)],
+      addNew: quickActor,
+      refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Chọn nông hộ —", fmtActorOpt) },
+    { k: "parcel_code", label: "Thửa đất", type: "select",
+      options: [{ v: "", t: "— Chọn thửa —" }, ...parcels.map(fmtParcelOpt)],
+      addNew: quickParcel,
+      refreshOptions: async () => optOf(await ensure("parcels", "/spatial-units"), "— Chọn thửa —", fmtParcelOpt) },
+    { k: "weigh_slip_number", label: "Số phiếu cân", placeholder: "vd: WS-2026-0051" },
+    { k: "quantity", label: "Sản lượng", type: "number", step: "0.01" },
+    { k: "unit", label: "Đơn vị", type: "select", options: [
+      { v: "kg", t: "kg" }, { v: "tấn", t: "tấn" }, { v: "thùng", t: "thùng" }, { v: "bao", t: "bao" }] },
+    { k: "expiry_date", label: "Hạn dùng", type: "date" },
+  ];
+}
+async function quickPlan(done, back) {
+  try {
+    openSheet("Tạo kế hoạch mùa vụ", await planCreateFields(), async (p) => { const r = await T("/crop-plans", { method: "POST", body: p }); invalidate("plans"); toast("Đã thêm kế hoạch " + r.code); done(r.code); }, { onCancel: back });
+  } catch { toast("Không mở được form kế hoạch.", true); back(); }
+}
+async function quickLot(done, back) {
+  try {
+    openSheet("Tạo lô thu hoạch", await lotCreateFields(), async (p) => { const r = await T("/lots", { method: "POST", body: p }); invalidate("lots"); toast("Đã thêm lô " + r.code); done(r.code); }, { onCancel: back });
+  } catch { toast("Không mở được form lô thu hoạch.", true); back(); }
 }
 
 const DETAIL_LABELS = window.IAICT_META.labels;
@@ -870,9 +952,13 @@ VIEWS.plans = async () => {
       openSheet("Ghi nhật ký đồng ruộng", [
         { k: "event_type", label: "Loại sự kiện", type: "select", required: true, options: EVENT_TYPES },
         { k: "plan_code", label: "Kế hoạch mùa vụ", type: "select",
-          options: [{ v: "", t: "— Không gắn kế hoạch —" }, ...plans.map((p) => ({ v: p.code, t: `${p.code} · ${p.name || p.crop_name || ""}` }))] },
+          options: [{ v: "", t: "— Không gắn kế hoạch —" }, ...plans.map(fmtPlanOpt)],
+          addNew: quickPlan,
+          refreshOptions: async () => optOf(await ensure("plans", "/crop-plans"), "— Không gắn kế hoạch —", fmtPlanOpt) },
         { k: "zone_code", label: "Vùng", type: "select",
-          options: [{ v: "", t: "— Không gắn vùng —" }, ...zones.map((z) => ({ v: z.code, t: `${z.code}${z.puc_code ? " · " + z.puc_code : ""}` }))] },
+          options: [{ v: "", t: "— Không gắn vùng —" }, ...zones.map(fmtZoneOpt)],
+          addNew: quickZone,
+          refreshOptions: async () => optOf(await ensure("zones", "/zones"), "— Không gắn vùng —", fmtZoneOpt) },
         { k: "input_lot_code", label: "Lô vật tư đã dùng", type: "select",
           options: [{ v: "", t: "— Không ghi vật tư —" }, ...inputs.map(fmtInputOpt)],
           addNew: quickInputLot,
@@ -894,41 +980,7 @@ VIEWS.plans = async () => {
     };
   } catch (err) { el.innerHTML = banner(err); }
   fab("Tạo kế hoạch mùa vụ", async () => {
-    const [zones, plants, parcels] = await Promise.all([
-      ensure("zones", "/zones").catch(() => []), ensure("plants", "/mother-plants").catch(() => []),
-      ensure("parcels", "/spatial-units").catch(() => []),
-    ]);
-    const forestZones = zones.filter((z) => z.sector_category === "FORESTRY_PLANTATION").map((z) => z.code);
-    const aquaZones = zones.filter((z) => z.sector_category === "AQUACULTURE").map((z) => z.code);
-    openSheet("Tạo kế hoạch mùa vụ", [
-      { k: "code", label: "Mã kế hoạch", required: true, placeholder: "vd: PLAN-2026" },
-      { k: "name", label: "Tên kế hoạch", placeholder: "vd: Vụ rau Đông Xuân" },
-      { k: "crop_name", label: "Cây trồng", placeholder: "vd: Xà lách, Cà chua…" },
-      { k: "zone_code", label: "Vùng canh tác", type: "select",
-        options: [{ v: "", t: "— Chọn vùng —" }, ...zones.map(fmtZoneOpt)],
-        addNew: quickZone,
-        refreshOptions: async () => optOf(await ensure("zones", "/zones"), "— Chọn vùng —", fmtZoneOpt) },
-      { k: "plant_code", label: "Cây đầu dòng liên quan", type: "select",
-        options: [{ v: "", t: "— Không gắn cây —" }, ...plants.map(fmtPlantOpt)],
-        addNew: quickPlant,
-        refreshOptions: async () => optOf(await ensure("plants", "/mother-plants"), "— Không gắn cây —", fmtPlantOpt) },
-      { k: "parcel_code", label: "Thửa đất canh tác", type: "select",
-        options: [{ v: "", t: "— Không gắn thửa —" }, ...parcels.map(fmtParcelOpt)],
-        addNew: quickParcel,
-        refreshOptions: async () => optOf(await ensure("parcels", "/spatial-units"), "— Không gắn thửa —", fmtParcelOpt) },
-      { k: "variety_name", label: "Tên giống", placeholder: "vd: Ri6, ST25…" },
-      { k: "start_date", label: "Ngày bắt đầu", type: "date" },
-      { k: "end_date", label: "Ngày kết thúc dự kiến", type: "date" },
-      { k: "target_yield_kg", label: "Mục tiêu sản lượng (kg)", type: "number", step: "0.1" },
-      { k: "planting_density", label: "Mật độ trồng (cây/ha)", type: "number", step: "0.1" },
-      { k: "seed_origin_doc", label: "Hồ sơ nguồn gốc giống", placeholder: "Số giấy chứng nhận / hóa đơn giống" },
-      { k: "forest_harvest_plan_no", label: "Số VB phê duyệt PA khai thác rừng (nếu có)" , visIf: { k: "zone_code", in: forestZones } },
-      { k: "departure_port_code", label: "Mã cảng xuất bến (thủy sản, nếu có)" , visIf: { k: "zone_code", in: aquaZones } },
-      { k: "arrival_port_code", label: "Mã cảng cập bến (thủy sản, nếu có)" , visIf: { k: "zone_code", in: aquaZones } },
-      { k: "status", label: "Trạng thái chu kỳ", type: "select", options: [
-        { v: "IN_PROGRESS", t: "Đang thực hiện" }, { v: "HARVESTING", t: "Đang thu hoạch" },
-        { v: "COMPLETED_CLOSED", t: "Đã kết thúc" }, { v: "ABORTED_BY_DISASTER_DISEASE", t: "Hủy do thiên tai / dịch bệnh" }] },
-    ], async (p) => { await T("/crop-plans", { method: "POST", body: p }); invalidate("plans"); });
+    openSheet("Tạo kế hoạch mùa vụ", await planCreateFields(), async (p) => { await T("/crop-plans", { method: "POST", body: p }); invalidate("plans"); });
   });
 };
 
@@ -951,40 +1003,13 @@ VIEWS.lots = async () => {
           ${l.farmer_code ? `<span>🧑‍🌾 ${esc(l.farmer_code)}</span>` : ""}
           ${l.weigh_slip_number ? `<span>⚖️ ${esc(l.weigh_slip_number)}</span>` : ""}
           ${l.traceability_code ? `<span>🔎 ${esc(l.traceability_code)}</span>` : ""}
-          ${l.harvested_by ? `<span>👤 ${esc(l.harvested_by)}</span>` : ""}
           ${l.expiry_date ? `<span>⏳ HSD ${fmtDate(l.expiry_date)}</span>` : ""}
         </div></div></div>`).join("")}</div>`
       : emptyState("📦", "Chưa có lô thu hoạch nào", "Bấm nút + để tạo lô từ vùng/kế hoạch đã thu hoạch."));
+    wireCardDetails(el, items, (l) => `Lô thu hoạch ${l.code}`, "lots");
   } catch (err) { el.innerHTML = banner(err); }
-  wireCardDetails(el, items, (l) => `Lô thu hoạch ${l.code}`, "lots");
   fab("Tạo lô thu hoạch", async () => {
-    const [zones, plans, actors, parcels] = await Promise.all([
-      ensure("zones", "/zones").catch(() => []), ensure("plans", "/crop-plans").catch(() => []),
-      ensure("actors", "/actors").catch(() => []), ensure("parcels", "/spatial-units").catch(() => []),
-    ]);
-    openSheet("Tạo lô thu hoạch", [
-      { k: "code", label: "Mã lô", required: true, placeholder: "vd: LOT-001" },
-      { k: "zone_code", label: "Vùng thu hoạch", type: "select",
-        options: [{ v: "", t: "— Chọn vùng —" }, ...zones.map((z) => ({ v: z.code, t: `${z.code}${z.puc_code ? " · " + z.puc_code : ""}` }))] },
-      { k: "plan_code", label: "Kế hoạch mùa vụ", type: "select",
-        options: [{ v: "", t: "— Không gắn kế hoạch —" }, ...plans.map((p) => ({ v: p.code, t: `${p.code} · ${p.name || p.crop_name || ""}` }))] },
-      { k: "harvest_date", label: "Ngày thu hoạch", type: "date" },
-      { k: "harvest_time", label: "Giờ thu hoạch (nếu cần chi tiết)", type: "time" },
-      { k: "farmer_code", label: "Nông hộ thu hoạch", type: "select",
-        options: [{ v: "", t: "— Chọn nông hộ —" }, ...actors.map(fmtActorOpt)],
-        addNew: quickActor,
-        refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Chọn nông hộ —", fmtActorOpt) },
-      { k: "parcel_code", label: "Thửa đất", type: "select",
-        options: [{ v: "", t: "— Chọn thửa —" }, ...parcels.map(fmtParcelOpt)],
-        addNew: quickParcel,
-        refreshOptions: async () => optOf(await ensure("parcels", "/spatial-units"), "— Chọn thửa —", fmtParcelOpt) },
-      { k: "weigh_slip_number", label: "Số phiếu cân", placeholder: "vd: WS-2026-0051" },
-      { k: "quantity", label: "Sản lượng", type: "number", step: "0.01" },
-      { k: "unit", label: "Đơn vị", type: "select", options: [
-        { v: "kg", t: "kg" }, { v: "tấn", t: "tấn" }, { v: "thùng", t: "thùng" }, { v: "bao", t: "bao" }] },
-      { k: "harvested_by", label: "Người thu hoạch" },
-      { k: "expiry_date", label: "Hạn dùng", type: "date" },
-    ], async (p) => { await T("/lots", { method: "POST", body: p }); invalidate("lots"); });
+    openSheet("Tạo lô thu hoạch", await lotCreateFields(), async (p) => { await T("/lots", { method: "POST", body: p }); invalidate("lots"); });
   });
 };
 
@@ -1099,7 +1124,9 @@ async function issueTraceCode(packingCode) {
   const lots = await ensure("lots", "/lots").catch(() => []);
   openSheet(`Cấp mã truy xuất · ${packingCode}`, [
     { k: "harvest_lot_code", label: "Lô thu hoạch đầu vào", type: "select", required: true,
-      options: [{ v: "", t: "— Chọn lô thu hoạch —" }, ...lots.map((l) => ({ v: l.code, t: `${l.code} · ${l.quantity ?? "?"} ${l.unit || "kg"}` }))] },
+      options: [{ v: "", t: "— Chọn lô thu hoạch —" }, ...lots.map(fmtLotOpt)],
+      addNew: quickLot,
+      refreshOptions: async () => optOf(await ensure("lots", "/lots"), "— Chọn lô thu hoạch —", fmtLotOpt) },
     { k: "allocated_weight_kg", label: "Khối lượng đưa vào đóng gói (kg)", type: "number", step: "0.01", required: true },
     { k: "product_name", label: "Tên sản phẩm (Bảng 29)", required: true, placeholder: "vd: Bưởi da xanh loại 1" },
     { k: "gtin_code", label: "Mã GTIN sản phẩm", required: true, placeholder: "vd: 08935049501234" },
@@ -1424,7 +1451,9 @@ VIEWS.users = async () => {
       { k: "account_status", label: "Trạng thái tài khoản", type: "select", def: u.account_status || "ACTIVE", options: [
         { v: "ACTIVE", t: "Hoạt động" }, { v: "LOCKED", t: "Khóa" }, { v: "REVOKED", t: "Thu hồi" }] },
       { k: "linked_actor_code", label: "Chủ thể liên kết", type: "select", def: u.linked_actor_code || "",
-        options: [{ v: "", t: "— Không liên kết —" }, ...actors.map(fmtActorOpt)] },
+        options: [{ v: "", t: "— Không liên kết —" }, ...actors.map(fmtActorOpt)],
+        addNew: quickActor,
+        refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Không liên kết —", fmtActorOpt) },
       { k: "jurisdiction_admin_code", label: "Mã đơn vị hành chính phụ trách", def: u.jurisdiction_admin_code || "" },
       { k: "auth_provider_type", label: "Phương thức xác thực", type: "select", def: u.auth_provider_type || "", options: [
         { v: "", t: "— Chưa xác định —" }, { v: "VNEID_NATIONAL_SSO", t: "VNeID / SSO quốc gia" },
@@ -1443,7 +1472,9 @@ VIEWS.users = async () => {
     { k: "role", label: "Vai trò", type: "select", options: [
       { v: "VIEWER", t: "Chỉ xem" }, { v: "OPERATOR", t: "Vận hành (ghi dữ liệu)" }, { v: "TENANT_ADMIN", t: "Quản trị tenant" }] },
     { k: "linked_actor_code", label: "Chủ thể liên kết", type: "select",
-      options: [{ v: "", t: "— Không liên kết —" }, ...actors.map(fmtActorOpt)] },
+      options: [{ v: "", t: "— Không liên kết —" }, ...actors.map(fmtActorOpt)],
+      addNew: quickActor,
+      refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Không liên kết —", fmtActorOpt) },
     { k: "jurisdiction_admin_code", label: "Mã đơn vị hành chính phụ trách" },
     { k: "auth_provider_type", label: "Phương thức xác thực", type: "select", options: [
       { v: "", t: "— Chưa xác định —" }, { v: "VNEID_NATIONAL_SSO", t: "VNeID / SSO quốc gia" },
