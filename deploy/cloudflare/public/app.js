@@ -176,12 +176,13 @@ function openSheet(title, fields, onSubmit, opts = {}) {
         if (inp) snapshot[pf.k] = inp.value;
       }
       const parent = { title, fields, onSubmit };
+      const parentOpts = sheetOnCancel ? { onCancel: sheetOnCancel } : {};
       const restore = async (newCode) => {
         for (const pf of parent.fields) {
           if (pf.refreshOptions) { try { pf.options = await pf.refreshOptions(); } catch { /* keep */ } }
           pf.def = newCode && pf.k === f.k ? newCode : snapshot[pf.k];
         }
-        openSheet(parent.title, parent.fields, parent.onSubmit);
+        openSheet(parent.title, parent.fields, parent.onSubmit, parentOpts);
       };
       f.addNew((code) => restore(code), () => restore(null));
     };
@@ -236,41 +237,157 @@ const ACTOR_TYPES = [
   { v: "COOPERATIVE", t: "Hợp tác xã" }, { v: "FACILITY", t: "Cơ sở đóng gói/chế biến" },
   { v: "OTHER", t: "Khác" }];
 
-function quickZone(done, back) {
-  openSheet("Thêm vùng mới", [
-    { k: "code", label: "Mã vùng", required: true, placeholder: "vd: Z-03" },
-    { k: "puc_code", label: "Mã số vùng trồng (PUC)" },
-  ], async (p) => { const r = await T("/zones", { method: "POST", body: p }); invalidate("zones", "zhistory"); toast("Đã thêm vùng " + r.code); done(r.code); }, { onCancel: back });
+/* Create-form field builders (T-037): ONE definition per kind, shared by the
+   main create form and the "+ Thêm mới" quick-create inside other forms, so
+   the quick form is always the full original form - never a stripped copy. */
+async function zoneCreateFields() {
+  const actors = await ensure("actors", "/actors").catch(() => []);
+  return [
+    { k: "code", label: "Mã vùng", required: true, placeholder: "vd: Z-01" },
+    { k: "puc_code", label: "Mã số vùng trồng (PUC)", placeholder: "vd: VN-66-650-24370-94-21" },
+    { k: "puc_status", label: "Trạng thái mã số vùng trồng", type: "select", options: PUC_STATUSES },
+    { k: "issue_date", label: "Ngày cấp mã vùng trồng", type: "date" },
+    { k: "issuing_authority", label: "Cơ quan cấp mã", placeholder: "vd: Chi cục Trồng trọt và BVTV" },
+    { k: "post_inspect_due_date", label: "Hạn hậu kiểm mã vùng trồng", type: "date" },
+    { k: "valid_from", label: "Mã vùng trồng hiệu lực từ", type: "date" },
+    { k: "valid_to", label: "Mã vùng trồng hiệu lực đến", type: "date" },
+    { k: "vsic_code", label: "Mã ngành VSIC", placeholder: "vd: 0119" },
+    { k: "sector_category", label: "Ngành / lĩnh vực", type: "select", options: [{ v: "", t: "— Chọn ngành —" }, ...SECTORS] },
+    { k: "market_scope", label: "Phạm vi thị trường", placeholder: "vd: Nội địa, EU, Trung Quốc…" },
+    { k: "scientific_name", label: "Tên khoa học cây trồng chính" },
+    { k: "owner_actor_code", label: "Chủ thể sở hữu vùng", type: "select",
+      options: [{ v: "", t: "— Chưa gắn —" }, ...actors.map(fmtActorOpt)],
+      addNew: quickActor,
+      refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Chưa gắn —", fmtActorOpt) },
+    { k: "initial_declared_area_ha", label: "Diện tích khai báo ban đầu (ha)", type: "number", step: "0.01" },
+    { k: "dist_to_residential_m", label: "Khoảng cách tới khu dân cư (m)", type: "number", step: "0.1", visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
+    { k: "dist_to_sensitive_zone_m", label: "Khoảng cách tới vùng nhạy cảm (m)", type: "number", step: "0.1", visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
+    { k: "bee_site_min_dist_km", label: "Khoảng cách tối thiểu tới điểm nuôi ong (km)", type: "number", step: "0.1", visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
+    { k: "farm_scale_tier", label: "Quy mô cơ sở chăn nuôi", type: "select", options: FARM_TIERS, visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
+    { k: "submission_channel", label: "Kênh nộp hồ sơ cấp mã", type: "select", options: SUBMIT_CHANNELS },
+    { k: "application_received_at", label: "Thời điểm xã tiếp nhận hồ sơ", type: "datetime-local" },
+    { k: "primary_species", label: "Cây trồng chính", placeholder: "vd: Bưởi da xanh" },
+  ];
 }
-function quickPlant(done, back) {
-  openSheet("Thêm cây đầu dòng mới", [
-    { k: "code", label: "Mã cây", required: true, placeholder: "vd: MPL-002" },
-    { k: "species", label: "Loài cây", required: true },
-    { k: "variety", label: "Giống" },
-  ], async (p) => { const r = await T("/mother-plants", { method: "POST", body: p }); invalidate("plants"); toast("Đã thêm cây " + r.code); done(r.code); }, { onCancel: back });
+async function plantCreateFields() {
+  const zones = await ensure("zones", "/zones").catch(() => []);
+  return [
+    { k: "code", label: "Mã cây (dùng cho QR)", required: true, placeholder: "vd: MPL-001" },
+    { k: "species", label: "Loài cây", required: true, placeholder: "vd: Sầu riêng" },
+    { k: "variety", label: "Giống", placeholder: "vd: Ri6, Monthong…" },
+    { k: "scientific_name", label: "Tên khoa học", placeholder: "vd: Durio zibethinus" },
+    { k: "zone_code", label: "Thuộc vùng", type: "select",
+      options: [{ v: "", t: "— Không gắn vùng —" }, ...zones.map(fmtZoneOpt)],
+      addNew: quickZone,
+      refreshOptions: async () => optOf(await ensure("zones", "/zones"), "— Không gắn vùng —", fmtZoneOpt) },
+    { k: "valid_to", label: "Công nhận đến", type: "date" },
+    { k: "planting_year", label: "Năm trồng", type: "number", placeholder: "vd: 2019" },
+    { k: "cultivar_code", label: "Mã giống" },
+    { k: "recognition_no", label: "Số quyết định công nhận" },
+    { k: "origin", label: "Nguồn gốc", placeholder: "Vườn ươm / xuất xứ" },
+    { k: "owner_manager", label: "Chủ sở hữu / người quản lý" },
+  ];
 }
-function quickActor(done, back) {
-  openSheet("Thêm chủ thể mới", [
-    { k: "code", label: "Mã chủ thể", required: true, placeholder: "vd: H05" },
+async function actorCreateFields() {
+  const items = await ensure("actors", "/actors").catch(() => []);
+  return [
+    { k: "code", label: "Mã chủ thể", required: true, placeholder: "vd: H05, PHC-01" },
     { k: "name", label: "Tên chủ thể", required: true },
     { k: "actor_type", label: "Loại chủ thể", type: "select", options: ACTOR_TYPES },
+    { k: "gln_code", label: "Mã GLN" },
+    { k: "gs1_role_ai", label: "Mã vai trò GS1" },
+    { k: "forestry_enterprise_class", label: "Phân loại DN gỗ (TT 26/2025)", type: "select", options: FORESTRY_CLASSES },
+    { k: "is_group_leader", label: "Là tổ trưởng", type: "bool", options: BOOL_OPTS },
+    { k: "ics_training_completed", label: "Đã tập huấn ICS", type: "bool", options: BOOL_OPTS },
+    { k: "parent_code", label: "Chủ thể cấp trên", type: "select",
+      options: [{ v: "", t: "— Không có —" }, ...items.map(fmtActorOpt)] },
+    { k: "province_code", label: "Mã tỉnh" },
+    { k: "district_code", label: "Mã huyện" },
+    { k: "commune_code", label: "Mã xã" },
+    { k: "address", label: "Địa chỉ" },
+    { k: "legal_id", label: "Số CCCD / mã số thuế" },
     { k: "phone", label: "Số điện thoại" },
-  ], async (p) => { const r = await T("/actors", { method: "POST", body: p }); invalidate("actors"); toast("Đã thêm chủ thể " + r.code); done(r.code); }, { onCancel: back });
+    { k: "email", label: "Email" },
+    { k: "valid_from", label: "Hiệu lực từ", type: "date" },
+    { k: "valid_to", label: "Hiệu lực đến", type: "date" },
+  ];
 }
-function quickInputLot(done, back) {
-  openSheet("Thêm lô vật tư mới", [
-    { k: "code", label: "Mã lô vật tư", required: true, placeholder: "vd: VT-001" },
-    { k: "name", label: "Tên sản phẩm", required: true },
-    { k: "phi_days", label: "Số ngày cách ly (PHI)", type: "number", step: "1" },
+async function inputLotCreateFields() {
+  const actors = await ensure("actors", "/actors").catch(() => []);
+  return [
+    { k: "code", label: "Mã lô vật tư", required: true, placeholder: "vd: VT-01" },
+    { k: "name", label: "Tên vật tư", placeholder: "vd: Thuốc trừ sâu X" },
+    { k: "category", label: "Nhóm vật tư", type: "select", options: INPUT_CATEGORIES },
+    { k: "substance_code", label: "Hoạt chất / thành phần", placeholder: "vd: Abamectin" },
+    { k: "vn_registration_number", label: "Số đăng ký lưu hành VN" },
+    { k: "batch_no", label: "Số lô nhà sản xuất" },
+    { k: "purchase_invoice_no", label: "Số hóa đơn mua" },
+    { k: "qcvn_scheme_id", label: "Mã quy chuẩn (QCVN)" },
+    { k: "supplier_code", label: "Nhà cung cấp", type: "select",
+      options: [{ v: "", t: "— Không ghi —" }, ...actors.map(fmtActorOpt)],
+      addNew: quickActor,
+      refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Không ghi —", fmtActorOpt) },
+    { k: "purchase_date", label: "Ngày nhập", type: "date" },
+    { k: "quantity", label: "Số lượng nhập", type: "number", step: "0.01" },
+    { k: "phi_days", label: "Số ngày cách ly PHI (theo nhãn)", type: "number", step: "1" },
     { k: "expiry_date", label: "Hạn dùng", type: "date" },
-  ], async (p) => { const r = await T("/input-lots", { method: "POST", body: p }); invalidate("inputs"); toast("Đã thêm lô vật tư " + r.code); done(r.code); }, { onCancel: back });
+  ];
 }
-function quickParcel(done, back) {
-  openSheet("Thêm thửa đất mới", [
-    { k: "code", label: "Mã thửa", required: true, placeholder: "vd: T42" },
-    { k: "unit_type", label: "Loại đơn vị", type: "select", options: [{ v: "", t: "— Chọn loại đơn vị —" }, ...UNIT_TYPES] },
+async function parcelCreateFields() {
+  const actors = await ensure("actors", "/actors").catch(() => []);
+  return [
+    { k: "code", label: "Mã thửa", required: true, placeholder: "vd: TH-01" },
+    { k: "unit_type", label: "Loại đơn vị", type: "select", options: UNIT_TYPES },
+    { k: "operator_code", label: "Người/hộ vận hành", type: "select",
+      options: [{ v: "", t: "— Không ghi —" }, ...actors.map(fmtActorOpt)],
+      addNew: quickActor,
+      refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Không ghi —", fmtActorOpt) },
+    { k: "national_land_parcel_id", label: "Mã định danh thửa đất quốc gia" },
+    { k: "map_sheet_number", label: "Số tờ bản đồ" },
+    { k: "parcel_number", label: "Số thửa" },
     { k: "area_m2", label: "Diện tích (m²)", type: "number", step: "0.01" },
-  ], async (p) => { const r = await T("/spatial-units", { method: "POST", body: p }); invalidate("parcels"); toast("Đã thêm thửa " + r.code); done(r.code); }, { onCancel: back });
+    { k: "land_tenure_doc_type", label: "Loại giấy tờ đất", placeholder: "vd: GCN QSDĐ" },
+    { k: "land_cert_serial", label: "Số giấy chứng nhận" },
+    { k: "land_legal_owner_name", label: "Chủ đất theo giấy tờ" },
+    { k: "owner_consent_doc_url", label: "Văn bản đồng ý của chủ đất (URL)", placeholder: "https://…" },
+    { k: "slope_degree", label: "Độ dốc (°)", type: "number", step: "0.1", visIf: { k: "unit_type", in: ["AGRICULTURAL_LAND_PARCEL", "FOREST_PLOT_STAND"] } },
+    { k: "earth_terrace_compliant", label: "Đã làm băng đất đồng mức (vùng dốc)", type: "bool", options: BOOL_OPTS, visIf: { k: "unit_type", in: ["AGRICULTURAL_LAND_PARCEL", "FOREST_PLOT_STAND"] } },
+    { k: "forest_subzone_code", label: "Mã tiểu khu", visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
+    { k: "forest_compartment_code", label: "Mã khoảnh", visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
+    { k: "forest_plot_code", label: "Mã lô rừng", visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
+    { k: "forest_origin_type", label: "Nguồn gốc rừng (nếu là lô rừng)", type: "select", options: FOREST_ORIGINS, visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
+    { k: "aquaculture_water_type", label: "Loại hình mặt nước (nếu nuôi thủy sản)", type: "select", options: AQUA_WATERS, visIf: { k: "unit_type", in: ["AQUACULTURE_POND_CAGE"] } },
+    { k: "vessel_reg_number", label: "Số đăng ký tàu cá (nếu là tàu cá)", visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
+    { k: "vessel_length_max_m", label: "Chiều dài lớn nhất tàu (m)", type: "number", step: "0.01", visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
+    { k: "tech_safety_cert_no", label: "Số GCN an toàn kỹ thuật tàu cá", visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
+    { k: "vms_device_serial", label: "Số seri thiết bị giám sát hành trình (VMS)", visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
+  ];
+}
+
+async function quickZone(done, back) {
+  try {
+    openSheet("Tạo vùng nguyên liệu", await zoneCreateFields(), async (p) => { const r = await T("/zones", { method: "POST", body: p }); invalidate("zones", "zhistory"); toast("Đã thêm vùng " + r.code); done(r.code); }, { onCancel: back });
+  } catch { toast("Không mở được form vùng.", true); back(); }
+}
+async function quickPlant(done, back) {
+  try {
+    openSheet("Thêm cây đầu dòng", await plantCreateFields(), async (p) => { const r = await T("/mother-plants", { method: "POST", body: p }); invalidate("plants"); toast("Đã thêm cây " + r.code); done(r.code); }, { onCancel: back });
+  } catch { toast("Không mở được form cây đầu dòng.", true); back(); }
+}
+async function quickActor(done, back) {
+  try {
+    openSheet("Thêm chủ thể", await actorCreateFields(), async (p) => { const r = await T("/actors", { method: "POST", body: p }); invalidate("actors"); toast("Đã thêm chủ thể " + r.code); done(r.code); }, { onCancel: back });
+  } catch { toast("Không mở được form chủ thể.", true); back(); }
+}
+async function quickInputLot(done, back) {
+  try {
+    openSheet("Nhập lô vật tư đầu vào", await inputLotCreateFields(), async (p) => { const r = await T("/input-lots", { method: "POST", body: p }); invalidate("inputs"); toast("Đã thêm lô vật tư " + r.code); done(r.code); }, { onCancel: back });
+  } catch { toast("Không mở được form lô vật tư.", true); back(); }
+}
+async function quickParcel(done, back) {
+  try {
+    openSheet("Khai thửa / ao / lô rừng", await parcelCreateFields(), async (p) => { const r = await T("/spatial-units", { method: "POST", body: p }); invalidate("parcels"); toast("Đã thêm thửa " + r.code); done(r.code); }, { onCancel: back });
+  } catch { toast("Không mở được form thửa đất.", true); back(); }
 }
 
 const DETAIL_LABELS = window.IAICT_META.labels;
@@ -639,33 +756,7 @@ VIEWS.zones = async () => {
       confirmDelete(`vùng ${b.dataset.delZone}`, `/zones/${encodeURIComponent(b.dataset.delZone)}`, ["zones"]));
   } catch (err) { el.innerHTML = banner(err); }
   fab("Tạo vùng", async () => {
-    const actors = await ensure("actors", "/actors").catch(() => []);
-    openSheet("Tạo vùng nguyên liệu", [
-    { k: "code", label: "Mã vùng", required: true, placeholder: "vd: Z-01" },
-    { k: "puc_code", label: "Mã số vùng trồng (PUC)", placeholder: "vd: VN-66-650-24370-94-21" },
-    { k: "puc_status", label: "Trạng thái mã số vùng trồng", type: "select", options: PUC_STATUSES },
-    { k: "issue_date", label: "Ngày cấp mã vùng trồng", type: "date" },
-    { k: "issuing_authority", label: "Cơ quan cấp mã", placeholder: "vd: Chi cục Trồng trọt và BVTV" },
-    { k: "post_inspect_due_date", label: "Hạn hậu kiểm mã vùng trồng", type: "date" },
-    { k: "valid_from", label: "Mã vùng trồng hiệu lực từ", type: "date" },
-    { k: "valid_to", label: "Mã vùng trồng hiệu lực đến", type: "date" },
-    { k: "vsic_code", label: "Mã ngành VSIC", placeholder: "vd: 0119" },
-    { k: "sector_category", label: "Ngành / lĩnh vực", type: "select", options: [{ v: "", t: "— Chọn ngành —" }, ...SECTORS] },
-    { k: "market_scope", label: "Phạm vi thị trường", placeholder: "vd: Nội địa, EU, Trung Quốc…" },
-    { k: "scientific_name", label: "Tên khoa học cây trồng chính" },
-    { k: "owner_actor_code", label: "Chủ thể sở hữu vùng", type: "select",
-      options: [{ v: "", t: "— Chưa gắn —" }, ...actors.map(fmtActorOpt)],
-      addNew: quickActor,
-      refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Chưa gắn —", fmtActorOpt) },
-    { k: "initial_declared_area_ha", label: "Diện tích khai báo ban đầu (ha)", type: "number", step: "0.01" },
-    { k: "dist_to_residential_m", label: "Khoảng cách tới khu dân cư (m)", type: "number", step: "0.1" , visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
-    { k: "dist_to_sensitive_zone_m", label: "Khoảng cách tới vùng nhạy cảm (m)", type: "number", step: "0.1" , visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
-    { k: "bee_site_min_dist_km", label: "Khoảng cách tối thiểu tới điểm nuôi ong (km)", type: "number", step: "0.1" , visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
-    { k: "farm_scale_tier", label: "Quy mô cơ sở chăn nuôi", type: "select", options: FARM_TIERS , visIf: { k: "sector_category", in: ["LIVESTOCK_FARMING"] } },
-    { k: "submission_channel", label: "Kênh nộp hồ sơ cấp mã", type: "select", options: SUBMIT_CHANNELS },
-    { k: "application_received_at", label: "Thời điểm xã tiếp nhận hồ sơ", type: "datetime-local" },
-    { k: "primary_species", label: "Cây trồng chính", placeholder: "vd: Bưởi da xanh" },
-  ], async (p) => { await T("/zones", { method: "POST", body: p }); invalidate("zones", "zhistory"); });
+    openSheet("Tạo vùng nguyên liệu", await zoneCreateFields(), async (p) => { await T("/zones", { method: "POST", body: p }); invalidate("zones", "zhistory"); });
   });
 };
 
@@ -716,23 +807,7 @@ VIEWS.plants = async () => {
       confirmDelete(`cây ${b.dataset.delPlant}`, `/mother-plants/${encodeURIComponent(b.dataset.delPlant)}`, ["plants"]));
   } catch (err) { el.innerHTML = banner(err); }
   fab("Thêm cây đầu dòng", async () => {
-    const zones = await ensure("zones", "/zones").catch(() => []);
-    openSheet("Thêm cây đầu dòng", [
-      { k: "code", label: "Mã cây (dùng cho QR)", required: true, placeholder: "vd: MPL-001" },
-      { k: "species", label: "Loài cây", required: true, placeholder: "vd: Sầu riêng" },
-      { k: "variety", label: "Giống", placeholder: "vd: Ri6, Monthong…" },
-      { k: "scientific_name", label: "Tên khoa học", placeholder: "vd: Durio zibethinus" },
-      { k: "zone_code", label: "Thuộc vùng", type: "select",
-        options: [{ v: "", t: "— Không gắn vùng —" }, ...zones.map(fmtZoneOpt)],
-        addNew: quickZone,
-        refreshOptions: async () => optOf(await ensure("zones", "/zones"), "— Không gắn vùng —", fmtZoneOpt) },
-      { k: "valid_to", label: "Công nhận đến", type: "date" },
-      { k: "planting_year", label: "Năm trồng", type: "number", placeholder: "vd: 2019" },
-      { k: "cultivar_code", label: "Mã giống" },
-      { k: "recognition_no", label: "Số quyết định công nhận" },
-      { k: "origin", label: "Nguồn gốc", placeholder: "Vườn ươm / xuất xứ" },
-      { k: "owner_manager", label: "Chủ sở hữu / người quản lý" },
-    ], async (p) => { await T("/mother-plants", { method: "POST", body: p }); invalidate("plants"); });
+    openSheet("Thêm cây đầu dòng", await plantCreateFields(), async (p) => { await T("/mother-plants", { method: "POST", body: p }); invalidate("plants"); });
   });
 };
 
@@ -1111,25 +1186,7 @@ VIEWS.inputs = async () => {
     });
   } catch (err) { el.innerHTML = banner(err); }
   fab("Nhập lô vật tư", async () => {
-    const actors = await ensure("actors", "/actors").catch(() => []);
-    openSheet("Nhập lô vật tư đầu vào", [
-      { k: "code", label: "Mã lô vật tư", required: true, placeholder: "vd: VT-01" },
-      { k: "name", label: "Tên vật tư", placeholder: "vd: Thuốc trừ sâu X" },
-      { k: "category", label: "Nhóm vật tư", type: "select", options: INPUT_CATEGORIES },
-      { k: "substance_code", label: "Hoạt chất / thành phần", placeholder: "vd: Abamectin" },
-      { k: "vn_registration_number", label: "Số đăng ký lưu hành VN" },
-      { k: "batch_no", label: "Số lô nhà sản xuất" },
-      { k: "purchase_invoice_no", label: "Số hóa đơn mua" },
-      { k: "qcvn_scheme_id", label: "Mã quy chuẩn (QCVN)" },
-      { k: "supplier_code", label: "Nhà cung cấp", type: "select",
-        options: [{ v: "", t: "— Không ghi —" }, ...actors.map(fmtActorOpt)],
-        addNew: quickActor,
-        refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Không ghi —", fmtActorOpt) },
-      { k: "purchase_date", label: "Ngày nhập", type: "date" },
-      { k: "quantity", label: "Số lượng nhập", type: "number", step: "0.01" },
-      { k: "phi_days", label: "Số ngày cách ly PHI (theo nhãn)", type: "number", step: "1" },
-      { k: "expiry_date", label: "Hạn dùng", type: "date" },
-    ], async (p) => { await T("/input-lots", { method: "POST", body: p }); invalidate("inputs"); });
+    openSheet("Nhập lô vật tư đầu vào", await inputLotCreateFields(), async (p) => { await T("/input-lots", { method: "POST", body: p }); invalidate("inputs"); });
   });
 };
 
@@ -1246,34 +1303,7 @@ VIEWS.parcels = async () => {
     };
   } catch (err) { el.innerHTML = banner(err); }
   fab("Khai thửa đất", async () => {
-    const actors = await ensure("actors", "/actors").catch(() => []);
-    openSheet("Khai thửa / ao / lô rừng", [
-      { k: "code", label: "Mã thửa", required: true, placeholder: "vd: TH-01" },
-      { k: "unit_type", label: "Loại đơn vị", type: "select", options: UNIT_TYPES },
-      { k: "operator_code", label: "Người/hộ vận hành", type: "select",
-        options: [{ v: "", t: "— Không ghi —" }, ...actors.map(fmtActorOpt)],
-        addNew: quickActor,
-        refreshOptions: async () => optOf(await ensure("actors", "/actors"), "— Không ghi —", fmtActorOpt) },
-      { k: "national_land_parcel_id", label: "Mã định danh thửa đất quốc gia" },
-      { k: "map_sheet_number", label: "Số tờ bản đồ" },
-      { k: "parcel_number", label: "Số thửa" },
-      { k: "area_m2", label: "Diện tích (m²)", type: "number", step: "0.01" },
-      { k: "land_tenure_doc_type", label: "Loại giấy tờ đất", placeholder: "vd: GCN QSDĐ" },
-      { k: "land_cert_serial", label: "Số giấy chứng nhận" },
-      { k: "land_legal_owner_name", label: "Chủ đất theo giấy tờ" },
-      { k: "owner_consent_doc_url", label: "Văn bản đồng ý của chủ đất (URL)", placeholder: "https://…" },
-      { k: "slope_degree", label: "Độ dốc (°)", type: "number", step: "0.1", visIf: { k: "unit_type", in: ["AGRICULTURAL_LAND_PARCEL", "FOREST_PLOT_STAND"] } },
-      { k: "earth_terrace_compliant", label: "Đã làm băng đất đồng mức (vùng dốc)", type: "bool", options: BOOL_OPTS, visIf: { k: "unit_type", in: ["AGRICULTURAL_LAND_PARCEL", "FOREST_PLOT_STAND"] } },
-      { k: "forest_subzone_code", label: "Mã tiểu khu", visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
-      { k: "forest_compartment_code", label: "Mã khoảnh", visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
-      { k: "forest_plot_code", label: "Mã lô rừng", visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
-      { k: "forest_origin_type", label: "Nguồn gốc rừng (nếu là lô rừng)", type: "select", options: FOREST_ORIGINS, visIf: { k: "unit_type", in: ["FOREST_PLOT_STAND"] } },
-      { k: "aquaculture_water_type", label: "Loại hình mặt nước (nếu nuôi thủy sản)", type: "select", options: AQUA_WATERS , visIf: { k: "unit_type", in: ["AQUACULTURE_POND_CAGE"] } },
-      { k: "vessel_reg_number", label: "Số đăng ký tàu cá (nếu là tàu cá)" , visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
-      { k: "vessel_length_max_m", label: "Chiều dài lớn nhất tàu (m)", type: "number", step: "0.01" , visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
-      { k: "tech_safety_cert_no", label: "Số GCN an toàn kỹ thuật tàu cá" , visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
-      { k: "vms_device_serial", label: "Số seri thiết bị giám sát hành trình (VMS)" , visIf: { k: "unit_type", in: ["FISHING_VESSEL"] } },
-    ], async (p) => { await T("/spatial-units", { method: "POST", body: p }); invalidate("parcels"); });
+    openSheet("Khai thửa / ao / lô rừng", await parcelCreateFields(), async (p) => { await T("/spatial-units", { method: "POST", body: p }); invalidate("parcels"); });
   });
 };
 
@@ -1355,28 +1385,7 @@ VIEWS.actors = async () => {
     });
   } catch (err) { el.innerHTML = banner(err); }
   fab("Thêm chủ thể", async () => {
-    const items = await ensure("actors", "/actors").catch(() => []);
-    openSheet("Thêm chủ thể", [
-      { k: "code", label: "Mã chủ thể", required: true, placeholder: "vd: H05, PHC-01" },
-      { k: "name", label: "Tên chủ thể", required: true },
-      { k: "actor_type", label: "Loại chủ thể", type: "select", options: ACTOR_TYPES },
-      { k: "gln_code", label: "Mã GLN" },
-      { k: "gs1_role_ai", label: "Mã vai trò GS1" },
-      { k: "forestry_enterprise_class", label: "Phân loại DN gỗ (TT 26/2025)", type: "select", options: FORESTRY_CLASSES },
-      { k: "is_group_leader", label: "Là tổ trưởng", type: "bool", options: BOOL_OPTS },
-      { k: "ics_training_completed", label: "Đã tập huấn ICS", type: "bool", options: BOOL_OPTS },
-      { k: "parent_code", label: "Chủ thể cấp trên", type: "select",
-        options: [{ v: "", t: "— Không có —" }, ...items.map(fmtActorOpt)] },
-      { k: "province_code", label: "Mã tỉnh" },
-      { k: "district_code", label: "Mã huyện" },
-      { k: "commune_code", label: "Mã xã" },
-      { k: "address", label: "Địa chỉ" },
-      { k: "legal_id", label: "Số CCCD / mã số thuế" },
-      { k: "phone", label: "Số điện thoại" },
-      { k: "email", label: "Email" },
-      { k: "valid_from", label: "Hiệu lực từ", type: "date" },
-      { k: "valid_to", label: "Hiệu lực đến", type: "date" },
-    ], async (p) => { await T("/actors", { method: "POST", body: p }); invalidate("actors"); });
+    openSheet("Thêm chủ thể", await actorCreateFields(), async (p) => { await T("/actors", { method: "POST", body: p }); invalidate("actors"); });
   });
 };
 

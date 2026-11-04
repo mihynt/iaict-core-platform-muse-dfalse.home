@@ -1,5 +1,5 @@
 {
- "revision": 51,
+ "revision": 52,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -29,7 +29,7 @@
   ],
   "current": {
    "active_task": "T-005",
-   "last_completed_step": "T-036 DONE (rev 51): Core+Vertical review for all 16 kinds + plan/event sector gating + zone-creation 500 incident fixed (legacy zones.name NOT NULL; store guard live on Worker a439d46e). Suites: memory 77+3; D1 legacy tests pass standalone; full D1 suite in one process is broken on the pristine tree too (pre-existing harness issue).",
+   "last_completed_step": "T-037 DONE (rev 52): quick-create forms unified with the main create forms via shared per-kind builders; nested two-level create/cancel verified live (Worker 649a53d0). Suites: memory 77+3.",
    "next_action": "Owner picks the next track: D-STD-01 phase 3 (17 tables + views) vs T-005 (M3a IoT gate) vs T-032 slices 3-4. Note: existing zones need sector_category set (edit each zone, pick its sector) for the vertical form blocks to open on current data.",
    "blockers": []
   },
@@ -236,6 +236,12 @@
     "name": "Core + Vertical forms across all kinds (T-036)",
     "status": "TECH_DONE",
     "notes": "Plan/event sector gating by the selected zone's sector; cycle_status aligned to Bang 15; zone-creation legacy NOT NULL incident fixed (store guard + schema relaxation + regression tests); Worker a439d46e; browser-verified."
+   },
+   {
+    "id": "F-016",
+    "name": "Unified create forms: quick-create opens the full original form (T-037)",
+    "status": "TECH_DONE",
+    "notes": "Single form-definition builder per kind shared by main + nested create; two-level nesting with correct cancel-return; Worker 649a53d0; browser-verified identical field sets."
    }
   ],
   "flows": [],
@@ -571,9 +577,19 @@
     ],
     "evidence": "Owner directive 2026-11-04 06:58: extend the T-035 Core+Vertical organization to the whole platform and review carefully. Minutes: iaict-full-audit/ra-soat-core-vertical-04-11-2026.md (Core/Vertical classification for all 16 kinds). APPLIED: crop_plans form - forest_harvest_plan_no only for FORESTRY_PLANTATION zones, departure/arrival_port_code only for AQUACULTURE zones (driver = the chosen zone's sector_category); field-event form - fruit_bagging_count only for CROP_FARMING zones; plan cycle-status select aligned to Bang 15 cycle_status (IN_PROGRESS/HARVESTING/COMPLETED_CLOSED/ABORTED_BY_DISASTER_DISEASE; stored PLAN-2026 value RUNNING untouched). Kept visible with recorded rationale: actors forestry_enterprise_class and packing cert fields (no sector driver in their dossier tables); lots timber block stays phase-3 scope. jsdom sim + live browser verified the gating. INCIDENT found by the mandatory browser test: zone CREATION on production returned 500 since T-034 - the live D1 zones table still carries name TEXT NOT NULL (no default) from the original schema era and T-034 cut name from SPECS, so inserts stopped supplying it (PATCH/GET unaffected, which is why earlier probes missed it; audit confirmed the only trap of its class). FIX (Worker a439d46e): legacy-schema guard in all three SQL stores (out-of-model NOT NULL columns with no default are satisfied with a neutral value at insert; never read back), schema files relax zones.name to nullable, regression tests in test_legacy_schema.py. Suites: memory 77 passed + 3 skipped; D1 legacy tests pass standalone. HONEST NOTE: the full D1-mode suite in one process errors on the PRISTINE tree too (git-stash verified; test_m3 standalone fails unmodified) - pre-existing harness isolation issue in this environment, follow-up. Post-fix production probes: POST /zones 201, probes deleted; final browser round PASSED (create forestry zone Z-FTEST, plan form shows the forestry field, delete Z-FTEST; pilot back to Z-01 + Z-TMP).",
     "blockers": []
+   },
+   {
+    "id": "T-037",
+    "title": "Quick-create forms unified with the main create forms (single form definition per kind)",
+    "status": "TECH_DONE",
+    "srs_refs": [
+     "DEC-013"
+    ],
+    "evidence": "Owner report 2026-11-04 07:19: the '+ Them moi' forms opened inside other forms were stripped-down versions, not the full original forms. Measured gap: quick zone 2 fields vs 21 in the main form; plant 3 vs 11; actor 4 vs 18; input lot 4 vs 13; parcel 3 vs 22. FIX: per-kind create-form builders (zoneCreateFields / plantCreateFields / actorCreateFields / inputLotCreateFields / parcelCreateFields) are now the single definition used by BOTH the main create button and every quick-create entry point - the nested form IS the original form, including Core+Vertical gating, so the two can never drift again. The quick-create machinery now also threads the sheet's onCancel through the restore path, so nesting two levels deep (plan form -> quick zone -> quick actor) cancels back level by level with typed values retained (previously the second level had no correct return path). jsdom simulation verified the whole chain: quick zone 21 fields, nested quick actor 18 fields, cancel at depth 2 returns to the zone form with values intact, saving the zone returns to the plan form with the new zone pre-selected. Deployed Worker 649a53d0; live browser round confirmed: main zone form and nested zone form identical (17 visible by default; 21 total including the 4 livestock fields gated behind the sector picker), actor form 18 = 18 in both paths, two-level cancel-return works. Suite memory mode 77 passed + 3 skipped.",
+    "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T00:15:00Z"
+ "updated_at": "2026-11-04T00:24:00Z"
 }
