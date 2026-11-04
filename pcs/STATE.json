@@ -1,5 +1,5 @@
 {
- "revision": 78,
+ "revision": 79,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -29,7 +29,7 @@
   ],
   "current": {
    "active_task": null,
-   "last_completed_step": "DEC-015 (rev 78): Owner chon chay song song v1/v2 (phuong an B). Chuong trinh Core v2 V2-1..V2-7 da xong toan bo.",
+   "last_completed_step": "T-063 TECH_DONE (rev 79): sua giao dien mobile v2 theo phan anh Owner — 5 loi (panel flex ep bang, tab khong noi bat, bang vo khung, iOS zoom, dua toc renderIntegrity) da sua + deploy + kiem chung trinh duyet that.",
    "next_action": "Chay song song: v1 la ban chinh, v2 pilot-dalat la ban guong; chay lai script anh xa khi v1 co du lieu moi. Quyet dinh chuyen doi A/C de danh gia sau.",
    "blockers": []
   },
@@ -977,9 +977,17 @@
     "srs_refs": [],
     "evidence": "Bien ban: ~/workspace/your_files/iaict-full-audit/bien-ban-ra-soat-v1-dong-bang-04-11-2026.md. Ket luan: KHONG co lech lac hay loi moi. Bang chung: (1) dashboard beta-pilot khop dung baseline sau T-050 (2 zones, 2 mother plants, 1 plan, 1 field event, 2 lots, 1 user; cac bang probe = 0); (2) integrity verify VALID, 3 checkpoint/88 dong, test trinh duyet that tren UI khop; (3) Worker dang chay van la ban T-050 8676c276 o 100%, khong deployment nao sau dong bang; (4) tu commit dong bang T-050 den HEAD chi 3 file pcs/ thay doi (STATE + coverage), 0 dong code/UI/contract; (5) suite v1 chay lai 109+4 dung con so da ghi; (6) cong IoT 401 khi khong khoa, platform 503 (tat nhu ghi nhan). Cac diem mo deu la hang muc da ghi nhan tu truoc (test PG loi 1 ca NULL-key, harness D1-mot-tien-trinh, users/audit chua phan trang, khoa PII/toan ven chua dat, Z-TMP bi ghim, PLAN-2026 RUNNING, spike chua don) — khong phai phat hien moi.",
     "blockers": []
+   },
+   {
+    "id": "T-063",
+    "title": "Sua giao dien mobile Core v2 (Owner phan anh 'cuc te')",
+    "status": "TECH_DONE",
+    "srs_refs": [],
+    "evidence": "Owner phan anh giao dien mobile v2 cuc te (2026-11-04 14:36). Kiem toan CSS/app.js thay 4 loi that: (1) lop .card la flex-item cua danh sach nhung 10 man dung lam panel khoi (h3 + bang) -> bang bi ep thanh dai ngang canh tieu de; (2) tab chon loai ho so dung class 'active' nhung CSS chi co rule '.on' thua tu v1 -> tab dang chon KHONG co trang thai noi bat, dong thoi .chip xung dot voi style huy trang thai 11px; (3) 2 bang (trang thai so su kien 5 cot, checkpoint 7 cot) khong co khung cuon ngang -> bi ep vo tren man hep; (4) o nhap form 15px -> iOS tu phong to khi cham. Sua: rule .card:has(>h3/table/form/p) -> display:block; chips thanh 1 hang cuon ngang + .chip.active nen xanh dam + muc tieu cham >=38px; bang boc .tbl-wrap (cuon ngang trong khung, min-width 540/680px); o nhap 16px; icon-btn 40px; go CSS trung lap (.chips x3, .side-nav x2); stat-grid 2 cot tren man <=600px; html/body overflow-x:clip. Them loi thu 5 bat duoc khi kiem tra lai tren trinh duyet that: renderIntegrity dua toc dieu huong (await fetch truoc khi gan listener bang querySelector toan cuc -> null.addEventListener khi nguoi dung chuyen man giua luc tai) -> da sua (isConnected + bind trong container). Xac minh: jsdom sim21 + sim22 (moi, bao 2 man co bang) dat, 0 loi JS; test trinh duyet that 2 vong: tab dang chon noi bat + chuyen tab dung, bang trang thai full-width du 5 cot, bang checkpoint du 7 cot nam gon trong the. Deploy Worker 1382ff19 (ban sua chinh) roi 5d06d63a (fix dua toc). Repo v2 commits: mobile repair + race fix.",
+    "blockers": []
    }
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T07:16:13Z"
+ "updated_at": "2026-11-04T07:42:44Z"
 }
