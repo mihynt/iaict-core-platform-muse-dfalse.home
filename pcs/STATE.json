@@ -1,5 +1,5 @@
 {
- "revision": 81,
+ "revision": 82,
  "schema": "pcs.solo.v1",
  "state": {
   "architecture_map": {
@@ -28,9 +28,9 @@
    }
   ],
   "current": {
-   "active_task": "T-066",
-   "last_completed_step": "DEC-017 + T-065 (AG01) TECH_DONE (rev 81): nen CI/ADR/linter/validator/ma tran truy vet + CF smoke — cong CI xanh o ca 3 che do store.",
-   "next_action": "AG02 (T-066): grant/scope engine + four-eyes + kiem thu cach ly TC-01/TC-02.",
+   "active_task": "T-067",
+   "last_completed_step": "T-066 (AG02) TECH_DONE (rev 82): grant/scope engine + four-eyes + TC-02. Deploy beta tam hoan vi token het hieu luc.",
+   "next_action": "AG03 (T-067): phien ban dia gioi cho spatial_units + quan he chu the + import dry-run. Khi co token moi: deploy ban AG01+AG02 len beta v2 va test trinh duyet.",
    "blockers": []
   },
   "decisions": [
@@ -1015,9 +1015,9 @@
    {
     "id": "T-066",
     "title": "AG02 — Identity tenant va policy (grant/scope, four-eyes) (SRS R3)",
-    "status": "PLANNED",
+    "status": "TECH_DONE",
     "srs_refs": [],
-    "evidence": "",
+    "evidence": "Repo v2 commit 063361f. Grants/scope engine: bang access_grants (migration v6) + scoping.py (mo rong PRODUCER->sites->units->subjects/cycles; nguoi co grant thi chi thay/ghi trong pham vi, TENANT_ADMIN khong bi scope, thu hoi/het han co hieu luc ngay o request ke tiep; ban ghi ngoai pham vi tra 404 de khong lo ton tai) ap vao records_api (list/get/create/update) + ledger (events/state). Four-eyes: bang pending_approvals; USER_REVOKE/GRANT_REVOKE chi thuc thi khi admin THU HAI duyet (tu duyet -> 403 FOUR_EYES_SELF_APPROVAL); thuc thi loi (LAST_ADMIN) -> FAILED kem ly do, khong gia thanh cong. API /grants + /approvals + audit GRANT_CREATE/REVOKE, APPROVAL_*. Test: test_access.py 5 ca (TC-02 tron vong grant->scope->revoke; WRITE grant; validate; four-eyes revoke user + reject path) — suite: memory 73+2, D1 75, PG 71+4; CI gate GREEN; trung lap PASS. UI: 2 panel Uy quyen + Phe duyet trong man Nguoi dung (jsdom sim23 PASS). CHUA deploy len beta: token Cloudflare phien 13:20 da het hieu luc (auth error 10000) — cho Owner gui token moi thi deploy gom.",
     "blockers": []
    },
    {
@@ -1153,5 +1153,5 @@
   ],
   "version": "0.1.0"
  },
- "updated_at": "2026-11-04T08:41:25Z"
+ "updated_at": "2026-11-04T08:52:18Z"
 }
